@@ -67,9 +67,13 @@ page_home = div(
   titlePanel("Home Page"),
   sidebarLayout(
     sidebarPanel(
-      p("For the following, let:"),
-      p("$\\frac{1}{\\delta_{i}} \\sim Gamma(\\alpha_{i}, \\beta_{i})$ for $i = 1, 2, .., p$ where $p$ is the sample size"),
-      p("and $\\mu \\sim N_{p}(\\mu_{0}, \\sigma_{0}^{2} \\sum)$."),
+      p("Generate: $\\frac{1}{\\sigma_{ii}} \\sim \\gamma(\\alpha_{01i}, \\alpha_{02i}), i = 1, 2, ..., p$"),
+      p("Let $\\triangle = diag(\\sqrt{\\sigma_{11}}, ..., \\sqrt{\\sigma_{pp}})$"),
+      p("$R \\sim uniform$ on the set of all $p \\times p$ correlation matrices."),
+      p("$\\Sigma = \\triangle^{1/2} R \\triangle^{1/2} $"),
+      p("$\\mu | \\Sigma \\sim N_{p}(\\mu_{0}, \\sigma^{2}_{0} \\Sigma)$"),
+      p("So the hyperparameters as determied by the elicitation are"),
+      p("$(\\alpha_{01i}, \\alpha_{02i}), i = 1, ..., p$, $\\mu_{0}$, and $\\sigma^{2}_{0}$"),
       p(""),
       textInput(
         inputId = "alphas",

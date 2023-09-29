@@ -106,6 +106,5 @@ sample_prior = function(alphas, betas, mu_0, sigma_0){
 # ELICITING FROM THE PRIOR                                     #
 ################################################################
 
-# blah blah blah
 
 
