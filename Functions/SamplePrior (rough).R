@@ -112,15 +112,6 @@ In = matrix(t(rep(1, n))) # identity column; replace the name later perhaps.
 Ybar_t = matrix(Ybar,nrow=1, ncol = 3) # transpose edition.
 S = (1/(n-1)) * t(Y - In%*%Ybar_t) %*% (Y - In%*%Ybar_t)
 
-
-# getting the k(SIGMA) function
-k_Sigma = 1
-for(i in 1:p){
-  deltas_inv = 1/deltas[i]
-  prod = (deltas_inv)^(-alphas[1] - (p+1)/2) * exp(-betas[1]/deltas_inv)
-  k_Sigma = k_Sigma * prod
-}
-
 # getting the A(Y) formula
 # have n from earlier
 AY = (n-1)*S + n*(n * sigma_0^2 + 1)^(-1) * ((Ybar - mu_0) %*% t(Ybar - mu_0))
@@ -130,23 +121,47 @@ AY = (n-1)*S + n*(n * sigma_0^2 + 1)^(-1) * ((Ybar - mu_0) %*% t(Ybar - mu_0))
 inverse_AY = solve(AY)
 # to ensure positive definite: need to do a bit of rounding.
 inverse_AY = round(inverse_AY, 19) # seens to work for the 19 case -> may need to generalise more in the future.
-is.positive.definite(inverse_AY)
-isSymmetric(inverse_AY)
+#is.positive.definite(inverse_AY)
+#isSymmetric(inverse_AY)
 
 N = 100 # monte carlo sample size - user input.
 zetas = rWishart(n = N, df = n - p + 1, Sigma = inverse_AY)
 # another issue: it has to be the case that n-p+1 has to be greater than dim(inverse_AY)!?
 
-SIGMA_matrices = 1/zetas
-# need to iterate to get the sigma is.
-
+# need to iterate to get the SIGMA is.
 temp_mean = (mu_0/(sigma_0^{2}) + n * Ybar)/(1/sigma_0^{2} +n) 
-mui_vect = c()
+mui_matrix = c()
 for(i in 1:N){
-  SIGMA_i = SIGMA_matrices[i]
-  temp_variance = (1/sigma_0^{2} + n)^{-1} * SIGMA_i
+  SIGMA_i = solve(zetas[,,i])
+  temp_variance = ((1/sigma_0^{2}) + n)^{-1} * SIGMA_i
+  # need to do the rounding things again...
   mu_i = mvrnorm(n = 1, mu = temp_mean, Sigma = temp_variance)
+  mui_matrix = rbind(matrix = mui_matrix, c(mu_i)) 
 }
+
+#########################################
+# getting the k(SIGMA) function -> again, requires iteration
+# evaluating the importance sampling estimator.
+K_Sigma_vect = c()
+for(i in 1:N){
+  k_Sigma = 1
+  sigma_ii = diag(solve(zetas[,,i])) # getting the diagonals
+  for(i in 1:p){
+    prod = (sigma_ii[i])^(-alphas[i] - (p+1)/2) * exp(-betas[i]/sigma_ii[i])
+    k_Sigma = k_Sigma * prod
+  }
+  K_Sigma_vect = c(K_Sigma_vect, k_Sigma)
+}
+
+# test for h: let h(mu, Sigma) = mu_1 (first coordinate of vector mu)
+
+INh = sum(mui_matrix*K_Sigma_vect)/sum(K_Sigma_vect)
+# need to do a sanity check if the above expression works properly.
+
+
+
+
+
 
 
 #sigma = diag(SIGMA)
@@ -198,11 +213,6 @@ for (i in 1:length(mu0)){
 
 
 # need to check notes more?
-
-
-
-pchisq(23.6848, df = 14, ncp = 0, lower.tail = TRUE) - pchisq(6.57, df = 14, ncp = 0, lower.tail = TRUE)
-
 
 
 
