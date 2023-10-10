@@ -18,17 +18,17 @@ library(stats)
 # 1/delta_{1} ~ gamma(aloha_{i}, beta_{i})
 
 # this is the user input!! MAY CHANGE
-alphas = c(1, 1, 1)
-betas = c(1, 1, 1)
+alpha01 = c(1, 1, 1)
+alpha02 = c(1, 1, 1)
 
-deltas = c() # assumption: len(alphas) == len(betas)
+deltas = c() # assumption: len(alpha01) == len(alpha02)
 # also, this is 1/delta.
-for(i in 1:length(alphas)){
-  gam = rgamma(1, shape = alphas[i], scale = betas[i]) # need to VERIFY if it is 1/beta
+for(i in 1:length(alpha01)){
+  gam = rgamma(1, shape = alpha01[i], scale = alpha02[i]) # need to VERIFY if it is 1/beta
   deltas = c(deltas, gam)
 }
 # making diag(delta_{1}, delta_{2}, ..., delta_{p})
-diagtri = diag(length(alphas))*deltas
+diagtri = diag(length(alpha01))*deltas
 
 # generate R (onion method) ##############
 vnorm = function(x, t) {
@@ -69,7 +69,7 @@ onion = function(dimension) {
 
 # find sigma for sigma = diag(delta1, ..., deltap)^{1/2} R diag(delta1, ..., deltap)^{1/2}
 
-sigma = diagtri^{1/2} * onion(length(alphas)) * diagtri^{1/2}
+sigma = diagtri^{1/2} * onion(length(alpha01)) * diagtri^{1/2}
 
 # generate mu
 
@@ -78,7 +78,7 @@ mu_0 = 10
 sigma_0 = 100
 
 # generate normal rvs
-z_vector = rnorm(n = length(alphas), mean = 0, sd = 1)
+z_vector = rnorm(n = length(alpha01), mean = 0, sd = 1)
 
 # finally geenrating mu
 
@@ -93,7 +93,10 @@ mu
 #trying to write code to generate for the posterior - separate for now.
 # this is the sample size - user must input.
 n = 100
-p = length(alphas) # this will be computed and hardcoded based on alpha01, alpha02
+# note: when writing the r-shiny site, ensure that the condition is ensured:
+# n >= 2p (or else the rest does not apply.)
+
+p = length(alpha01) # this will be computed and hardcoded based on alpha01, alpha02
 mu = rep(0, p) #temporary dummy data
 sigma = diag(p) # identity matrix, for now.
 mu_0 = 0
@@ -120,12 +123,12 @@ AY = (n-1)*S + n*(n * sigma_0^2 + 1)^(-1) * ((Ybar - mu_0) %*% t(Ybar - mu_0))
 # note: dimensions are okay, i guess there's smth wrong with the inputs lmaoo
 inverse_AY = solve(AY)
 # to ensure positive definite: need to do a bit of rounding.
-inverse_AY = round(inverse_AY, 19) # seens to work for the 19 case -> may need to generalise more in the future.
-#is.positive.definite(inverse_AY)
-#isSymmetric(inverse_AY)
+inverse_AY = round(inverse_AY, 18) # seens to work for the 19 case -> may need to generalise more in the future.
+is.positive.definite(inverse_AY)
+isSymmetric(inverse_AY)
 
 N = 100 # monte carlo sample size - user input.
-zetas = rWishart(n = N, df = n - p + 1, Sigma = inverse_AY)
+zetas = rWishart(n = N, df = n - p - 1, Sigma = inverse_AY)
 # another issue: it has to be the case that n-p+1 has to be greater than dim(inverse_AY)!?
 
 # need to iterate to get the SIGMA is.
@@ -147,7 +150,7 @@ for(i in 1:N){
   k_Sigma = 1
   sigma_ii = diag(solve(zetas[,,i])) # getting the diagonals
   for(i in 1:p){
-    prod = (sigma_ii[i])^(-alphas[i] - (p+1)/2) * exp(-betas[i]/sigma_ii[i])
+    prod = (sigma_ii[i])^(-alpha01[i] - (p+1)/2) * exp(-alpha02[i]/sigma_ii[i])
     k_Sigma = k_Sigma * prod
   }
   K_Sigma_vect = c(K_Sigma_vect, k_Sigma)
@@ -155,7 +158,7 @@ for(i in 1:N){
 
 # test for h: let h(mu, Sigma) = mu_1 (first coordinate of vector mu)
 
-INh = sum(mui_matrix*K_Sigma_vect)/sum(K_Sigma_vect)
+INh = sum(mui_matrix[, 1]*K_Sigma_vect)/sum(K_Sigma_vect)
 # need to do a sanity check if the above expression works properly.
 
 

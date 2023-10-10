@@ -11,6 +11,9 @@ library(expm) # used for the onion method
 library(stringr)
 library(varhandle)
 #library(powerplus) # May be useful for matrix multiplication
+library(MASS)
+library(matrixcalc)
+library(stats)
 
 # Globally setting the spinner colour and type # TODO: find a new one
 options(spinner.type = 8, spinner.color = "#6990EE")
@@ -20,79 +23,26 @@ options(scipen = 999)
 
 # Accessing other R-codes
 #source("routes.R") # Note: re-add later.
-source("./Functions/SamplePrior.R")
-source("./Functions/HelperFunctions.R")
+source("./pages/sampling/samplepriorposterior.R")
+source("./pages/algorithm_description.R")
+source("./pages/contact.R")
+source("./pages/home.R")
+
+source("./functions/SamplePrior.R")
+source("./functions/HelperFunctions.R")
+source("./functions/HelperFunctions.R")
 
 ################################################################
 # FRONTEND                                                     #
 ################################################################
 
-page_contact = div(
-  mainPanel(
-    titlePanel("Contact Page"),
-    p("PLACEHOLDER. WILL ADD LATER.")
-  )
-)
-
-page_algorithm = div(
-  mainPanel(
-    titlePanel("Algorithm Page"),
-    p("PLACEHOLDER. WILL ADD LATER.")
-  )
-)
-
+# still a placeholder before adding a true home page.
 page_home = div(
-  
-  # Code for adding latex
-  tags$head(
-    tags$link(rel="stylesheet", 
-              href="https://cdn.jsdelivr.net/npm/katex@0.10.1/dist/katex.min.css", 
-              integrity="sha384-dbVIfZGuN1Yq7/1Ocstc1lUEm+AT+/rCkibIcC/OmWo5f0EA48Vf8CytHzGrSwbQ",
-              crossorigin="anonymous"),
-    HTML('<script defer src="https://cdn.jsdelivr.net/npm/katex@0.10.1/dist/katex.min.js" integrity="sha384-2BKqo+exmr9su6dir+qCw08N2ZKRucY4PrGQPPWU1A7FtlCGjmEGFqXCv5nyM5Ij" crossorigin="anonymous"></script>'),
-    HTML('<script defer src="https://cdn.jsdelivr.net/npm/katex@0.10.1/dist/contrib/auto-render.min.js" integrity="sha384-kWPLUVMOks5AQFrykwIup5lo0m3iMkkHrD0uJ4H5cjeGihAutqP0yW0J6dpFiVkI" crossorigin="anonymous"></script>'),
-    HTML('
-    <script>
-      document.addEventListener("DOMContentLoaded", function(){
-        renderMathInElement(document.body, {
-          delimiters: [{left: "$", right: "$", display: false}]
-        });
-      })
-    </script>')
-  ),
-  
-  withMathJax(),
-  # end of adding latex
-  
   titlePanel("Home Page"),
-  sidebarLayout(
-    sidebarPanel(
-      p("Generate: $\\frac{1}{\\sigma_{ii}} \\sim \\gamma(\\alpha_{01i}, \\alpha_{02i}), i = 1, 2, ..., p$"),
-      p("Let $\\triangle = diag(\\sqrt{\\sigma_{11}}, ..., \\sqrt{\\sigma_{pp}})$"),
-      p("$R \\sim uniform$ on the set of all $p \\times p$ correlation matrices."),
-      p("$\\Sigma = \\triangle^{1/2} R \\triangle^{1/2} $"),
-      p("$\\mu | \\Sigma \\sim N_{p}(\\mu_{0}, \\sigma^{2}_{0} \\Sigma)$"),
-      p("So the hyperparameters as determied by the elicitation are"),
-      p("$(\\alpha_{01i}, \\alpha_{02i}), i = 1, ..., p$, $\\mu_{0}$, and $\\sigma^{2}_{0}$"),
-      p(""),
-      textInput(
-        inputId = "alphas",
-        label = "Insert the vector of $\\alpha_{1}, ..., \\alpha_{p}$.",
-        value = "1, 1, 1, 1, 1"),
-      textInput(
-        inputId = "betas",
-        label = "Insert the vector of $\\beta_{1}, ..., \\beta_{p}$",
-        value = "1, 1, 1, 1, 1"),
-      numericInput(inputId = "mu_0",
-                   label = 'Insert $\\mu_{0}$',
-                   value = 2),
-      numericInput(inputId = "sigma_0",
-                   label = 'Insert $\\sigma_{0}$',
-                   value = 2),
-    ),
-    mainPanel(
-      withSpinner(verbatimTextOutput("sample_prior_computation"))
-    ),
+  tabsetPanel(type = "tabs",
+              tabPanel("Description", page_samplingdescription),
+              tabPanel("Sampling from the Prior", page_priorsample),
+              tabPanel("Sampling from the Posterior", page_posteriorsample)
   )
 )
 
@@ -110,11 +60,23 @@ ui = navbarPage(title = "Importance Sampling for Multivariate Normal Calculation
 
 server = function(input, output, session) {
   # convert the inputs into vectors to be used for computations
-  alphas_list = reactive({create_necessary_vector(input$alphas)})
-  betas_list = reactive({create_necessary_vector(input$betas)})
+  alpha01_list = reactive({create_necessary_vector(input$alpha01)})
+  alpha02_list = reactive({create_necessary_vector(input$alpha02)})
   
   output$sample_prior_computation = renderPrint({
-    sample_prior(alphas_list(), betas_list(), input$mu_0, input$sigma_0)
+    sample_prior(alpha01 = alpha01_list(), 
+                 alpha02 = alpha02_list(), 
+                 mu_0 = input$mu_0, 
+                 sigma_0 = input$sigma_0)
+  })
+  
+  output$sample_posterior_computation = renderPrint({
+    sample_posterior(alpha01 = alpha01_list(), 
+                     alpha02 = alpha02_list(), 
+                     n = input$n, 
+                     N = input$bigN, 
+                     mu_0 = input$mu_0, 
+                     sigma_0 = input$sigma_0)
   })
 }
 

@@ -46,16 +46,16 @@ onion = function(dimension){
 # MAIN FUNCTIONS                                               #
 ################################################################
 
-sample_prior = function(alphas, betas, mu_0, sigma_0){
-  # Let 1/delta_{i} ~ gamma(alpha_{i}, beta_{i}) for i = 1, 2, .., p where p is the sample size.
+sample_prior = function(alpha01, alpha02, mu_0, sigma_0){
+  # Let 1/delta_{i} ~ gamma(alpha01_{i}, alpha02_{i}) for i = 1, 2, .., p where p is the sample size.
   # mu ~ N_{p}(mu_0, sigma_{0}^{2} * SIGMA) 
-  if(length(alphas) != length(betas)){
-    return("Error: the vector for alpha and beta are of a different size.")
+  if(length(alpha01) != length(alpha02)){
+    return("Error: the vector for alpha_01 and beta_01 are of a different size.")
   }
-  sample_size = length(alphas)
+  sample_size = length(alpha01)
   deltas = c() 
   for(i in 1:sample_size){
-    gam = rgamma(1, shape = alphas[i], scale = betas[i]) # need to VERIFY if it is 1/beta.. ASK which gamma funct. they use
+    gam = rgamma(1, shape = alpha01[i], scale = alpha02[i]) # need to VERIFY if it is 1/beta.. ASK which gamma funct. they use
     deltas = c(deltas, gam)
   }
   # Making diag(delta_{1}, delta_{2}, ..., delta_{p})
@@ -77,34 +77,108 @@ sample_prior = function(alphas, betas, mu_0, sigma_0){
   return(newlist)
 }
 
-#alphas = c(1, 2, 3, 4, 5)
-#betas = c(1, 2, 3, 4, 5)
-#mu_0 = 1
-#sigma_0 = 1
-#sample_prior(alphas, betas, mu_0, sigma_0)
-
-
-# trying to sample from the posterior (note: may change file name entirely!)
-
-# generate zeta_{i} ~ Wp(A^{-1}(Y), n-p+1) #wishet
-######################################
-
-# first, compute A(Y) which is defined by
-#compute_AY = function(n, s, sigma_0, ybar, mu_0)
-
-
-# calculate SIGMA_{i} = zeta_{i}^{-1} to obtain sigma_{11}, ..., sigma_{pp} (diag elements)
-######################################
-
-# generate mu_{i} = N_{p}(...)
-######################################
-
-# evaluate the estimator I_{N}(h)
-######################################
+sample_posterior = function(alpha01, alpha02, n, N, mu_0, sigma_0){
+  if(length(alpha01) != length(alpha02)){
+    return("Error: the vector for alpha_01 and beta_01 are of a different size.")
+  }
+  p = length(alpha01)
+  if(n < (2*p)){
+    return("Error: the value of n (size of Y) is too small.")
+  }
+  
+  mu = rep(0, p) #temporary dummy data -> MAY REPLACE?
+  sigma = diag(p) # identity matrix, for now.
+  
+  # generating Y. May have an option where the user inputs Y themselves - ask?
+  Y = mvrnorm(n = n, mu = mu, Sigma = sigma)
+  
+  Yprime = t(Y)
+  Ybar = rowMeans(Yprime)
+  
+  In = matrix(t(rep(1, n))) # identity column
+  Ybar_t = matrix(Ybar,nrow=1, ncol = p) # transpose
+  S = (1/(n-1)) * t(Y - In%*%Ybar_t) %*% (Y - In%*%Ybar_t)
+  
+  # getting the A(Y) formula
+  AY = (n-1)*S + n*(n * sigma_0^2 + 1)^(-1) * ((Ybar - mu_0) %*% t(Ybar - mu_0))
+  
+  # finding the inverse. to ensure positive definite: need to round.
+  inverse_AY = round(solve(AY), 15)
+  
+  zetas = rWishart(n = N, df = (n - p - 1), Sigma = inverse_AY)
+  
+  temp_mean = (mu_0/(sigma_0^{2}) + n * Ybar)/(1/sigma_0^{2} +n) 
+  mui_matrix = c()
+  for(i in 1:N){
+    SIGMA_i = solve(zetas[,,i])
+    temp_variance = ((1/sigma_0^{2}) + n)^{-1} * SIGMA_i
+    # need to do the rounding things again...
+    mu_i = mvrnorm(n = 1, mu = temp_mean, Sigma = temp_variance)
+    mui_matrix = rbind(matrix = mui_matrix, c(mu_i)) 
+  }
+  
+  # getting the k(SIGMA) function
+  K_Sigma_vect = c()
+  for(i in 1:N){
+    k_Sigma = 1
+    sigma_ii = diag(solve(zetas[,,i])) # getting the diagonals
+    for(i in 1:p){
+      prod = (sigma_ii[i])^(-alpha01[i] - (p+1)/2) * exp(-alpha02[i]/sigma_ii[i])
+      k_Sigma = k_Sigma * prod
+    }
+    K_Sigma_vect = c(K_Sigma_vect, k_Sigma)
+  }
+  
+  # test for h: let h(mu, Sigma) = mu_1 (first coordinate of vector mu)
+  INh = sum(mui_matrix[, 1]*K_Sigma_vect)/sum(K_Sigma_vect)
+  
+  newlist = list("AY" = AY, "INh" = INh)
+  
+  return(newlist)
+}
 
 ################################################################
 # ELICITING FROM THE PRIOR                                     #
 ################################################################
 
+# functions we discarded.
+
+test_matrix_symmetry = function(matrix){
+  # Note: issue with the isSymmetric function where it doesn't count for
+  # past a certain decimal place.
+  ans = TRUE
+  for(i in 1:nrow(matrix)){
+    for(j in 1:ncol(matrix)){
+      if(matrix[i,j]!=matrix[j,i]){
+        ans = FALSE;break}
+    }
+  }
+  return(ans)
+}
+
+test_matrix_symmetry = function(matrix){all(matrix==t(matrix))}
+
+ensure_positive_definite = function(matrix){
+  i = 5 # start the iteration. 
+  # 5 is an arbitrary start, but if we start at i we will get the 0 matrix.
+  is_pos_def = TRUE
+  while(is_pos_def == TRUE){
+    test_matrix = round(matrix, i)
+    if(test_matrix_symmetry(test_matrix) == TRUE){
+      if(is.positive.definite(test_matrix) == TRUE){
+        i = i + 1
+      } else {
+        is_pos_def = FALSE
+      }
+    } else {
+      is_pof_def = FALSE
+    }
+  }
+  if(i == 1){
+    return("Error: matrix is not symmetric or positive definite at all.")
+  } else {
+    return(round(matrix, i-1))
+  }
+}
 
 
