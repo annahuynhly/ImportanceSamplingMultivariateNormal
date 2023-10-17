@@ -88,6 +88,12 @@ mu = mu_0 + sigma_0 * diag(sigma^{1/2}) * z_vector
 mu
 
 
+
+
+
+
+
+
 ####################################################
 
 #trying to write code to generate for the posterior - separate for now.
@@ -121,7 +127,33 @@ AY = (n-1)*S + n*(n * sigma_0^2 + 1)^(-1) * ((Ybar - mu_0) %*% t(Ybar - mu_0))
 
 # finding the inverse
 # note: dimensions are okay, i guess there's smth wrong with the inputs lmaoo
-inverse_AY = solve(AY)
+#inverse_AY = solve(AY)
+
+#trying to find a method that isn't from the inverse method.
+#note: is.positive.definite(AY) == TRUE
+
+# first attempt: spectral decomposition method
+test = eigen(AY, symmetric = TRUE, only.values=FALSE)
+
+Q = test$vectors
+V_inv = diag(1/test$values)
+Q_inv = t(test$vectors)
+
+inverse_AY = Q %*% V_inv %*% Q_inv
+
+is.positive.definite(inverse_AY)
+
+is.positive.definite(round(inverse_AY, 10))
+
+# second event: cholesky fractorization method
+
+a = chol(AY) %*% solve(t(chol(AY)) %*% chol(AY))
+
+a = solve(t(chol(AY)) %*% chol(AY))
+
+is.positive.definite(a)
+isSymmetric(a)
+
 # to ensure positive definite: need to do a bit of rounding.
 inverse_AY = round(inverse_AY, 18) # seens to work for the 19 case -> may need to generalise more in the future.
 is.positive.definite(inverse_AY)
@@ -170,53 +202,6 @@ INh = sum(mui_matrix[, 1]*K_Sigma_vect)/sum(K_Sigma_vect)
 #sigma = diag(SIGMA)
 
 # now need to generate mu_i
-
-################ BELOW IS FOR ELICITATION OF THE PRIOR!
-
-# blah blah blah
-#library(MASS) # check if these are needed beforehand - from Luai's code.
-#library(mvtnorm)
-
-# 1) Specify virtual certainty
-alpha = 0.999 #virtual certainty, tells you the accuracy if I recall correctly? 
-
-# 2) Specify m_{1i}, m_{2i} such that m_{1i} < M_{i} < m_{2i} with virtual certainty, so
-
-# Can think of the following as "bounds of mu". These are inputs.
-#ai < mu_0i < bi
-m1 = c(-5, -5, -5) #ai 
-m2 = c(5, 5, 5) #bi
-
-# multivariate mu_0
-mu0 = (m1+m2)/2
-
-alpha_0 = c(1, 1, 1)
-beta_0 = c(1, 1, 1)
-a_matrix = matrix(alpha_0, nrow=1) #alpha0
-b_matrix = matrix(beta_0, nrow=1) #beta0           
-x = as.matrix(rbind(a_matrix, b_matrix))#; rownames(x)<-c('a','b') # matrix of a,b
-delta = x     # why not assign earlier? check.
-
-
-
-# 3) Specifying s_{1i}, s_{2i}
-# half-length, setting for upper and lower bound of s_1, s_2
-# NOTE: commented the two lines below for now as it seems unnecessary to declare as numeric. may need to change later.
-#s1 = numeric()  # half-length, lower bound            
-#s2 = numeric()   # half-length, upper bound
-# BELOW IS GIVEN
-const = c(2,2,2) # range for upper s2, delta_i need to be contained in this range 
-## (optimal found is between ? to be the lowest to contain delta_i (higher is possible))
-
-for (i in 1:length(mu0)){
-  s1 = c(s1, qnorm((1+alpha)/2))
-  s2 = c(s2, const[i]*(qnorm((1+alpha)/2)))
-}
-
-
-
-# need to check notes more?
-
 
 
 

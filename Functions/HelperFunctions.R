@@ -1,4 +1,18 @@
 
+closed_bracket_grid = function(delta){
+  # Creates a grid of values from 0 to 1 based on the distance between two points (delta).
+  # Previous names: finite_val_grid & binormal_val_grid_1
+  grid = seq(0, 1, length= (1/delta)+1)
+  return(grid)
+}
+
+open_bracket_grid = function(delta){
+  # Creates a grid of values from 0 to 1 based on the distance between two points (delta).
+  # Previous names: RB_distance_that_matters & binormal_val_grid_2
+  grid = seq(delta/2, 1 - delta/2, length=(1/delta))
+  return(grid)
+}
+
 convert_to_hex = function(hex_colour){
   hex_colour = gsub(" ", "", hex_colour)
   first_char = substr(hex_colour, 1, 1)

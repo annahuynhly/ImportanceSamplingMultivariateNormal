@@ -52,28 +52,41 @@ sample_prior = function(alpha01, alpha02, mu_0, sigma_0){
   if(length(alpha01) != length(alpha02)){
     return("Error: the vector for alpha_01 and beta_01 are of a different size.")
   }
-  sample_size = length(alpha01)
+  p = length(alpha01)
   deltas = c() 
-  for(i in 1:sample_size){
+  for(i in 1:p){
     gam = rgamma(1, shape = alpha01[i], scale = alpha02[i]) # need to VERIFY if it is 1/beta.. ASK which gamma funct. they use
     deltas = c(deltas, gam)
   }
   # Making diag(delta_{1}, delta_{2}, ..., delta_{p})
-  diagtri = diag(sample_size)*deltas
+  diagtri = diag(p)*deltas
   
   # Obtain R using onion method
-  R = onion(sample_size)
+  R = onion(p)
   
   # Find SIGMA
   SIGMA = diagtri^{1/2} * R * diagtri^{1/2}
   
   # Generate normal rvs
-  z_vector = rnorm(n = sample_size, mean = 0, sd = 1)
+  z_vector = rnorm(n = p, mean = 0, sd = 1)
   
-  # Finally geenrating mu
-  mu = mu_0 + sigma_0 * SIGMA^{1/2} * z_vector
+  # Finally generating mu
+  mu = mu_0 + sigma_0 * diag(SIGMA^{1/2}) * z_vector
   
-  newlist = list("mu" = mu, "sigma" = SIGMA)
+  newlist = list("mu" = mu, "sigma" = diag(SIGMA))
+  
+  return(newlist)
+}
+
+sample_multiple_prior = function(n, alpha01, alpha02, mu_0, sigma_0){
+  mu_vectors = c()
+  sigma_vectors = c()
+  for(i in 1:n){
+    sample = sample_prior(alpha01, alpha02, mu_0, sigma_0)
+    mu_vectors = rbind(mu_vectors, sample$mu)
+    sigma_vectors = rbind(sigma_vectors, sample$sigma)
+  }
+  newlist = list("mu" = mu_vectors, "sigma" = sigma_vectors)
   return(newlist)
 }
 
@@ -105,6 +118,9 @@ sample_posterior = function(alpha01, alpha02, n, N, mu_0, sigma_0){
   # finding the inverse. to ensure positive definite: need to round.
   inverse_AY = round(solve(AY), 15)
   
+  # another way to find it: spectral decomposition
+  
+  
   zetas = rWishart(n = N, df = (n - p - 1), Sigma = inverse_AY)
   
   temp_mean = (mu_0/(sigma_0^{2}) + n * Ybar)/(1/sigma_0^{2} +n) 
@@ -132,7 +148,7 @@ sample_posterior = function(alpha01, alpha02, n, N, mu_0, sigma_0){
   # test for h: let h(mu, Sigma) = mu_1 (first coordinate of vector mu)
   INh = sum(mui_matrix[, 1]*K_Sigma_vect)/sum(K_Sigma_vect)
   
-  newlist = list("AY" = AY, "INh" = INh)
+  newlist = list("INh" = INh)
   
   return(newlist)
 }
@@ -141,7 +157,144 @@ sample_posterior = function(alpha01, alpha02, n, N, mu_0, sigma_0){
 # ELICITING FROM THE PRIOR                                     #
 ################################################################
 
-# functions we discarded.
+elicit = function(alpha, beta, gamma, s1, s2){
+  # This function finds the two values of gamma which we are subtracting.
+  
+  prob1 = (1+gamma)/2
+  prob2 = (1-gamma)/2
+  G = matrix(0,2,1)
+  
+  G[1] = qgamma(prob1, alpha, beta) - (qnorm(prob1)/s1)^2
+  G[2] = qgamma(prob2, alpha, beta) - (qnorm(prob1)/s2)^2
+  
+  return(G)  
+}
+
+generate_samp_var = function(gamma, p, const, s1, s2){
+  # this checks whether the user inputs a valid s1, s2 or whether they just placed
+  # constraints.
+  if(is.numeric(const) == FALSE & is.numeric(s1) == TRUE & is.numeric(s2) == TRUE){
+    if(length(s1) == length(s2)){
+      return(list("s1" = s1, "s2" = s2))
+    } else {
+      return("Error")
+    }
+  } else if (is.numeric(const) == TRUE & is.numeric(s1) == FALSE & is.numeric(s2) == FALSE){
+    s1 = numeric()           
+    s2 = numeric()
+    
+    for (i in 1:p){
+      s1 = c(s1, qnorm((1+gamma)/2))
+      s2 = c(s2, const[i]*(qnorm((1+gamma)/2)))
+    }
+    return(list("s1" = s1, "s2" = s2))
+  } else {
+    return("Error")
+  }
+}
+
+prior_elicitation = function(gamma, m1, m2, const = FALSE, s1 = FALSE, s2 = FALSE){
+  # algorithm doesn't work with a poor choice of s1 and s2; keep this here, but
+  # remove options for the user.
+  if(length(m1) == length(m2)){
+    p = length(m1)
+  } else {
+    return("Error: length of m1, m2 are not equal.")
+  }
+  mu0 = (m1+m2)/2 # multivariate mu_0
+  
+  s = generate_samp_var(gamma, p, const, s1, s2)
+  if(s[1] != "Error"){
+    s1 = s$s1
+    s2 = s$s2
+  } else {
+    return("Error: cannot determine the values for s1, s2.")
+  }
+  
+  alphas = matrix(rep(1, p), nrow=1) 
+  betas = matrix(rep(1, p), nrow=1)          
+  x = as.matrix(rbind(alphas, betas))
+  delta = x
+  
+  j = 1
+  # initializing
+  delta0 = matrix(c(alphas[1],betas[1]), ncol=1)
+  while(j <= p){
+    maxiter = 1000   
+    iter = 0
+    tol = 0.5 
+    
+    while (norm(delta0) > tol & iter < maxiter){
+      h = 0.000000001 # increase point
+      
+      fx = elicit(x[1,j], x[2,j], gamma, s1[j], s2[j])
+      Jx = matrix(0,2,2)
+      
+      for(i in 1:2){
+        xh = x # estimation values
+        xh[i,j] = x[i,j] + h
+        
+        fxh = elicit(xh[1,j], xh[2,j], gamma, s1[j], s2[j]) # estimated
+        Jx[,i] = (fxh - fx)/h 
+      }
+      
+      delta[,j] = -solve(Jx) %*% elicit(x[1,j], x[2,j], gamma, s1[j], s2[j])  
+      delta0[,1] = delta[,j]
+      
+      x[,j] = x[,j] + delta[,j]      
+      iter = iter + 1   
+    }
+    j = j+1
+    delta0 = matrix(c(alphas[j],betas[j]), ncol=1)
+  }
+  
+  sigma0 = (m2 - m1)/(2*s1)
+  
+  newlist = list("alphas" = x[1,], "betas" = x[2,], "s1" = s1, "s2" = s2,
+                 "mu0" = mu0, "sigma0" = sigma0)
+  return(newlist)
+}
+
+################################################################
+# GRAPH FUNCTIONS                                              #
+################################################################
+
+prior_mu_graph = function(prior_mu, 
+                          col_num,
+                          colour_choice = c("blue", "blue"),
+                          lty_type = 2,
+                          transparency = 0.1){
+  # This generates the graph for the prior of the mu, given the number of mu.
+  
+  mu_values = prior_mu[,col_num]
+  # see latex support later for graphs - was able to for a paper.
+  title = paste("Graph of the Prior of mu", col_num, sep = " ")
+  xlab_title = paste("mu", col_num, sep = " ")
+  
+  rgb_version = col2rgb(colour_choice[1])
+  
+  hist_col = rgb(rgb_version[1]/255, rgb_version[2]/255, rgb_version[3]/255, 
+                alpha = transparency)
+  
+  # Plots of the Prior and the Posterior
+  hist(mu_values, 
+       main = title, ylab = "Densities", xlab = xlab_title, 
+       col = hist_col, border = "#ffffff",
+       prob = TRUE,
+       ylim = c(0, 1))
+  lines(density(mu_values), lwd = 2, lty = lty_type, col = colour_choice[2])
+}
+
+# need to test below
+
+#test = sample_multiple_prior(n = 100, alpha01 = c(2, 2, 2), 
+#                      alpha02 = c(4, 4, 4), mu_0 = c(0, 0, 0), 
+#                      sigma_0 = c(1, 1, 1))
+#prior_mu_graph(test$mu, col_num = 1)
+
+################################################################
+# DISCARDED - MAY BE USED LATER                                #
+################################################################
 
 test_matrix_symmetry = function(matrix){
   # Note: issue with the isSymmetric function where it doesn't count for

@@ -59,24 +59,73 @@ page_samplingdescription = div(
   
 )
 
+page_elicitprior = div(
+  titlePanel("Elicitation from the Prior"),
+  sidebarLayout(
+    sidebarPanel(
+      textInput(
+        inputId = "m1",
+        label = "Insert the vector of $m_{11}, m_{12}, ..., m_{1p}$",
+        value = "-5,-5,-5"),
+      textInput(
+        inputId = "m2",
+        label = "Insert the vector of $m_{21}, m_{22}, ..., m_{2p}$",
+        value = "5,5,5"),
+      textInput(
+        inputId = "const_s",
+        label = "Insert the upper range of $s_{2}$, where $\\delta_{i}$ 
+                need to be contained.",
+        value = "2,2,2"),
+      numericInput(inputId = "virtual_uncertainty",
+                   label = 'Insert the virtual uncertainty, $\\gamma$.',
+                   value = 0.99),
+    ),
+    mainPanel(
+      withSpinner(verbatimTextOutput("elicit_prior_computation"))
+    ),
+  )
+)
+
 page_priorsample = div(
   titlePanel("Sampling from the Prior"),
   sidebarLayout(
     sidebarPanel(
-      textInput(
-        inputId = "alpha01",
-        label = "Insert the vector of $\\alpha_{011}, ..., \\alpha_{01p}$",
-        value = "1, 1, 1, 1, 1"),
-      textInput(
-        inputId = "alpha02",
-        label = "Insert the vector of $\\alpha_{021}, ..., \\alpha_{02p}$",
-        value = "1, 1, 1, 1, 1"),
-      numericInput(inputId = "mu_0",
-                   label = 'Insert $\\mu_{0}$',
-                   value = 0),
-      numericInput(inputId = "sigma_0",
-                   label = 'Insert $\\sigma_{0}$',
-                   value = 1),
+      
+      numericInput(inputId = "prior_bigN",
+                   label = 'Insert N, the length of vectors $\\mu$ and $\\sigma$.',
+                   value = 100),
+      
+      p("Remark: the values show only the first 10 values. You may download them."),
+      
+      selectInput(inputId = "priorsample_use", 
+                  label = 'Do you want to use the values from the previous section?', 
+                  choices = list("Yes" = "y", "No" = "n"), 
+                  selected = "n"
+      ),
+      
+      conditionalPanel(
+        condition = "input.priorsample_use == 'yes'",
+        p("The values from the previous section will be used!")
+      ),
+      
+      conditionalPanel(
+        condition = "input.priorsample_use == 'n'",
+        textInput(
+          inputId = "alpha01",
+          label = "Insert the vector of $\\alpha_{011}, ..., \\alpha_{01p}$",
+          value = "1, 1, 1, 1, 1"),
+        textInput(
+          inputId = "alpha02",
+          label = "Insert the vector of $\\alpha_{021}, ..., \\alpha_{02p}$",
+          value = "1, 1, 1, 1, 1"),
+        numericInput(inputId = "mu_0",
+                     label = 'Insert $\\mu_{0}$',
+                     value = 0),
+        numericInput(inputId = "sigma_0",
+                     label = 'Insert $\\sigma_{0}$',
+                     value = 1),
+      ),
+      
     ),
     mainPanel(
       withSpinner(verbatimTextOutput("sample_prior_computation"))
@@ -86,7 +135,7 @@ page_priorsample = div(
 
 page_posteriorsample = div(
 
-  titlePanel("Sampling from the Posterior"),
+  titlePanel("Integrating with Respect to the Posterior"),
   
   sidebarLayout(
     sidebarPanel(
@@ -101,6 +150,43 @@ page_posteriorsample = div(
       withSpinner(verbatimTextOutput("sample_posterior_computation"))
     ),
   )
+)
+
+################################################
+# graph portion.
+
+page_priorgraph = div(
+  titlePanel("Plots for $\\mu$ Sampled from the Prior"), 
+  sidebarLayout(
+    sidebarPanel(
+      width = 4,
+      numericInput(inputId = "mu_col", 
+                   label = 'The column of $\\mu$ used to generate the graph.',
+                   value = 1),
+      textInput(inputId = "prior_colour_hist",
+                label = 'Input the colour of the histogram',
+                value = "6699FF"
+      ), 
+      textInput(inputId = "prior_colour_line",
+                label = 'Input the colour of the line',
+                value = "FF6666"
+      ), 
+      selectInput(inputId = "prior_lty_type", 
+                  label = 'Select a line type', 
+                  choices = list("0" = 0, "1" = 1, "2" = 2, 
+                                 "3" = 3, "4" = 4, "5" = 5, "6" = 6),
+                  selected = 2
+      ),
+      sliderInput(inputId = "prior_transparency", 
+                  label = "Scale for colour transparency",
+                  min = 0, max = 1, value = 0.2
+      ), 
+      
+    ),
+    mainPanel(
+      tabPanel("Plots", plotOutput("sample_prior_graph")),
+    ),
+  ),
 )
 
 
