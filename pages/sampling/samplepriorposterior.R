@@ -63,6 +63,7 @@ page_elicitprior = div(
   titlePanel("Elicitation from the Prior"),
   sidebarLayout(
     sidebarPanel(
+      width = 3,
       textInput(
         inputId = "m1",
         label = "Insert the vector of $m_{11}, m_{12}, ..., m_{1p}$",
@@ -90,12 +91,15 @@ page_priorsample = div(
   titlePanel("Sampling from the Prior"),
   sidebarLayout(
     sidebarPanel(
-      
+      width = 3,
       numericInput(inputId = "prior_bigN",
                    label = 'Insert N, the length of vectors $\\mu$ and $\\sigma$.',
                    value = 100),
       
-      p("Remark: the values show only the first 10 values. You may download them."),
+      p("Remark: the values show only the first 10 rows. You may download them."),
+      
+      downloadButton("priorsample_download_mu", "Download $\\mu$"),
+      downloadButton("priorsample_download_sigma", "Download $\\Sigma$"),
       
       selectInput(inputId = "priorsample_use", 
                   label = 'Do you want to use the values from the previous section?', 
@@ -139,12 +143,54 @@ page_posteriorsample = div(
   
   sidebarLayout(
     sidebarPanel(
-      numericInput(inputId = "n",
+      width = 3,
+      numericInput(inputId = "post_n",
                    label = 'Insert n, the length of Y',
                    value = 100),
-      numericInput(inputId = "bigN",
+      numericInput(inputId = "post_bigN",
                    label = 'Insert N, the monte carlo sample size',
                    value = 1000),
+      
+      p("Remark: select values are shown. You may download to see the rest."),
+      
+      downloadButton("postsample_download_mu", "$\\mu$"),
+      downloadButton("postsample_download_sigma", "$\\Sigma$"),
+      downloadButton("postsample_download_k_zeta", "$K(\\zeta)$"),
+      
+      selectInput(inputId = "posteriorsample_use", 
+                  label = 'Which kind of values do you want to use?', 
+                  choices = list("Input values" = 1, 
+                                 "Same values as elicitation" = 2,
+                                 "Same values as prior" = 3), 
+                  selected = 1),
+      
+      conditionalPanel(
+        condition = "input.posteriorsample_use == 2",
+        p("The values from the elicitation of the prior will be used!")
+      ),
+      conditionalPanel(
+        condition = "input.posteriorsample_use == 3",
+        p("The values inputted in the sampling of the prior will be used!")
+      ),
+      
+      conditionalPanel(
+        condition = "input.posteriorsample_use == 1",
+        textInput(
+          inputId = "alpha01_ver2",
+          label = "Insert the vector of $\\alpha_{011}, ..., \\alpha_{01p}$",
+          value = "1, 1, 1, 1, 1"),
+        textInput(
+          inputId = "alpha02_ver2",
+          label = "Insert the vector of $\\alpha_{021}, ..., \\alpha_{02p}$",
+          value = "1, 1, 1, 1, 1"),
+        numericInput(inputId = "mu_0_ver2",
+                     label = 'Insert $\\mu_{0}$',
+                     value = 0),
+        numericInput(inputId = "sigma_0_ver2",
+                     label = 'Insert $\\sigma_{0}$',
+                     value = 1),
+      ),
+      
     ),
     mainPanel(
       withSpinner(verbatimTextOutput("sample_posterior_computation"))
@@ -159,7 +205,7 @@ page_priorgraph = div(
   titlePanel("Plots for $\\mu$ Sampled from the Prior"), 
   sidebarLayout(
     sidebarPanel(
-      width = 4,
+      width = 3,
       numericInput(inputId = "mu_col", 
                    label = 'The column of $\\mu$ used to generate the graph.',
                    value = 1),

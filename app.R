@@ -68,6 +68,9 @@ server = function(input, output, session) {
   
   alpha01_list = reactive({create_necessary_vector(input$alpha01)})
   alpha02_list = reactive({create_necessary_vector(input$alpha02)})
+  alpha01_list_ver2 = reactive({create_necessary_vector(input$alpha01_ver2)})
+  alpha02_list_ver2 = reactive({create_necessary_vector(input$alpha02_ver2)})
+  
 
   prior_elicitation_values = reactive({
     prior_elicitation(gamma = input$virtual_uncertainty, 
@@ -108,17 +111,72 @@ server = function(input, output, session) {
     )
   })
   
-  output$sample_posterior_computation = renderPrint({
-    sample_posterior(alpha01 = alpha01_list(), 
-                     alpha02 = alpha02_list(), 
-                     n = input$n, 
-                     N = input$bigN, 
-                     mu_0 = input$mu_0, 
-                     sigma_0 = input$sigma_0)
+  # downloading the data
+  output$priorsample_download_mu = downloadHandler(
+    filename = "priorsample_mu.csv",
+    content = function(file) {
+      write.csv(prior_sample_values()$mu, file, row.names = FALSE)
+    }
+  )
+  
+  output$priorsample_download_sigma = downloadHandler(
+    filename = "priorsample_sigma.csv",
+    content = function(file) {
+      write.csv(prior_sample_values()$sigma, file, row.names = FALSE)
+    }
+  )
+  
+  posterior_sample_values = reactive({
+    if(input$posteriorsample_use == 1){ # input values
+      sample_posterior(alpha01 = alpha01_list_ver2(), 
+                       alpha02 = alpha02_list_ver2(), 
+                       n = input$post_n, N = input$post_bigN, 
+                       mu_0 = input$mu_0_ver2, 
+                       sigma_0 = input$sigma_0_ver2)
+    } else if (input$posteriorsample_use == 2){ # same as elicit
+      sample_posterior(alpha01 = prior_elicitation_values()$alphas, 
+                       alpha02 = prior_elicitation_values()$betas,
+                       n = input$post_n, N = input$post_bigN, 
+                       mu_0 = prior_elicitation_values()$mu0, 
+                       sigma_0 = prior_elicitation_values()$sigma0)
+    } else if (input$posteriorsample_use == 3){ # same as prior
+      sample_posterior(alpha01 = alpha01_list(), 
+                       alpha02 = alpha02_list(), 
+                       n = input$post_n, N = input$post_bigN, 
+                       mu_0 = input$mu_0, 
+                       sigma_0 = input$sigma_0)
+    }
   })
   
+  output$sample_posterior_computation = renderPrint({
+    list(
+      "mu" = head(posterior_sample_values()$mu, 5),
+      "sigma" = head(posterior_sample_values()$sigma, 5),
+      "k_zeta" = posterior_sample_values()$k_zeta[1:25]
+    )
+  })
+  
+  output$postsample_download_mu = downloadHandler(
+    filename = "postsample_mu.csv",
+    content = function(file) {
+      write.csv(posterior_sample_values()$mu, file, row.names = FALSE)
+    }
+  )
+  output$postsample_download_sigma = downloadHandler(
+    filename = "postsample_sigma.csv",
+    content = function(file) {
+      write.csv(posterior_sample_values()$sigma, file, row.names = FALSE)
+    }
+  )
+  output$postsample_download_k_zeta = downloadHandler(
+    filename = "postsample_k_zeta.csv",
+    content = function(file) {
+      write.csv(posterior_sample_values()$k_zeta, file, row.names = FALSE)
+    }
+  )
   
   
+  #################################### graphing
   # this is for the GRAPH of the prior.
   output$sample_prior_graph = renderPlot({
     prior_mu_graph(

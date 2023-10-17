@@ -115,18 +115,17 @@ sample_posterior = function(alpha01, alpha02, n, N, mu_0, sigma_0){
   # getting the A(Y) formula
   AY = (n-1)*S + n*(n * sigma_0^2 + 1)^(-1) * ((Ybar - mu_0) %*% t(Ybar - mu_0))
   
-  # finding the inverse. to ensure positive definite: need to round.
-  inverse_AY = round(solve(AY), 15)
-  
-  # another way to find it: spectral decomposition
-  
+  # finding the inverse.
+  inverse_AY = find_inverse_alt(AY)
   
   zetas = rWishart(n = N, df = (n - p - 1), Sigma = inverse_AY)
   
-  temp_mean = (mu_0/(sigma_0^{2}) + n * Ybar)/(1/sigma_0^{2} +n) 
+  temp_mean = (mu_0/(sigma_0^{2}) + n * Ybar)/(1/sigma_0^{2}+n) 
   mui_matrix = c()
+  SIGMA_i_matrices = list()
   for(i in 1:N){
-    SIGMA_i = solve(zetas[,,i])
+    SIGMA_i = find_inverse_alt(zetas[,,i])
+    SIGMA_i_matrices[[i]] = SIGMA_i
     temp_variance = ((1/sigma_0^{2}) + n)^{-1} * SIGMA_i
     # need to do the rounding things again...
     mu_i = mvrnorm(n = 1, mu = temp_mean, Sigma = temp_variance)
@@ -137,7 +136,8 @@ sample_posterior = function(alpha01, alpha02, n, N, mu_0, sigma_0){
   K_Sigma_vect = c()
   for(i in 1:N){
     k_Sigma = 1
-    sigma_ii = diag(solve(zetas[,,i])) # getting the diagonals
+    sigma_ii = diag(SIGMA_i_matrices[[i]])
+    #sigma_ii = diag(find_inverse_alt(zetas[,,i])) # getting the diagonals
     for(i in 1:p){
       prod = (sigma_ii[i])^(-alpha01[i] - (p+1)/2) * exp(-alpha02[i]/sigma_ii[i])
       k_Sigma = k_Sigma * prod
@@ -146,9 +146,10 @@ sample_posterior = function(alpha01, alpha02, n, N, mu_0, sigma_0){
   }
   
   # test for h: let h(mu, Sigma) = mu_1 (first coordinate of vector mu)
-  INh = sum(mui_matrix[, 1]*K_Sigma_vect)/sum(K_Sigma_vect)
+  #INh = sum(mui_matrix[, 1]*K_Sigma_vect)/sum(K_Sigma_vect)
   
-  newlist = list("INh" = INh)
+  newlist = list("mu" = mui_matrix, "sigma" = SIGMA_i_matrices,
+                 "k_zeta" = K_Sigma_vect)
   
   return(newlist)
 }
@@ -253,6 +254,17 @@ prior_elicitation = function(gamma, m1, m2, const = FALSE, s1 = FALSE, s2 = FALS
   newlist = list("alphas" = x[1,], "betas" = x[2,], "s1" = s1, "s2" = s2,
                  "mu0" = mu0, "sigma0" = sigma0)
   return(newlist)
+}
+
+find_inverse_alt = function(matrix){
+  # issue with solve(...): doesn't ensure the function is positive definite.
+  # this ensures that it is.
+  x = eigen(matrix, symmetric = TRUE, only.values=FALSE)
+  Q = x$vectors
+  V_inv = diag(1/x$values)
+  B = Q%*%sqrt(V_inv)
+  inverse_matrix = B%*%t(B)
+  return(inverse_matrix)
 }
 
 ################################################################
