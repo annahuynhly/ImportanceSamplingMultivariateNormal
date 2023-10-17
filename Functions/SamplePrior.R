@@ -90,7 +90,7 @@ sample_multiple_prior = function(n, alpha01, alpha02, mu_0, sigma_0){
   return(newlist)
 }
 
-sample_posterior = function(alpha01, alpha02, n, N, mu_0, sigma_0){
+sample_post = function(alpha01, alpha02, n, N, mu_0, sigma_0){
   if(length(alpha01) != length(alpha02)){
     return("Error: the vector for alpha_01 and beta_01 are of a different size.")
   }
@@ -151,6 +151,33 @@ sample_posterior = function(alpha01, alpha02, n, N, mu_0, sigma_0){
   newlist = list("mu" = mui_matrix, "sigma" = SIGMA_i_matrices,
                  "k_zeta" = K_Sigma_vect)
   
+  return(newlist)
+}
+
+# warning: will need to test the following function below.
+sample_rbr_mu = function(prior_mu, post_mu, delta){
+  if(ncol(prior_mu) != ncol(post_mu)){
+    return("Error: the number of columns for the prior mu and posterior 
+           mu are not equal.")
+  }
+  # note: delta is the length of the bins.
+  rbr = matrix()
+  rbr_sequence = matrix()
+  for(i in 1:ncol(prior_mu)){
+    # we first start by focusing on each individual column.
+    min_val = floor(min(prior_mu[,i], post_mu[,i]))
+    max_val = ceiling(max(prior_mu[,i], post_mu[,i]))
+    prior_density = hist(prior_mu[,i], 
+                         prob = TRUE, 
+                         breaks = seq(from=min_val, to=max_val, by=delta))
+    post_density = hist(post_mu[,i], 
+                        prob = TRUE, 
+                        breaks = seq(from=min_val, to=max_val, by=delta))
+    rbr_density = prior_density$counts/post_density$counts
+    rbr = cbind(rbr, rbr_density)
+    rbr_sequence = cbind(rbr_sequence, prior_density$mids)
+  }
+  newlist = list("rbr" = rbr, "rbr_sequence" = rbr_sequence)
   return(newlist)
 }
 
@@ -271,6 +298,7 @@ find_inverse_alt = function(matrix){
 # GRAPH FUNCTIONS                                              #
 ################################################################
 
+# note: this might also work for the posterior as well...
 prior_mu_graph = function(prior_mu, 
                           col_num,
                           colour_choice = c("blue", "blue"),
@@ -292,16 +320,23 @@ prior_mu_graph = function(prior_mu,
   hist(mu_values, 
        main = title, ylab = "Densities", xlab = xlab_title, 
        col = hist_col, border = "#ffffff",
-       prob = TRUE,
-       ylim = c(0, 1))
+       prob = TRUE)
   lines(density(mu_values), lwd = 2, lty = lty_type, col = colour_choice[2])
 }
 
 # need to test below
 
-#test = sample_multiple_prior(n = 100, alpha01 = c(2, 2, 2), 
-#                      alpha02 = c(4, 4, 4), mu_0 = c(0, 0, 0), 
-#                      sigma_0 = c(1, 1, 1))
+# double check why mu_0 and sigma_0 are vectors ere..?
+test = sample_multiple_prior(n = 100, alpha01 = c(2, 2, 2), 
+                      alpha02 = c(4, 4, 4), mu_0 = 0, 
+                      sigma_0 = 1)
+test2 = sample_post(alpha01 = c(2, 2, 2), 
+                    alpha02 = c(4, 4, 4), 
+                    n = 100, N = 100, mu_0 = 0, sigma_0 = 1)
+
+# error with this code...
+sample_rbr_mu(test$mu, test2$mu, 0.5)
+
 #prior_mu_graph(test$mu, col_num = 1)
 
 ################################################################

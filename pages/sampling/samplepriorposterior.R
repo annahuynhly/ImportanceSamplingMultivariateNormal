@@ -157,7 +157,7 @@ page_posteriorsample = div(
       downloadButton("postsample_download_sigma", "$\\Sigma$"),
       downloadButton("postsample_download_k_zeta", "$K(\\zeta)$"),
       
-      selectInput(inputId = "posteriorsample_use", 
+      selectInput(inputId = "postsample_use", 
                   label = 'Which kind of values do you want to use?', 
                   choices = list("Input values" = 1, 
                                  "Same values as elicitation" = 2,
@@ -165,16 +165,16 @@ page_posteriorsample = div(
                   selected = 1),
       
       conditionalPanel(
-        condition = "input.posteriorsample_use == 2",
+        condition = "input.postsample_use == 2",
         p("The values from the elicitation of the prior will be used!")
       ),
       conditionalPanel(
-        condition = "input.posteriorsample_use == 3",
+        condition = "input.postsample_use == 3",
         p("The values inputted in the sampling of the prior will be used!")
       ),
       
       conditionalPanel(
-        condition = "input.posteriorsample_use == 1",
+        condition = "input.postsample_use == 1",
         textInput(
           inputId = "alpha01_ver2",
           label = "Insert the vector of $\\alpha_{011}, ..., \\alpha_{01p}$",
@@ -193,7 +193,7 @@ page_posteriorsample = div(
       
     ),
     mainPanel(
-      withSpinner(verbatimTextOutput("sample_posterior_computation"))
+      withSpinner(verbatimTextOutput("sample_post_computation"))
     ),
   )
 )
@@ -230,7 +230,15 @@ page_priorgraph = div(
       
     ),
     mainPanel(
-      tabPanel("Plots", plotOutput("sample_prior_graph")),
+      tabPanel("Plots",
+        fluidRow(
+          splitLayout(
+            cellWidths = c("50%", "50%"), 
+            withSpinner(plotOutput("sample_prior_graph")), 
+            withSpinner(plotOutput("sample_post_graph"))
+          )
+        ),
+      ),
     ),
   ),
 )

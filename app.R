@@ -126,21 +126,21 @@ server = function(input, output, session) {
     }
   )
   
-  posterior_sample_values = reactive({
-    if(input$posteriorsample_use == 1){ # input values
-      sample_posterior(alpha01 = alpha01_list_ver2(), 
+  post_sample_values = reactive({
+    if(input$postsample_use == 1){ # input values
+      sample_post(alpha01 = alpha01_list_ver2(), 
                        alpha02 = alpha02_list_ver2(), 
                        n = input$post_n, N = input$post_bigN, 
                        mu_0 = input$mu_0_ver2, 
                        sigma_0 = input$sigma_0_ver2)
-    } else if (input$posteriorsample_use == 2){ # same as elicit
-      sample_posterior(alpha01 = prior_elicitation_values()$alphas, 
+    } else if (input$postsample_use == 2){ # same as elicit
+      sample_post(alpha01 = prior_elicitation_values()$alphas, 
                        alpha02 = prior_elicitation_values()$betas,
                        n = input$post_n, N = input$post_bigN, 
                        mu_0 = prior_elicitation_values()$mu0, 
                        sigma_0 = prior_elicitation_values()$sigma0)
-    } else if (input$posteriorsample_use == 3){ # same as prior
-      sample_posterior(alpha01 = alpha01_list(), 
+    } else if (input$postsample_use == 3){ # same as prior
+      sample_post(alpha01 = alpha01_list(), 
                        alpha02 = alpha02_list(), 
                        n = input$post_n, N = input$post_bigN, 
                        mu_0 = input$mu_0, 
@@ -148,30 +148,30 @@ server = function(input, output, session) {
     }
   })
   
-  output$sample_posterior_computation = renderPrint({
+  output$sample_post_computation = renderPrint({
     list(
-      "mu" = head(posterior_sample_values()$mu, 5),
-      "sigma" = head(posterior_sample_values()$sigma, 5),
-      "k_zeta" = posterior_sample_values()$k_zeta[1:25]
+      "mu" = head(post_sample_values()$mu, 5),
+      "sigma" = head(post_sample_values()$sigma, 5),
+      "k_zeta" = post_sample_values()$k_zeta[1:25]
     )
   })
   
   output$postsample_download_mu = downloadHandler(
     filename = "postsample_mu.csv",
     content = function(file) {
-      write.csv(posterior_sample_values()$mu, file, row.names = FALSE)
+      write.csv(post_sample_values()$mu, file, row.names = FALSE)
     }
   )
   output$postsample_download_sigma = downloadHandler(
     filename = "postsample_sigma.csv",
     content = function(file) {
-      write.csv(posterior_sample_values()$sigma, file, row.names = FALSE)
+      write.csv(post_sample_values()$sigma, file, row.names = FALSE)
     }
   )
   output$postsample_download_k_zeta = downloadHandler(
     filename = "postsample_k_zeta.csv",
     content = function(file) {
-      write.csv(posterior_sample_values()$k_zeta, file, row.names = FALSE)
+      write.csv(post_sample_values()$k_zeta, file, row.names = FALSE)
     }
   )
   
@@ -181,6 +181,17 @@ server = function(input, output, session) {
   output$sample_prior_graph = renderPlot({
     prior_mu_graph(
       prior_mu = prior_sample_values()$mu, 
+      col_num = input$mu_col,
+      colour_choice = c(convert_to_hex(input$prior_colour_hist),
+                        convert_to_hex(input$prior_colour_line)),
+      lty_type = as.numeric(input$prior_lty_type),
+      transparency = input$prior_transparency)
+  })
+  
+  # this is for the GRAPH of the posterior.
+  output$sample_post_graph = renderPlot({
+    prior_mu_graph(
+      prior_mu = post_sample_values()$mu, 
       col_num = input$mu_col,
       colour_choice = c(convert_to_hex(input$prior_colour_hist),
                         convert_to_hex(input$prior_colour_line)),
