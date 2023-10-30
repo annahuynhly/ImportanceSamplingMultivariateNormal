@@ -5,6 +5,7 @@
 # For Shiny & website support
 library(shiny)
 library(shinycssloaders) # for loading screens
+library(latex2exp) # for latex within graphs
 
 # For the functions
 library(expm) # used for the onion method 
@@ -41,7 +42,7 @@ page_home = div(
   titlePanel("Home Page"),
   tabsetPanel(type = "tabs",
               tabPanel("Description", page_samplingdescription),
-              tabPanel("Elicitating the Prior", page_elicitprior),
+              tabPanel("Eliciting the Prior", page_elicitprior),
               tabPanel("Sampling from the Prior", page_priorsample),
               tabPanel("Graph of the Prior", page_priorgraph),
               tabPanel("Sampling from the Posterior", page_posteriorsample)
@@ -71,7 +72,6 @@ server = function(input, output, session) {
   alpha01_list_ver2 = reactive({create_necessary_vector(input$alpha01_ver2)})
   alpha02_list_ver2 = reactive({create_necessary_vector(input$alpha02_ver2)})
   
-
   prior_elicitation_values = reactive({
     prior_elicitation(gamma = input$virtual_uncertainty, 
                       m1 = m1_list(), 
@@ -107,24 +107,64 @@ server = function(input, output, session) {
   output$sample_prior_computation = renderPrint({
     list(
       "mu" = head(prior_sample_values()$mu, 10),
-      "sigma" = head(prior_sample_values()$sigma, 10)
+      "sigma" = head(prior_sample_values()$sigma, 10),
+      "R" = prior_sample_values()$R[[1]]
     )
+  })
+  
+  # cleaning the data before being downloaded - changing the column names.
+  download_prior_sample_mu = reactive({
+    data = as.data.frame(prior_sample_values()$mu)
+    for(i in 1:ncol(data)){
+      colnames(data)[i] = paste("mu", i, sep = " ")
+    }
+    data
+  })
+  
+  download_prior_sample_sigma = reactive({
+    data = as.data.frame(prior_sample_values()$sigma)
+    for(i in 1:ncol(data)){
+      colnames(data)[i] = paste("sigma", i, sep = " ")
+    }
+    data
+  })
+  
+  download_prior_sample_R = reactive({
+    data = as.data.frame(prior_sample_values()$R)
+    n_matrices = length(data)
+    for(i in 1:n_matrices){
+      data[[i]] = as.data.frame(data[[i]]) # turning into data frame to name the columns
+      n_cols = ncol(data[[1]]) # assuming there exists a matrix haha
+      for(j in 1:n_cols){
+        colnames(data[[i]])[j] = paste("Matrix", i, "column", j, sep = " ")
+      }
+    }
+    data
   })
   
   # downloading the data
   output$priorsample_download_mu = downloadHandler(
     filename = "priorsample_mu.csv",
     content = function(file) {
-      write.csv(prior_sample_values()$mu, file, row.names = FALSE)
+      write.csv(download_prior_sample_mu(), file, row.names = FALSE)
     }
   )
   
   output$priorsample_download_sigma = downloadHandler(
     filename = "priorsample_sigma.csv",
     content = function(file) {
-      write.csv(prior_sample_values()$sigma, file, row.names = FALSE)
+      write.csv(download_prior_sample_sigma(), file, row.names = FALSE)
     }
   )
+  
+  output$priorsample_download_R = downloadHandler(
+    filename = "priorsample_R.csv",
+    content = function(file) {
+      write.csv(download_prior_sample_R(), file, row.names = FALSE)
+    }
+  )
+  
+  ######### THESE ARE FOR THE POSTERIOR! ###############################
   
   post_sample_values = reactive({
     if(input$postsample_use == 1){ # input values
@@ -156,15 +196,26 @@ server = function(input, output, session) {
     )
   })
   
+  # cleaning the data before being downloaded - changing the column names.
+  download_post_sample_mu = reactive({
+    data = as.data.frame(post_sample_values()$mu)
+    for(i in 1:ncol(data)){
+      colnames(data)[i] = paste("mu", i, sep = " ")
+    }
+    data
+  })
+  
   output$postsample_download_mu = downloadHandler(
     filename = "postsample_mu.csv",
     content = function(file) {
-      write.csv(post_sample_values()$mu, file, row.names = FALSE)
+      write.csv(download_post_sample_mu(), file, row.names = FALSE)
     }
   )
+  
   output$postsample_download_sigma = downloadHandler(
     filename = "postsample_sigma.csv",
     content = function(file) {
+      # Note: difficult to change the column names for this particular case.
       write.csv(post_sample_values()$sigma, file, row.names = FALSE)
     }
   )
@@ -179,9 +230,11 @@ server = function(input, output, session) {
   #################################### graphing
   # this is for the GRAPH of the prior.
   output$sample_prior_graph = renderPlot({
-    prior_mu_graph(
-      prior_mu = prior_sample_values()$mu, 
+    mu_graph(
+      mu = prior_sample_values()$mu, 
+      type = "Prior",
       col_num = input$mu_col,
+      delta = input$graph_delta,
       colour_choice = c(convert_to_hex(input$prior_colour_hist),
                         convert_to_hex(input$prior_colour_line)),
       lty_type = as.numeric(input$prior_lty_type),
@@ -190,9 +243,30 @@ server = function(input, output, session) {
   
   # this is for the GRAPH of the posterior.
   output$sample_post_graph = renderPlot({
-    prior_mu_graph(
-      prior_mu = post_sample_values()$mu, 
+    mu_graph(
+      mu = post_sample_values()$mu, 
+      type = "Posterior",
       col_num = input$mu_col,
+      delta = input$graph_delta,
+      colour_choice = c(convert_to_hex(input$prior_colour_hist),
+                        convert_to_hex(input$prior_colour_line)),
+      lty_type = as.numeric(input$prior_lty_type),
+      transparency = input$prior_transparency)
+  })
+  
+  # plotting for the relative belief ratio
+  rbr_sample_values = reactive({
+    sample_rbr_mu(prior_mu = prior_sample_values()$mu, 
+                  post_mu = post_sample_values()$mu, 
+                  delta = input$graph_delta)
+  })
+  
+  output$sample_rbr_graph = renderPlot({
+    rbr_mu_graph(
+      mu = rbr_sample_values()$rbr, 
+      type = "RBR",
+      col_num = input$mu_col,
+      grid_vals = rbr_sample_values()$rbr_sequence,
       colour_choice = c(convert_to_hex(input$prior_colour_hist),
                         convert_to_hex(input$prior_colour_line)),
       lty_type = as.numeric(input$prior_lty_type),

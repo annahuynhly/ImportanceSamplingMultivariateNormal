@@ -42,6 +42,18 @@ onion = function(dimension){
   return(next_corr)
 }
 
+seq_alt = function(values, delta){
+  # creates a sequence and includes the last value, even if it isn't captured
+  # by the original sequence.
+  min = floor(min(values))
+  max = ceiling(max(values))
+  grid = seq(min, max, by = delta)
+  if(!(max %in% grid) == TRUE){
+    grid = c(grid, max)
+  }
+  return(grid)
+}
+
 ################################################################
 # MAIN FUNCTIONS                                               #
 ################################################################
@@ -73,7 +85,7 @@ sample_prior = function(alpha01, alpha02, mu_0, sigma_0){
   # Finally generating mu
   mu = mu_0 + sigma_0 * diag(SIGMA^{1/2}) * z_vector
   
-  newlist = list("mu" = mu, "sigma" = diag(SIGMA))
+  newlist = list("mu" = mu, "sigma" = diag(SIGMA), "R" = R)
   
   return(newlist)
 }
@@ -81,12 +93,16 @@ sample_prior = function(alpha01, alpha02, mu_0, sigma_0){
 sample_multiple_prior = function(n, alpha01, alpha02, mu_0, sigma_0){
   mu_vectors = c()
   sigma_vectors = c()
+  R_vectors = list() # recall, R is from the onion method
   for(i in 1:n){
     sample = sample_prior(alpha01, alpha02, mu_0, sigma_0)
     mu_vectors = rbind(mu_vectors, sample$mu)
     sigma_vectors = rbind(sigma_vectors, sample$sigma)
+    #print(sample$R) # debugging
+    R_vectors[[i]] = sample$R
   }
-  newlist = list("mu" = mu_vectors, "sigma" = sigma_vectors)
+  newlist = list("mu" = mu_vectors, "sigma" = sigma_vectors, 
+                 "R" = R_vectors)
   return(newlist)
 }
 
@@ -161,21 +177,21 @@ sample_rbr_mu = function(prior_mu, post_mu, delta){
            mu are not equal.")
   }
   # note: delta is the length of the bins.
-  rbr = matrix()
-  rbr_sequence = matrix()
+  rbr = list()
+  rbr_sequence = list()
   for(i in 1:ncol(prior_mu)){
     # we first start by focusing on each individual column.
     min_val = floor(min(prior_mu[,i], post_mu[,i]))
     max_val = ceiling(max(prior_mu[,i], post_mu[,i]))
-    prior_density = hist(prior_mu[,i], 
-                         prob = TRUE, 
-                         breaks = seq(from=min_val, to=max_val, by=delta))
-    post_density = hist(post_mu[,i], 
-                        prob = TRUE, 
-                        breaks = seq(from=min_val, to=max_val, by=delta))
-    rbr_density = prior_density$counts/post_density$counts
-    rbr = cbind(rbr, rbr_density)
-    rbr_sequence = cbind(rbr_sequence, prior_density$mids)
+    grid = seq(min_val, max_val, by = delta)
+    if(!(max_val %in% grid) == TRUE){
+      grid = c(grid, max)
+    }
+    prior_density = hist(prior_mu[,i], prob = TRUE, breaks = grid)
+    post_density = hist(post_mu[,i], prob = TRUE, breaks = grid)
+    rbr_density = divison_alt(prior_density$counts, post_density$counts)
+    rbr[[i]] = rbr_density
+    rbr_sequence[[i]] = prior_density$mids # can be prior or posterior
   }
   newlist = list("rbr" = rbr, "rbr_sequence" = rbr_sequence)
   return(newlist)
@@ -294,35 +310,91 @@ find_inverse_alt = function(matrix){
   return(inverse_matrix)
 }
 
+divison_alt = function(num, denom){
+  # assumption: length(num) == length(denom)
+  x = c()
+  for(i in 1:length(num)){
+    if(denom[i] == 0){
+      x = c(x, NaN)
+    } else {
+      x = c(x, num[i]/denom[i])
+    }
+  }
+  return(x)
+}
+
 ################################################################
 # GRAPH FUNCTIONS                                              #
 ################################################################
 
 # note: this might also work for the posterior as well...
-prior_mu_graph = function(prior_mu, 
-                          col_num,
-                          colour_choice = c("blue", "blue"),
-                          lty_type = 2,
-                          transparency = 0.1){
+mu_graph = function(mu, type = "prior", col_num,
+                    delta,
+                    colour_choice = c("blue", "blue"),
+                    lty_type = 2,
+                    transparency = 0.1){
   # This generates the graph for the prior of the mu, given the number of mu.
   
-  mu_values = prior_mu[,col_num]
-  # see latex support later for graphs - was able to for a paper.
-  title = paste("Graph of the Prior of mu", col_num, sep = " ")
-  xlab_title = paste("mu", col_num, sep = " ")
+  mu_values = mu[,col_num]
+  # TODO: see latex support later for graphs - was able to for a paper.
+  #title = TeX(paste(r'($\mu$)', "sample text for testing", sep = " "))
+  title = TeX(paste("Graph of the", type, r'(of $\mu$)', col_num, sep = " "))
+  
+  xlab_title = TeX(paste(r'($\mu$)', col_num, sep = " "))
   
   rgb_version = col2rgb(colour_choice[1])
   
   hist_col = rgb(rgb_version[1]/255, rgb_version[2]/255, rgb_version[3]/255, 
                 alpha = transparency)
   
+  # getting the sequence values
+  grid = seq_alt(mu_values, delta)
+  
   # Plots of the Prior and the Posterior
   hist(mu_values, 
        main = title, ylab = "Densities", xlab = xlab_title, 
        col = hist_col, border = "#ffffff",
+       breaks = grid,
        prob = TRUE)
   lines(density(mu_values), lwd = 2, lty = lty_type, col = colour_choice[2])
 }
+
+# separate function needs to exist based on the type of what rbr is.
+rbr_mu_graph = function(mu, type = "rbr", col_num,
+                        grid_vals,
+                        colour_choice = c("blue", "blue"),
+                        lty_type = 2,
+                        transparency = 0.1){
+  mu_values = mu[[col_num]]
+  print(mu_values)
+  grid = grid_vals[[col_num]]
+  
+  title = TeX(paste("Graph of the", type, r'(of $\mu$)', col_num, sep = " "))
+  
+  xlab_title = TeX(paste(r'($\mu$)', col_num, sep = " "))
+  
+  rgb_version = col2rgb(colour_choice[1])
+  
+  hist_col = rgb(rgb_version[1]/255, rgb_version[2]/255, rgb_version[3]/255, 
+                 alpha = transparency)
+  
+  # Plotting
+  hist(mu_values, 
+       main = title, ylab = "Densities", xlab = xlab_title, 
+       col = hist_col, border = "#ffffff",
+       breaks = grid,
+       prob = TRUE)
+  lines(density(mu_values, na.rm = TRUE), lwd = 2, lty = lty_type, col = colour_choice[2])
+}
+  
+
+
+#rbr_mu_graph(mu = x$rbr, type = "rbr", 1,
+#                        grid_vals = x$rbr_sequence,
+#                       colour_choice = c("blue", "blue"),
+#                        lty_type = 2,
+#                        transparency = 0.1)
+
 
 # need to test below
 
@@ -333,9 +405,25 @@ prior_mu_graph = function(prior_mu,
 #test2 = sample_post(alpha01 = c(2, 2, 2), 
 #                    alpha02 = c(4, 4, 4), 
 #                    n = 100, N = 100, mu_0 = 0, sigma_0 = 1)
-
 # error with this code...
-#sample_rbr_mu(test$mu, test2$mu, 0.5)
+#x = sample_rbr_mu(test$mu, test2$mu, 0.5)
+
+#delta = 0.5
+#min_val = floor(min(test$mu[,1], test2$mu[,1]))
+#max_val = ceiling(max(test$mu[,1], test2$mu[,1]))
+#grid = seq(min_val, max_val, by = delta)
+#if(!(max_val %in% grid) == TRUE){
+#  grid = c(grid, max)
+#}
+
+#prior_density = hist(test$mu[1,], prob = TRUE, breaks = grid)
+#post_density = hist(test2$mu[1,], prob = TRUE, breaks = grid)
+#prior_density$mids
+
+#x1 = divison_alt(prior_density$counts, post_density$counts)
+
+#v = matrix(, nrow = 100, ncol = 0) # empty matrix
+#cbind(v, rep(0, 100))
 
 #prior_mu_graph(test$mu, col_num = 1)
 
@@ -381,4 +469,45 @@ ensure_positive_definite = function(matrix){
   }
 }
 
-
+# reason: we need 3 graphs due to the inconsistent endpoints
+prior_post_mu_graph = function(prior_mu,
+                               post_mu,
+                               col_num,
+                               delta,
+                               colour_hist = c("blue", "red"),
+                               lty_type = 2,
+                               transparency = 0.1){
+  post_mu_values = post_mu[,col_num]
+  prior_mu_values = prior_mu[,col_num]
+  # see latex support later for graphs - was able to for a paper.
+  title = paste("Graph of the Prior of mu", col_num, sep = " ")
+  xlab_title = paste("mu", col_num, sep = " ")
+  
+  prior_rgb_version = col2rgb(colour_hist[1])
+  post_rgb_version = col2rgb(colour_hist[2])
+  prior_hist_col = rgb(prior_rgb_version[1]/255, 
+                       prior_rgb_version[2]/255, 
+                       prior_rgb_version[3]/255, 
+                       alpha = transparency)
+  post_hist_col = rgb(post_rgb_version[1]/255, 
+                      post_rgb_version[2]/255, 
+                      post_rgb_version[3]/255, 
+                      alpha = transparency)
+  
+  # getting the sequence values
+  min = min(floor(min(post_mu_values)), floor(min(prior_mu_values)))
+  max = max(ceiling(max(post_mu_values)), ceiling(max(prior_mu_values)))
+  grid = seq(min, max, by = delta)
+  if(!(max %in% grid) == TRUE){
+    grid = c(grid, max)
+  }
+  
+  # Plots of the Prior and the Posterior
+  prior_plot = hist(prior_mu_values, breaks = grid, prob = TRUE)
+  post_plot = hist(post_mu_values, breaks = grid, prob = TRUE)
+  plot(prior_plot, main = title, ylab = "Densities", xlab = xlab_title, 
+       col = prior_hist_col, border = "#ffffff")
+  plot(post_plot, add = T, col = post_hist_col, border = "#ffffff")
+  lines(density(prior_mu_values), lwd = 2, lty = lty_type, col = "black")
+  lines(density(post_mu_values), lwd = 2, lty = lty_type, col = "black")
+}

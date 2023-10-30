@@ -96,10 +96,12 @@ page_priorsample = div(
                    label = 'Insert N, the length of vectors $\\mu$ and $\\sigma$.',
                    value = 100),
       
-      p("Remark: the values show only the first 10 rows. You may download them."),
+      p("Remark: the values show only the first 10 rows for mu and sigma, and then only 1 matrix 
+      for R. You may download them below by pressing their respective icons below."),
       
-      downloadButton("priorsample_download_mu", "Download $\\mu$"),
-      downloadButton("priorsample_download_sigma", "Download $\\Sigma$"),
+      downloadButton("priorsample_download_mu", "$\\mu$"),
+      downloadButton("priorsample_download_sigma", "$\\Sigma$"),
+      downloadButton("priorsample_download_R", "$R$"),
       
       selectInput(inputId = "priorsample_use", 
                   label = 'Do you want to use the values from the previous section?', 
@@ -209,6 +211,15 @@ page_priorgraph = div(
       numericInput(inputId = "mu_col", 
                    label = 'The column of $\\mu$ used to generate the graph.',
                    value = 1),
+      sliderInput(
+        inputId = "graph_delta",
+        label = "The meaningful difference (length of the bins)",
+        min = 0.01, max = 1, value = 0.1,
+      ),
+      
+      #numericInput(inputId = "graph_delta",
+      #             label = 'The meaningful difference (length of the bins).',
+      #             value = 0.1),
       textInput(inputId = "prior_colour_hist",
                 label = 'Input the colour of the histogram',
                 value = "6699FF"
@@ -233,9 +244,10 @@ page_priorgraph = div(
       tabPanel("Plots",
         fluidRow(
           splitLayout(
-            cellWidths = c("50%", "50%"), 
+            cellWidths = c("33%", "33%"), 
             withSpinner(plotOutput("sample_prior_graph")), 
-            withSpinner(plotOutput("sample_post_graph"))
+            withSpinner(plotOutput("sample_post_graph")),
+            withSpinner(plotOutput("sample_rbr_graph"))
           )
         ),
       ),
