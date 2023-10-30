@@ -42,7 +42,8 @@ page_home = div(
   titlePanel("Home Page"),
   tabsetPanel(type = "tabs",
               tabPanel("Description", page_samplingdescription),
-              tabPanel("Eliciting the Prior", page_elicitprior),
+              tabPanel("Specify the Prior for mu", page_elicitprior),
+              tabPanel("Specify the Prior for sigma", page_elicitsigma),
               tabPanel("Sampling from the Prior", page_priorsample),
               tabPanel("Graph of the Prior", page_priorgraph),
               tabPanel("Sampling from the Posterior", page_posteriorsample)
@@ -73,11 +74,23 @@ server = function(input, output, session) {
   alpha02_list_ver2 = reactive({create_necessary_vector(input$alpha02_ver2)})
   
   prior_elicitation_values = reactive({
-    prior_elicitation(gamma = input$virtual_uncertainty, 
+    prior_elicitation_mu(gamma = input$virtual_uncertainty, 
                       m1 = m1_list(), 
                       m2 = m2_list(), 
                       const = const_list(), 
                       s1 = FALSE, s2 = FALSE)
+  })
+  
+  sigma_prior_elicitation_values = reactive({
+    elicit_sigma(gamma = input$virtual_uncertainty_sigma, 
+                 s1 = input$elicit_sigma_s1, 
+                 s2 = input$elicit_sigma_s2, 
+                 alphaup = input$alphaup_sigma, 
+                 alphalow = input$alphalow_sigma)
+  })
+  
+  output$sigma_elicit_prior_calculation = renderPrint({
+    sigma_prior_elicitation_values()
   })
   
   prior_sample_values = reactive({
@@ -107,7 +120,7 @@ server = function(input, output, session) {
   output$sample_prior_computation = renderPrint({
     list(
       "mu" = head(prior_sample_values()$mu, 10),
-      "sigma" = head(prior_sample_values()$sigma, 10),
+      "sigma" = prior_sample_values()$sigma[[1]],
       "R" = prior_sample_values()$R[[1]]
     )
   })
@@ -188,6 +201,15 @@ server = function(input, output, session) {
     }
   })
   
+  # previous location for sample post computations.
+  
+  # plotting for the relative belief ratio
+  rbr_sample_values = reactive({
+    sample_rbr_mu(prior_mu = prior_sample_values()$mu, 
+                  post_mu = post_sample_values()$mu, 
+                  delta = input$graph_delta)
+  })
+  
   output$sample_post_computation = renderPrint({
     list(
       "mu" = head(post_sample_values()$mu, 5),
@@ -252,13 +274,6 @@ server = function(input, output, session) {
                         convert_to_hex(input$prior_colour_line)),
       lty_type = as.numeric(input$prior_lty_type),
       transparency = input$prior_transparency)
-  })
-  
-  # plotting for the relative belief ratio
-  rbr_sample_values = reactive({
-    sample_rbr_mu(prior_mu = prior_sample_values()$mu, 
-                  post_mu = post_sample_values()$mu, 
-                  delta = input$graph_delta)
   })
   
   output$sample_rbr_graph = renderPlot({

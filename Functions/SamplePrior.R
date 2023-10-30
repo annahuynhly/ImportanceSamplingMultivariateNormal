@@ -85,19 +85,19 @@ sample_prior = function(alpha01, alpha02, mu_0, sigma_0){
   # Finally generating mu
   mu = mu_0 + sigma_0 * diag(SIGMA^{1/2}) * z_vector
   
-  newlist = list("mu" = mu, "sigma" = diag(SIGMA), "R" = R)
+  newlist = list("mu" = mu, "sigma" = SIGMA, "R" = R)
   
   return(newlist)
 }
 
 sample_multiple_prior = function(n, alpha01, alpha02, mu_0, sigma_0){
   mu_vectors = c()
-  sigma_vectors = c()
+  sigma_vectors = list()
   R_vectors = list() # recall, R is from the onion method
   for(i in 1:n){
     sample = sample_prior(alpha01, alpha02, mu_0, sigma_0)
     mu_vectors = rbind(mu_vectors, sample$mu)
-    sigma_vectors = rbind(sigma_vectors, sample$sigma)
+    sigma_vectors[[i]] = sample$sigma
     #print(sample$R) # debugging
     R_vectors[[i]] = sample$R
   }
@@ -201,7 +201,7 @@ sample_rbr_mu = function(prior_mu, post_mu, delta){
 # ELICITING FROM THE PRIOR                                     #
 ################################################################
 
-elicit = function(alpha, beta, gamma, s1, s2){
+elicit_mu = function(alpha, beta, gamma, s1, s2){
   # This function finds the two values of gamma which we are subtracting.
   
   prob1 = (1+gamma)/2
@@ -212,6 +212,36 @@ elicit = function(alpha, beta, gamma, s1, s2){
   G[2] = qgamma(prob2, alpha, beta) - (qnorm(prob1)/s2)^2
   
   return(G)  
+}
+
+elicit_sigma = function(gamma, s1, s2, alphaup, alphalow){
+  # gamma: probability corresponding to virtual certainty
+  # alphaup: bounds on alpha in the gamma_rate(alpha, beta) dist.
+  p = gamma # will switch all notations later!
+  gam = (1+p)/2
+  z0 = qnorm(gam,0,1)
+  up = (z0/s1)**2
+  low = (z0/s2)**2
+  
+  # iterate until prob content of s1<= sigma*z0 <= s2 is within eps of p - HARDCODED for now.
+  eps = .0001
+  maxits = 100
+  
+  for (i in 1:maxits){
+    alpha = (alphalow + alphaup)/2
+    beta = qgamma(gam, alpha, 1)/up
+    test = pgamma(beta*low, alpha, 1)
+    if (abs(test-(1-gam)) <= eps) {
+      break 
+    }
+    if(test < 1 - gam){
+      alphaup = alpha
+    } else if (test > 1 - gam){
+      alphalow = alpha
+    }
+  }
+  newlist = list("up" = up, "low" = low, "alpha" = alpha, "beta" = beta, "z0" = z0)
+  return(newlist)
 }
 
 generate_samp_var = function(gamma, p, const, s1, s2){
@@ -237,7 +267,7 @@ generate_samp_var = function(gamma, p, const, s1, s2){
   }
 }
 
-prior_elicitation = function(gamma, m1, m2, const = FALSE, s1 = FALSE, s2 = FALSE){
+prior_elicitation_mu = function(gamma, m1, m2, const = FALSE, s1 = FALSE, s2 = FALSE){
   # algorithm doesn't work with a poor choice of s1 and s2; keep this here, but
   # remove options for the user.
   if(length(m1) == length(m2)){
@@ -271,18 +301,18 @@ prior_elicitation = function(gamma, m1, m2, const = FALSE, s1 = FALSE, s2 = FALS
     while (norm(delta0) > tol & iter < maxiter){
       h = 0.000000001 # increase point
       
-      fx = elicit(x[1,j], x[2,j], gamma, s1[j], s2[j])
+      fx = elicit_mu(x[1,j], x[2,j], gamma, s1[j], s2[j])
       Jx = matrix(0,2,2)
       
       for(i in 1:2){
         xh = x # estimation values
         xh[i,j] = x[i,j] + h
         
-        fxh = elicit(xh[1,j], xh[2,j], gamma, s1[j], s2[j]) # estimated
+        fxh = elicit_mu(xh[1,j], xh[2,j], gamma, s1[j], s2[j]) # estimated
         Jx[,i] = (fxh - fx)/h 
       }
       
-      delta[,j] = -solve(Jx) %*% elicit(x[1,j], x[2,j], gamma, s1[j], s2[j])  
+      delta[,j] = -solve(Jx) %*% elicit_mu(x[1,j], x[2,j], gamma, s1[j], s2[j])  
       delta0[,1] = delta[,j]
       
       x[,j] = x[,j] + delta[,j]      
@@ -366,8 +396,9 @@ rbr_mu_graph = function(mu, type = "rbr", col_num,
                         lty_type = 2,
                         transparency = 0.1){
   mu_values = mu[[col_num]]
-  print(mu_values)
+  mu_values = unlist(mu_values)
   grid = grid_vals[[col_num]]
+  grid = unlist(grid)
   
   title = TeX(paste("Graph of the", type, r'(of $\mu$)', col_num, sep = " "))
   
