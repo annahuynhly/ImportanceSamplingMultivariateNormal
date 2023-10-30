@@ -327,15 +327,15 @@ prior_mu_graph = function(prior_mu,
 # need to test below
 
 # double check why mu_0 and sigma_0 are vectors ere..?
-test = sample_multiple_prior(n = 100, alpha01 = c(2, 2, 2), 
-                      alpha02 = c(4, 4, 4), mu_0 = 0, 
-                      sigma_0 = 1)
-test2 = sample_post(alpha01 = c(2, 2, 2), 
-                    alpha02 = c(4, 4, 4), 
-                    n = 100, N = 100, mu_0 = 0, sigma_0 = 1)
+#test = sample_multiple_prior(n = 100, alpha01 = c(2, 2, 2), 
+#                      alpha02 = c(4, 4, 4), mu_0 = 0, 
+#                      sigma_0 = 1)
+#test2 = sample_post(alpha01 = c(2, 2, 2), 
+#                    alpha02 = c(4, 4, 4), 
+#                    n = 100, N = 100, mu_0 = 0, sigma_0 = 1)
 
 # error with this code...
-sample_rbr_mu(test$mu, test2$mu, 0.5)
+#sample_rbr_mu(test$mu, test2$mu, 0.5)
 
 #prior_mu_graph(test$mu, col_num = 1)
 
