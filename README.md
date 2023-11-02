@@ -1,2 +1,5 @@
 # ImportanceSamplingMultivariateNormal
-Starting with the importance sampling for the multivariate normal calculations. OOooO!
+Webpage is underconstruction. You may access some of it here, but it is not usable:
+https://annaly.shinyapps.io/ImportanceSamplingMultivariateNormal/
+
+It is currently public for other researchers to review.
