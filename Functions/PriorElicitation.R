@@ -37,7 +37,8 @@ elicit_sigma = function(gamma, s1, s2, alphaup, alphalow){
     }
     if(test < 1 - gam){
       alphaup = alpha
-    } else if (test > 1 - gam){
+    }
+    if (test > 1 - gam){ # see if the else if is causing an error
       alphalow = alpha
     }
   }
@@ -129,3 +130,28 @@ prior_elicitation_mu = function(gamma, m1, m2, const = FALSE, s1 = FALSE, s2 = F
                  "mu0" = mu0, "sigma0" = sigma0)
   return(newlist)
 }
+
+# testing.
+#test = elicit_sigma(gamma = 0.99, 
+#                    s1 = 2, 
+#                    s2 = 10, 
+#                    alphaup = 50, 
+#                    alphalow = 0)
+
+#alpha = test$alpha
+#beta = test$beta
+#low = test$low
+#up = test$up
+#x=low+(up-low)*c(0:1000)/1000
+#x3=sqrt(1/x)
+#dens3=2*(x^(3/2))*dgamma(x,alpha,beta)
+#plot(x3,dens3,xlab="sigma",ylab="prior density",type="l")
+
+
+
+
+
+
+
+
+

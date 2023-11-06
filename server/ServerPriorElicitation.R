@@ -36,3 +36,37 @@ output$elicit_prior_computation = renderPrint({
   # Note: this is separate such that it can be re-used in the other algorithm.
   prior_elicitation_values()
 })
+
+sigma_elicit_prior_graphs = reactive({
+  alpha = sigma_prior_elicitation_values()$alpha
+  beta = sigma_prior_elicitation_values()$beta
+  low = sigma_prior_elicitation_values()$low
+  up = sigma_prior_elicitation_values()$up
+  z0 = sigma_prior_elicitation_values()$z0
+  x = low+(up-low)*c(0:1000)/1000
+  
+  if(input$elicit_sigma_graph_type == 1){
+    x3 = sqrt(1/x)
+    dens3 = 2*(x^(3/2))*dgamma(x,alpha,beta)
+    plot(x3,dens3,
+         main = "Eliciting for Sigma | Prior Density of Sigma",
+         xlab="Sigma",
+         ylab="Prior Density",
+         type="l")
+    
+  } else if (input$elicit_sigma_graph_type == 2){
+    x3 = z0*sqrt(1/x)
+    dens3 = (2/z0)*(x^(3/2))*dgamma(x,alpha,beta)
+    plot(x3,dens3,
+         main = "Eliciting for Sigma | Prior Density of Sigma * z",
+         xlab = "Sigma * z",
+         ylab = "Prior Sensity",
+         type = "l")
+  }
+})
+
+output$sigma_elicit_prior_graph = renderPlot({
+  # clean up the rest later - this is a placeholder. Will turn it into a function to
+  # make it easier to read in the future.
+  sigma_elicit_prior_graphs()
+})

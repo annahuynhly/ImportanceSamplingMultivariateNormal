@@ -50,17 +50,28 @@ page_elicitsigma = div(
       p("For below, you need to insert $s_{1} \\leq \\sigma z_{0} \\leq s_{2}$ 
         holds with virtual certainty."),
       numericInput(inputId = "elicit_sigma_s1",
-                   label = "Insert $s_{1}$", value = 1),
+                   label = "Insert $s_{1}$", value = 2),
       numericInput(inputId = "elicit_sigma_s2",
-                   label = "Insert $s_{2}$", value = 1),
+                   label = "Insert $s_{2}$", value = 10),
       numericInput(inputId = "alphalow_sigma",
                    label = "Lower bound for $\\alpha_{0i}$", value = 0),
       numericInput(inputId = "alphaup_sigma",
-                   label = "Upper bound for $\\alpha_{0i}$", value = 50)
+                   label = "Upper bound for $\\alpha_{0i}$", value = 50),
+      selectInput(inputId = "elicit_sigma_graph_type",
+        label = "Select which type of graph to view.",
+        choices = list("Prior Density of Sigma" = 1,
+                       "Prior Density of Sigma * z" = 2)),
     ),
+    # want to add two tab panels
     mainPanel(
-      tabPanel(
-        "sigmawhatever", withSpinner(verbatimTextOutput("sigma_elicit_prior_calculation"))
+      tabPanel("Relative Belief Plot of w0",
+        fluidRow(
+          splitLayout(
+            cellWidths = c("65%", "35%"), 
+              withSpinner(plotOutput(outputId = "sigma_elicit_prior_graph")), 
+              withSpinner(verbatimTextOutput("sigma_elicit_prior_calculation"))
+          )
+        )
       )
     )
   )
