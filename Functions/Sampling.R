@@ -130,27 +130,30 @@ sample_multiple_prior = function(n, alpha01, alpha02, mu_0, sigma_0){
   return(newlist)
 }
 
-sample_post = function(alpha01, alpha02, n, N, mu_0, sigma_0){
+#mu = rep(0, p) #temporary dummy data -> MAY REPLACE?
+#sigma = diag(p) # identity matrix, for now.
+# generating Y. May have an option where the user inputs Y themselves - ask?
+#Y = mvrnorm(n = n, mu = mu, Sigma = sigma)
+
+sample_post = function(alpha01, alpha02, Y = FALSE,
+                       N, mu_0, sigma_0){
   if(length(alpha01) != length(alpha02)){
     return("Error: the vector for alpha_01 and beta_01 are of a different size.")
   }
   p = length(alpha01)
-  if(n < (2*p)){
-    return("Error: the value of n (size of Y) is too small.")
+  if(is.numeric(Y) == TRUE){
+    n = nrow(Y)
+    if(n < (2*p)){
+      return("Error: the value of n (size of Y) is too small.")
+    }
+    Yprime = t(Y)
+    Ybar = rowMeans(Yprime)
+    In = matrix(t(rep(1, n))) # identity column
+    Ybar_t = matrix(Ybar,nrow=1, ncol = p) # transpose
+    S = (1/(n-1)) * t(Y - In%*%Ybar_t) %*% (Y - In%*%Ybar_t)
+  } else {
+    return("Error: no data given.")
   }
-  
-  mu = rep(0, p) #temporary dummy data -> MAY REPLACE?
-  sigma = diag(p) # identity matrix, for now.
-  
-  # generating Y. May have an option where the user inputs Y themselves - ask?
-  Y = mvrnorm(n = n, mu = mu, Sigma = sigma)
-  
-  Yprime = t(Y)
-  Ybar = rowMeans(Yprime)
-  
-  In = matrix(t(rep(1, n))) # identity column
-  Ybar_t = matrix(Ybar,nrow=1, ncol = p) # transpose
-  S = (1/(n-1)) * t(Y - In%*%Ybar_t) %*% (Y - In%*%Ybar_t)
   
   # getting the A(Y) formula
   AY = (n-1)*S + n*(n * sigma_0^2 + 1)^(-1) * ((Ybar - mu_0) %*% t(Ybar - mu_0))
@@ -409,3 +412,15 @@ prior_post_mu_graph = function(prior_mu,
   lines(density(prior_mu_values), lwd = 2, lty = lty_type, col = "black")
   lines(density(post_mu_values), lwd = 2, lty = lty_type, col = "black")
 }
+
+
+
+
+## TESTING!!!
+
+#alpha01 = c(1, 1, 1, 1, 1)
+#alpha02 = c(1, 1, 1, 1, 1)
+#N = 1000
+#mu_0 = 0
+#sigma_0 = 1
+#sample_post(alpha01, alpha02, Y, N, mu_0, sigma_0)

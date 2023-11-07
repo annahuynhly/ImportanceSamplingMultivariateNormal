@@ -6,6 +6,7 @@
 library(shiny)
 library(shinycssloaders) # for loading screens
 library(latex2exp) # for latex within graphs
+library(shinydashboard)
 
 # For the functions
 library(expm) # used for the onion method 
@@ -24,8 +25,9 @@ options(scipen = 999)
 
 # Accessing other R-codes
 #source("routes.R") # Note: re-add later once we have an abundance of pages.
+source("./pages/sampling/Description.R")
 source("./pages/sampling/PagePriorElicitations.R")
-source("./pages/sampling/samplepriorposterior.R")
+source("./pages/sampling/PageSamplePriorPosterior.R")
 source("./pages/algorithm_description.R")
 source("./pages/contact.R")
 source("./pages/home.R")

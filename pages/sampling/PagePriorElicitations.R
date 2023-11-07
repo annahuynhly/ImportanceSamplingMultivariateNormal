@@ -15,14 +15,22 @@ page_elicitprior = div(
       numericInput(inputId = "virtual_uncertainty",
                    label = 'Insert the virtual uncertainty, $\\gamma$.',
                    value = 0.99),
-      textInput(
-        inputId = "m1",
-        label = "Insert the vector of $m_{11}, m_{12}, ..., m_{1p}$",
-        value = "-5,-5,-5"),
-      textInput(
-        inputId = "m2",
-        label = "Insert the vector of $m_{21}, m_{22}, ..., m_{2p}$",
-        value = "5,5,5"),
+      
+      fluidRow(box(
+        width = 12,
+        splitLayout(
+          textInput(
+            inputId = "m1",
+            label = "$m_{11}, m_{12}, ..., m_{1p}$",
+            value = "-5,-5,-5"),
+          textInput(
+            inputId = "m2",
+            label = "$m_{21}, m_{22}, ..., m_{2p}$",
+            value = "5,5,5"),
+          )
+        )
+      ),
+      
       textInput(
         inputId = "const_s",
         label = "Insert the upper range of $s_{2}$, where $\\delta_{i}$ 
@@ -49,14 +57,27 @@ page_elicitsigma = div(
                    value = 0.99),
       p("For below, you need to insert $s_{1} \\leq \\sigma z_{0} \\leq s_{2}$ 
         holds with virtual certainty."),
-      numericInput(inputId = "elicit_sigma_s1",
-                   label = "Insert $s_{1}$", value = 2),
-      numericInput(inputId = "elicit_sigma_s2",
-                   label = "Insert $s_{2}$", value = 10),
-      numericInput(inputId = "alphalow_sigma",
-                   label = "Lower bound for $\\alpha_{0i}$", value = 0),
-      numericInput(inputId = "alphaup_sigma",
-                   label = "Upper bound for $\\alpha_{0i}$", value = 50),
+      
+      fluidRow(box(
+        width = 12,
+        splitLayout(
+          numericInput(inputId = "elicit_sigma_s1",
+                       label = "Insert $s_{1}$", value = 2),
+          numericInput(inputId = "elicit_sigma_s2",
+                       label = "Insert $s_{2}$", value = 10),
+        )
+      )),
+      
+      fluidRow(box(
+        width = 12,
+        splitLayout(
+          numericInput(inputId = "alphalow_sigma",
+                       label = "Lower bd of $\\alpha_{0i}$", value = 0),
+          numericInput(inputId = "alphaup_sigma",
+                       label = "Upper bd of $\\alpha_{0i}$", value = 50),
+        )
+      )),
+      
       selectInput(inputId = "elicit_sigma_graph_type",
         label = "Select which type of graph to view.",
         choices = list("Prior Density of Sigma" = 1,

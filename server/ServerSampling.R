@@ -2,6 +2,27 @@
 # BACKEND FOR SAMPLING                                         #
 ################################################################
 
+# creating test sample data (changes every time for fun!)
+test_sample_data = reactive({
+  p = 5
+  mu = rep(0, p) 
+  sigma = diag(p) 
+  n = 100
+  Y = mvrnorm(n = n, mu = mu, Sigma = sigma)
+  data = as.data.frame(Y)
+  colnames(data) = c("Y1", "Y2", "Y3", "Y4", "Y5")
+  data
+})
+
+# test data for uploading Y_{1i}s
+output$sample_post_example_file = downloadHandler(
+  filename = "Y_example.csv",
+  content = function(file) {
+    write.csv(test_sample_data(), file, row.names = FALSE)
+  }
+)
+
+
 # PRIOR CASE ###################################################
 
 prior_sample_values = reactive({
@@ -87,23 +108,40 @@ output$priorsample_download_R = downloadHandler(
 
 # PRIOR CASE ###################################################
 
+input_Y_values = reactive({
+  #as.matrix(test_sample_data())
+  tryCatch(
+    {
+      df = read.csv(input$sample_post_Y$datapath, header = TRUE)
+    },
+    error = function(e) {
+      # return a safeError if a parsing error occurs
+      stop(safeError(e))
+    }
+  )
+  as.matrix(df)
+})
+
 post_sample_values = reactive({
   if(input$postsample_use == 1){ # input values
     sample_post(alpha01 = alpha01_list_ver2(), 
                 alpha02 = alpha02_list_ver2(), 
-                n = input$post_n, N = input$post_bigN, 
+                Y = input_Y_values(),
+                N = input$post_bigN, 
                 mu_0 = input$mu_0_ver2, 
                 sigma_0 = input$sigma_0_ver2)
   } else if (input$postsample_use == 2){ # same as elicit
     sample_post(alpha01 = prior_elicitation_values()$alphas, 
                 alpha02 = prior_elicitation_values()$betas,
-                n = input$post_n, N = input$post_bigN, 
+                Y = input_Y_values(),
+                N = input$post_bigN, 
                 mu_0 = prior_elicitation_values()$mu0, 
                 sigma_0 = prior_elicitation_values()$sigma0)
   } else if (input$postsample_use == 3){ # same as prior
     sample_post(alpha01 = alpha01_list(), 
                 alpha02 = alpha02_list(), 
-                n = input$post_n, N = input$post_bigN, 
+                Y = input_Y_values(),
+                N = input$post_bigN, 
                 mu_0 = input$mu_0, 
                 sigma_0 = input$sigma_0)
   }
@@ -118,12 +156,17 @@ rbr_sample_values = reactive({
                 delta = input$graph_delta)
 })
 
-output$sample_post_computation = renderPrint({
+# makes it so the output is delayed until the user submits the data
+sample_post_computations_outputs = eventReactive(input$submit_sample_post, {
   list(
     "mu" = head(post_sample_values()$mu, 5),
     "sigma" = head(post_sample_values()$sigma, 5),
     "k_zeta" = post_sample_values()$k_zeta[1:25]
   )
+})
+
+output$sample_post_computation = renderPrint({
+  sample_post_computations_outputs()
 })
 
 # cleaning the data before being downloaded - changing the column names.
