@@ -109,19 +109,19 @@ sample_prior = function(alpha01, alpha02, mu_0, sigma_0){
   # Finally generating mu
   mu = mu_0 + sigma_0 * diag(SIGMA^{1/2}) * z_vector
   
-  newlist = list("mu" = mu, "sigma" = SIGMA, "R" = R)
+  newlist = list("mu" = mu, "sigma" = diag(SIGMA), "R" = R)
   
   return(newlist)
 }
 
 sample_multiple_prior = function(n, alpha01, alpha02, mu_0, sigma_0){
   mu_vectors = c()
-  sigma_vectors = list()
+  sigma_vectors = c()
   R_vectors = list() # recall, R is from the onion method
   for(i in 1:n){
     sample = sample_prior(alpha01, alpha02, mu_0, sigma_0)
     mu_vectors = rbind(mu_vectors, sample$mu)
-    sigma_vectors[[i]] = sample$sigma
+    sigma_vectors = rbind(sigma_vectors, sample$sigma)
     #print(sample$R) # debugging
     R_vectors[[i]] = sample$R
   }
