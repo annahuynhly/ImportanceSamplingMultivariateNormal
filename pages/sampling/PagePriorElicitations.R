@@ -16,6 +16,9 @@ page_elicitsigma = div(
   sidebarLayout(
     sidebarPanel(
       width = 3,
+      
+      actionButton(inputId = "submit_prior_elicit", label = "Submit Data"),
+      
       numericInput(inputId = "virtual_uncertainty",
                    label = 'Insert the virtual uncertainty, $\\gamma$.',
                    value = 0.99),
@@ -63,21 +66,23 @@ page_elicitsigma = div(
             value = "50, 50, 50"),
         )
       )),
-      
       selectInput(inputId = "elicit_sigma_graph_type",
-        label = "Select which type of graph to view.",
-        choices = list("Prior Density of Sigma" = 1,
-                       "Prior Density of Sigma * z" = 2)),
+                  label = "Select which type of graph to view.",
+                  choices = list("Prior Density of Sigma" = 1,
+                                 "Prior Density of Sigma * z" = 2)),
+      numericInput(inputId = "prior_elicit_graphnum", 
+                   label = 'The index of $\\alpha_{01}, \\alpha_{02}$ for the graph.',
+                   value = 1),
     ),
     # want to add two tab panels
     mainPanel(
       tabPanel("Relative Belief Plot of w0",
         fluidRow(
           splitLayout(
-            cellWidths = c("65%", "35%"), 
+            cellWidths = c("50%", "50%"), 
               withSpinner(plotOutput(outputId = "elicit_prior_graph")), 
               withSpinner(verbatimTextOutput("elicit_prior_calculation"))
-          )
+          ),
         )
       )
     )

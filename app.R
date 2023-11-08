@@ -3,7 +3,7 @@
 ################################################################
 
 # For Shiny & website support
-library(shiny)
+library(shiny)  
 library(shinycssloaders) # for loading screens
 library(latex2exp) # for latex within graphs
 library(shinydashboard)

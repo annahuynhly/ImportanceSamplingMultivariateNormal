@@ -8,6 +8,8 @@ page_priorsample = div(
     sidebarPanel(
       width = 3,
       
+      actionButton(inputId = "submit_sample_prior", label = "Submit Data"),
+      
       numericInput(inputId = "prior_bigN",
                    label = 'Insert N, the monte carlo sample size.',
                    value = 100),

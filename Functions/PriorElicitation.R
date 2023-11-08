@@ -2,11 +2,7 @@
 # ELICITING FROM THE PRIOR                                     #
 ################################################################
 
-determining_gamma_vals = function(){
-  
-}
-
-elicit_prior = function(gamma, m1, m2, s1, s2, alphaup, alphalow){
+elicit_prior = function(gamma, m1, m2, s1, s2, alphaup_vect, alphalow_vect){
   # gamma: probability corresponding to virtual certainty
   # alphaup: bounds on alpha in the gamma_rate(alpha, beta) dist.
   
@@ -27,21 +23,14 @@ elicit_prior = function(gamma, m1, m2, s1, s2, alphaup, alphalow){
   alpha01 = numeric()
   alpha02 = numeric()
   
-
   for(j in 1:p){
-    #print("BEGINNING.............")
-    #print(gam) #####
-    #print(c1[j]) #####
     # iterate until prob content of s1<= sigma*z0 <= s2 is within eps of p 
     eps = .0001
     maxits = 100
-    
+    alphalow = alphalow_vect[j]
+    alphaup = alphaup_vect[j]
     for (i in 1:maxits){
-      alpha = (alphalow[j] + alphaup[j])/2
-      print("PRE-ALPHA...")
-      print(alphalow[j])
-      print(alphaup[j])
-      #print(alpha) #############
+      alpha = (alphalow + alphaup)/2
       beta = qgamma(gam, alpha, 1)/c1[j]
       test = pgamma(beta*c2[j], alpha, 1)
       if (abs(test-(1-gam)) <= eps) {
@@ -49,8 +38,7 @@ elicit_prior = function(gamma, m1, m2, s1, s2, alphaup, alphalow){
       }
       if(test < 1 - gam){
         alphaup = alpha
-      }
-      if (test > 1 - gam){ # see if the else if is causing an error
+      } else if (test > 1 - gam){ # later: see if the else if is causing an error to make the code efficient
         alphalow = alpha
       }
     }
@@ -168,13 +156,13 @@ prior_elicitation_mu = function(gamma, m1, m2, const = FALSE, s1 = FALSE, s2 = F
 }
 
 # testing.
-x = elicit_prior(gamma = 0.999, 
-             m1 = c(-5, -5, -5), 
-             m2 = c(5, 5, 5), 
-             s1 = c(2, 2, 2), 
-             s2 = c(10, 10, 10), 
-             alphaup = c(0, 0, 0), 
-             alphalow = c(50, 50, 50))
+#x = elicit_prior(gamma = 0.999, 
+#             m1 = c(-5, -5, -5), 
+#             m2 = c(5, 5, 5), 
+#             s1 = c(2, 2, 2), 
+#             s2 = c(10, 10, 10), 
+#             alphaup = c(0, 0, 0), 
+#             alphalow = c(50, 50, 50))
 
 #alpha = test$alpha
 #beta = test$beta

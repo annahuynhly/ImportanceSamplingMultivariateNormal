@@ -135,8 +135,7 @@ sample_multiple_prior = function(n, alpha01, alpha02, mu_0, sigma_0){
 # generating Y. May have an option where the user inputs Y themselves - ask?
 #Y = mvrnorm(n = n, mu = mu, Sigma = sigma)
 
-sample_post = function(alpha01, alpha02, Y = FALSE,
-                       N, mu_0, sigma_0){
+sample_post = function(alpha01, alpha02, Y = FALSE, N, mu_0, sigma_0){
   if(length(alpha01) != length(alpha02)){
     return("Error: the vector for alpha_01 and beta_01 are of a different size.")
   }
@@ -418,9 +417,18 @@ prior_post_mu_graph = function(prior_mu,
 
 ## TESTING!!!
 
-#alpha01 = c(1, 1, 1, 1, 1)
-#alpha02 = c(1, 1, 1, 1, 1)
+
+#p = 3
+#mu = rep(0, p) 
+#sigma = diag(p) 
+#n = 100
+#Y = mvrnorm(n = n, mu = mu, Sigma = sigma)
+
+#alpha01 = c(3.149414, 3.149414, 3.149414)
+#alpha02 = c(5.748669, 5.748669, 5.748669)
 #N = 1000
 #mu_0 = 0
-#sigma_0 = 1
-#sample_post(alpha01, alpha02, Y, N, mu_0, sigma_0)
+#sigma_0 = 2.5
+#x = sample_post(alpha01, alpha02, Y, N, mu_0, sigma_0)
+
+

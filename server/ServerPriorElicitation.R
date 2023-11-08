@@ -11,8 +11,7 @@ alpha02_list = reactive({create_necessary_vector(input$alpha02)})
 alpha01_list_ver2 = reactive({create_necessary_vector(input$alpha01_ver2)})
 alpha02_list_ver2 = reactive({create_necessary_vector(input$alpha02_ver2)})
 
-
-prior_elicitation_values = reactive({
+prior_elicitation_values = eventReactive(input$submit_prior_elicit, {
   elicit_prior(gamma = input$virtual_uncertainty,
                m1 = create_necessary_vector(input$m1),
                m2 = create_necessary_vector(input$m2),
@@ -28,10 +27,11 @@ output$elicit_prior_calculation = renderPrint({
 })
 
 elicit_prior_graphs = reactive({
-  alpha = prior_elicitation_values()$alpha01
-  beta = prior_elicitation_values()$alpha02
-  low = prior_elicitation_values()$c1
-  up = prior_elicitation_values()$c2
+  graph_num = input$prior_elicit_graphnum
+  alpha = prior_elicitation_values()$alpha01[graph_num]
+  beta = prior_elicitation_values()$alpha02[graph_num]
+  low = prior_elicitation_values()$c1[graph_num]
+  up = prior_elicitation_values()$c2[graph_num]
   z0 = prior_elicitation_values()$z0
   x = low+(up-low)*c(0:1000)/1000
   
@@ -43,7 +43,6 @@ elicit_prior_graphs = reactive({
          xlab=TeX(r'($\sigma$)'),
          ylab="Prior Density",
          type="l")
-    
   } else if (input$elicit_sigma_graph_type == 2){
     x3 = z0*sqrt(1/x)
     dens3 = (2/z0)*(x^(3/2))*dgamma(x,alpha,beta)

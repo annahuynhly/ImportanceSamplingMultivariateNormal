@@ -4,13 +4,13 @@
 
 # creating test sample data (changes every time for fun!)
 test_sample_data = reactive({
-  p = 5
+  p = 3#5
   mu = rep(0, p) 
   sigma = diag(p) 
   n = 100
   Y = mvrnorm(n = n, mu = mu, Sigma = sigma)
   data = as.data.frame(Y)
-  colnames(data) = c("Y1", "Y2", "Y3", "Y4", "Y5")
+  colnames(data) = c("Y1", "Y2", "Y3") #c("Y1", "Y2", "Y3", "Y4", "Y5")
   data
 })
 
@@ -24,7 +24,7 @@ output$sample_post_example_file = downloadHandler(
 
 # PRIOR CASE ###################################################
 
-prior_sample_values = reactive({
+prior_sample_values = eventReactive(input$submit_sample_prior, {
   if(input$priorsample_use == "y"){
     sample_multiple_prior(
       n = input$prior_bigN,
@@ -44,12 +44,16 @@ prior_sample_values = reactive({
   }
 })
 
-output$sample_prior_computation = renderPrint({
+prior_sample_computation_summary = eventReactive(input$submit_sample_prior, {
   list(
     "mu" = head(prior_sample_values()$mu, 10),
     "sigma" = prior_sample_values()$sigma[[1]],
     "R" = prior_sample_values()$R[[1]]
   )
+})
+
+output$sample_prior_computation = renderPrint({
+  prior_sample_computation_summary()
 })
 
 # CODE FOR DOWNLOADING PRIOR CASE ##############################
@@ -130,8 +134,8 @@ post_sample_values = reactive({
                 mu_0 = input$mu_0_ver2, 
                 sigma_0 = input$sigma_0_ver2)
   } else if (input$postsample_use == 2){ # same as elicit
-    sample_post(alpha01 = prior_elicitation_values()$alphas, 
-                alpha02 = prior_elicitation_values()$betas,
+    sample_post(alpha01 = prior_elicitation_values()$alpha01, 
+                alpha02 = prior_elicitation_values()$alpha02,
                 Y = input_Y_values(),
                 N = input$post_bigN, 
                 mu_0 = prior_elicitation_values()$mu0, 
