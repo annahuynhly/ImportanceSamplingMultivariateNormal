@@ -7,8 +7,12 @@ page_elicitdescription = div(
   p("UNDER CONSTRUCTION! Description will be added soon...")
 )
 
-page_elicitprior = div(
-  titlePanel("Specify the Prior of $\\mu$"),
+################################################################
+# ELICITING FROM THE PRIOR                                     #
+################################################################
+
+page_elicitsigma = div(
+  titlePanel("Determining the prior on $\\frac{1}{\\sigma^{2}}$"),
   sidebarLayout(
     sidebarPanel(
       width = 3,
@@ -27,54 +31,36 @@ page_elicitprior = div(
             inputId = "m2",
             label = "$m_{21}, m_{22}, ..., m_{2p}$",
             value = "5,5,5"),
-          )
         )
-      ),
+      )),
       
-      textInput(
-        inputId = "const_s",
-        label = "Insert the upper range of $s_{2}$, where $\\delta_{i}$ 
-                need to be contained.",
-        value = "2,2,2"),
-    ),
-    mainPanel(
-      withSpinner(verbatimTextOutput("elicit_prior_computation"))
-    ),
-  )
-)
-
-################################################################
-# ELICITING FROM THE PRIOR FOR SIGMA                           #
-################################################################
-
-page_elicitsigma = div(
-  titlePanel("Specify the Prior of $\\sum$"),
-  sidebarLayout(
-    sidebarPanel(
-      width = 3,
-      numericInput(inputId = "virtual_uncertainty_sigma",
-                   label = 'Insert the virtual uncertainty, $\\gamma$.',
-                   value = 0.99),
       p("For below, you need to insert $s_{1} \\leq \\sigma z_{0} \\leq s_{2}$ 
         holds with virtual certainty."),
-      
       fluidRow(box(
         width = 12,
         splitLayout(
-          numericInput(inputId = "elicit_sigma_s1",
-                       label = "Insert $s_{1}$", value = 2),
-          numericInput(inputId = "elicit_sigma_s2",
-                       label = "Insert $s_{2}$", value = 10),
+          textInput(
+            inputId = "elicit_s1",
+            label = "Insert $s_{1}$",
+            value = "2, 2, 2"),
+          textInput(
+            inputId = "elicit_s2",
+            label = "Insert $s_{2}$",
+            value = "10, 10, 10"),
         )
       )),
       
       fluidRow(box(
         width = 12,
         splitLayout(
-          numericInput(inputId = "alphalow_sigma",
-                       label = "Lower bd of $\\alpha_{0i}$", value = 0),
-          numericInput(inputId = "alphaup_sigma",
-                       label = "Upper bd of $\\alpha_{0i}$", value = 50),
+          textInput(
+            inputId = "alphalow",
+            label = "Lower bd of $\\alpha_{0i}$",
+            value = "0, 0, 0"),
+          textInput(
+            inputId = "alphaup",
+            label = "Upper bd of $\\alpha_{0i}$",
+            value = "50, 50, 50"),
         )
       )),
       
@@ -89,8 +75,8 @@ page_elicitsigma = div(
         fluidRow(
           splitLayout(
             cellWidths = c("65%", "35%"), 
-              withSpinner(plotOutput(outputId = "sigma_elicit_prior_graph")), 
-              withSpinner(verbatimTextOutput("sigma_elicit_prior_calculation"))
+              withSpinner(plotOutput(outputId = "elicit_prior_graph")), 
+              withSpinner(verbatimTextOutput("elicit_prior_calculation"))
           )
         )
       )
@@ -105,9 +91,8 @@ page_elicitsigma = div(
 page_prior_elicit = div(
   titlePanel("Prior Elicitation"),
   tabsetPanel(type = "tabs",
-              tabPanel("Description", page_elicitdescription),
-              tabPanel("Specify the Prior for mu", page_elicitprior),
-              tabPanel("Specify the Prior for sigma", page_elicitsigma)
+              tabPanel("Specify the Prior", page_elicitsigma),
+              tabPanel("Description", page_elicitdescription)
   )
 )
 

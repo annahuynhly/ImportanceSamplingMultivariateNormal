@@ -2,6 +2,73 @@
 # ELICITING FROM THE PRIOR                                     #
 ################################################################
 
+determining_gamma_vals = function(){
+  
+}
+
+elicit_prior = function(gamma, m1, m2, s1, s2, alphaup, alphalow){
+  # gamma: probability corresponding to virtual certainty
+  # alphaup: bounds on alpha in the gamma_rate(alpha, beta) dist.
+  
+  if(length(m1) == length(m2)){
+    p = length(m1)
+  } else {
+    return("Error: length of m1, m2 are not equal.")
+  }
+  mu0 = (m1+m2)/2 # multivariate mu_0
+  
+  # note: add another condition to check to ensure the rest of the lengths are the same.
+  # will add later.
+  gam = (1+gamma)/2
+  z0 = qnorm(gam,0,1)
+  c1 = (z0/s1)**2
+  c2 = (z0/s2)**2
+  
+  alpha01 = numeric()
+  alpha02 = numeric()
+  
+
+  for(j in 1:p){
+    #print("BEGINNING.............")
+    #print(gam) #####
+    #print(c1[j]) #####
+    # iterate until prob content of s1<= sigma*z0 <= s2 is within eps of p 
+    eps = .0001
+    maxits = 100
+    
+    for (i in 1:maxits){
+      alpha = (alphalow[j] + alphaup[j])/2
+      print("PRE-ALPHA...")
+      print(alphalow[j])
+      print(alphaup[j])
+      #print(alpha) #############
+      beta = qgamma(gam, alpha, 1)/c1[j]
+      test = pgamma(beta*c2[j], alpha, 1)
+      if (abs(test-(1-gam)) <= eps) {
+        break
+      }
+      if(test < 1 - gam){
+        alphaup = alpha
+      }
+      if (test > 1 - gam){ # see if the else if is causing an error
+        alphalow = alpha
+      }
+    }
+    alpha01[j] = alpha
+    alpha02[j] = beta
+  }
+  
+  sigma0 = (m2 - m1)/(2*s1)
+  
+  newlist = list("c1" = c1, "c2" = c2, "alpha01" = alpha01, "alpha02" = alpha02,
+                 "mu0" = mu0, "sigma0" = sigma0, "z0" = z0)
+  return(newlist)
+}
+
+################################################################
+# DISCARDED CODE (kept for rough)                              #
+################################################################
+
 elicit_mu = function(alpha, beta, gamma, s1, s2){
   # This function finds the two values of gamma which we are subtracting.
   
@@ -13,37 +80,6 @@ elicit_mu = function(alpha, beta, gamma, s1, s2){
   G[2] = qgamma(prob2, alpha, beta) - (qnorm(prob1)/s2)^2
   
   return(G)  
-}
-
-elicit_sigma = function(gamma, s1, s2, alphaup, alphalow){
-  # gamma: probability corresponding to virtual certainty
-  # alphaup: bounds on alpha in the gamma_rate(alpha, beta) dist.
-  p = gamma # will switch all notations later!
-  gam = (1+p)/2
-  z0 = qnorm(gam,0,1)
-  up = (z0/s1)**2
-  low = (z0/s2)**2
-  
-  # iterate until prob content of s1<= sigma*z0 <= s2 is within eps of p - HARDCODED for now.
-  eps = .0001
-  maxits = 100
-  
-  for (i in 1:maxits){
-    alpha = (alphalow + alphaup)/2
-    beta = qgamma(gam, alpha, 1)/up
-    test = pgamma(beta*low, alpha, 1)
-    if (abs(test-(1-gam)) <= eps) {
-      break 
-    }
-    if(test < 1 - gam){
-      alphaup = alpha
-    }
-    if (test > 1 - gam){ # see if the else if is causing an error
-      alphalow = alpha
-    }
-  }
-  newlist = list("up" = up, "low" = low, "alpha" = alpha, "beta" = beta, "z0" = z0)
-  return(newlist)
 }
 
 generate_samp_var = function(gamma, p, const, s1, s2){
@@ -132,11 +168,13 @@ prior_elicitation_mu = function(gamma, m1, m2, const = FALSE, s1 = FALSE, s2 = F
 }
 
 # testing.
-#test = elicit_sigma(gamma = 0.99, 
-#                    s1 = 2, 
-#                    s2 = 10, 
-#                    alphaup = 50, 
-#                    alphalow = 0)
+x = elicit_prior(gamma = 0.999, 
+             m1 = c(-5, -5, -5), 
+             m2 = c(5, 5, 5), 
+             s1 = c(2, 2, 2), 
+             s2 = c(10, 10, 10), 
+             alphaup = c(0, 0, 0), 
+             alphalow = c(50, 50, 50))
 
 #alpha = test$alpha
 #beta = test$beta
@@ -146,8 +184,6 @@ prior_elicitation_mu = function(gamma, m1, m2, const = FALSE, s1 = FALSE, s2 = F
 #x3=sqrt(1/x)
 #dens3=2*(x^(3/2))*dgamma(x,alpha,beta)
 #plot(x3,dens3,xlab="sigma",ylab="prior density",type="l")
-
-
 
 
 

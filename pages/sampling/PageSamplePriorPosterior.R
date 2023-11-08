@@ -211,10 +211,10 @@ page_priorgraph = div(
 page_sampling = div(
   titlePanel("Sampling"),
   tabsetPanel(type = "tabs",
-              tabPanel("Description", page_samplingdescription),
               tabPanel("Sampling from the Prior", page_priorsample),
               tabPanel("Sampling from the Posterior", page_posteriorsample),
-              tabPanel("Graphs", page_priorgraph)
+              tabPanel("Graphs", page_priorgraph),
+              tabPanel("Description", page_samplingdescription)
   )
 )
 

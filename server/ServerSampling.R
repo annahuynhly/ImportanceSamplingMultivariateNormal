@@ -22,15 +22,14 @@ output$sample_post_example_file = downloadHandler(
   }
 )
 
-
 # PRIOR CASE ###################################################
 
 prior_sample_values = reactive({
   if(input$priorsample_use == "y"){
     sample_multiple_prior(
       n = input$prior_bigN,
-      alpha01 = prior_elicitation_values()$alphas, 
-      alpha02 = prior_elicitation_values()$betas, 
+      alpha01 = prior_elicitation_values()$alpha01, 
+      alpha02 = prior_elicitation_values()$alpha02, 
       mu_0 = prior_elicitation_values()$mu0, 
       sigma_0 = prior_elicitation_values()$sigma0
     )
