@@ -91,7 +91,7 @@ sample_prior = function(alpha01, alpha02, mu_0, sigma_0){
   p = length(alpha01)
   deltas = c() 
   for(i in 1:p){
-    gam = rgamma(1, shape = alpha01[i], scale = alpha02[i]) # need to VERIFY if it is 1/beta.. ASK which gamma funct. they use
+    gam = rgamma(1, shape = alpha01[i], scale = alpha02[i]) 
     deltas = c(deltas, gam)
   }
   # Making diag(delta_{1}, delta_{2}, ..., delta_{p})
@@ -299,9 +299,18 @@ rbr_mu_graph = function(mu, type = "rbr", col_num,
 # need to test below
 
 # double check why mu_0 and sigma_0 are vectors ere..?
-#test = sample_multiple_prior(n = 100, alpha01 = c(2, 2, 2), 
-#                      alpha02 = c(4, 4, 4), mu_0 = 0, 
-#                      sigma_0 = 1)
+
+#test = sample_multiple_prior(n = 1000, 
+#                             alpha01 = x$alpha01, 
+#                             alpha02 = x$alpha02, 
+#                             mu_0 = x$mu0, 
+#                             sigma_0 = x$sigma0)
+
+#test$mu
+#test$mu[,1] # this is for mu 1
+#plot(density(test$mu[,1]))
+
+
 #test2 = sample_post(alpha01 = c(2, 2, 2), 
 #                    alpha02 = c(4, 4, 4), 
 #                    n = 100, N = 100, mu_0 = 0, sigma_0 = 1)

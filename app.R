@@ -7,6 +7,7 @@ library(shiny)
 library(shinycssloaders) # for loading screens
 library(latex2exp) # for latex within graphs
 library(shinydashboard)
+library(shinyanimate)
 
 # For the functions
 library(expm) # used for the onion method 
@@ -17,7 +18,7 @@ library(MASS)
 library(matrixcalc)
 library(stats)
 
-# Globally setting the spinner colour and type # TODO: find a new one
+# Globally setting the spinner colour and type
 options(spinner.type = 8, spinner.color = "#6990EE")
 
 # Removing scientific notation
@@ -59,6 +60,9 @@ server = function(input, output, session) {
   source(file.path("server", "ServerPriorElicitation.R"),  local = TRUE)$value
   source(file.path("server", "ServerSampling.R"),  local = TRUE)$value
   
+  observe(addHoverAnim(session, 'AnnaImg', 'rubberBand'))
+  observe(addHoverAnim(session, 'MikeImg', 'tada'))
+  observe(addHoverAnim(session, 'LuaiImg', 'flip'))
 }
 
 shinyApp(ui, server)

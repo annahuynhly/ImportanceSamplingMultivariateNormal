@@ -160,7 +160,7 @@ prior_elicitation_mu = function(gamma, m1, m2, const = FALSE, s1 = FALSE, s2 = F
 #x = elicit_prior(gamma = 0.999, 
 #             m1 = c(-5, -5, -5), 
 #             m2 = c(5, 5, 5), 
-#             s1 = c(2, 2, 2), 
+#           s1 = c(2, 2, 2), 
 #             s2 = c(10, 10, 10), 
 #             alphaup = c(0, 0, 0), 
 #             alphalow = c(50, 50, 50))
