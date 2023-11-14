@@ -22,6 +22,53 @@ output$sample_post_example_file = downloadHandler(
   }
 )
 
+# PRIOR CASE (MODIFIED) ########################################
+
+prior_sample_values_NEW = eventReactive(input$submit_sample_prior_NEW, {
+  if(input$priorsample_use_NEW == "y"){
+    hyperpara = sample_prior_hyperparameters(
+      gamma = input$virtual_uncertainty, 
+      alpha01 = prior_elicitation_values()$alpha01, 
+      alpha02 = prior_elicitation_values()$alpha02, 
+      m1 = create_necessary_vector(input$m1),
+      m2 = create_necessary_vector(input$m2)
+    )
+    samples = sample_prior_new(N = input$prior_bigN_NEW, 
+                               alpha01 = prior_elicitation_values()$alpha01, 
+                               alpha02 = prior_elicitation_values()$alpha02, 
+                               mu0 = hyperpara$mu0, 
+                               lambda0 = hyperpara$lambda0)
+  } else if (input$priorsample_use_NEW == "n"){
+    hyperpara = sample_prior_hyperparameters(
+      gamma = input$virtual_uncertainty_NEW, 
+      alpha01 = create_necessary_vector(input$alpha01_NEW), 
+      alpha02 = create_necessary_vector(input$alpha02_NEW), 
+      m1 = create_necessary_vector(input$m1_NEW),
+      m2 = create_necessary_vector(input$m2_NEW)
+    )
+    samples = sample_prior_new(N = input$prior_bigN_NEW, 
+                               alpha01 = create_necessary_vector(input$alpha01_NEW), 
+                               alpha02 = create_necessary_vector(input$alpha02_NEW), 
+                               mu0 = hyperpara$mu0, 
+                               lambda0 = hyperpara$lambda0)
+  }
+  samples
+})
+
+output$sample_prior_computation_NEW = renderPrint({
+  prior_sample_values_NEW()
+})
+
+output$sample_prior_computations_graph_NEW = renderPlot({
+  hist(prior_sample_values_NEW(), prob = TRUE,
+       xlab = "Values of Mu",
+       ylab = "Density", 
+       main = "Density plot of Mu",
+       border = "#ffffff")
+  lines(density(prior_sample_values_NEW()), lwd = 2, lty = 2, col = "black")
+})
+
+
 # PRIOR CASE ###################################################
 
 prior_sample_values = eventReactive(input$submit_sample_prior, {

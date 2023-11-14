@@ -2,6 +2,93 @@
 # SAMPLING FROM THE PRIOR                                      #
 ################################################################
 
+page_priorsample_new = div(
+  # note: this is a new way to sample. may need to replace the other page.
+  titlePanel("Sampling from the Prior (MODIFIED)"),
+  sidebarLayout(
+    sidebarPanel(
+      width = 3,
+      
+      actionButton(inputId = "submit_sample_prior_NEW", label = "Submit Data"),
+      
+      numericInput(inputId = "prior_bigN_NEW",
+                   label = 'Insert N, the monte carlo sample size.',
+                   value = 100),
+      
+      selectInput(inputId = "priorsample_use_NEW", 
+                  label = 'Do you want to use the values from the Prior Elicitation calculations?', 
+                  choices = list("Yes" = "y", "No" = "n"), 
+                  selected = "n"
+      ),
+      
+      conditionalPanel(
+        condition = "input.priorsample_use_NEW == 'yes'",
+        p("The values from the previous section will be used!")
+      ),
+      
+      conditionalPanel(
+        condition = "input.priorsample_use_NEW == 'n'",
+        
+        numericInput(inputId = "virtual_uncertainty_NEW",
+                     label = 'Insert the virtual uncertainty, $\\gamma$.',
+                     value = 0.99),
+        
+        fluidRow(box(
+          width = 12,
+          splitLayout(
+            textInput(
+              inputId = "alpha01_NEW",
+              label = "$\\alpha_{011}, ..., \\alpha_{01p}$",
+              value = "3.15, 3.15, 3.15"),
+            textInput(
+              inputId = "alpha02_NEW",
+              label = "$\\alpha_{021}, ..., \\alpha_{02p}$",
+              value = "5.75, 5.75, 5.75"),
+          )
+        )),
+        
+        fluidRow(box(
+          width = 12,
+          splitLayout(
+            textInput(
+              inputId = "m1_NEW",
+              label = "$m_{11}, m_{12}, ..., m_{1p}$",
+              value = "-5,-5,-5"),
+            textInput(
+              inputId = "m2_NEW",
+              label = "$m_{21}, m_{22}, ..., m_{2p}$",
+              value = "5,5,5"),
+          )
+        )),
+        
+        fluidRow(box(
+          width = 12,
+          splitLayout(
+            textInput(inputId = "mu_0_NEW",
+                      label = 'Insert $\\mu_{0}$',
+                      value = "12, 12, 12"),
+            textInput(inputId = "sigma_0_NEW",
+                      label = 'Insert $\\sigma_{0}$',
+                      value = "1.22, 1.22, 1.22"),
+          )
+        )),
+      ),
+      
+    ),
+    mainPanel(
+      #withSpinner(verbatimTextOutput("sample_prior_computation_NEW"))
+      fluidRow(
+        splitLayout(
+          cellWidths = c("50%", "50%"), 
+          withSpinner(plotOutput(outputId = "sample_prior_computations_graph_NEW")), 
+          withSpinner(verbatimTextOutput("sample_prior_computation_NEW"))
+        ),
+      )
+    ),
+  )
+)
+
+
 page_priorsample = div(
   titlePanel("Sampling from the Prior"),
   sidebarLayout(
@@ -213,6 +300,7 @@ page_priorgraph = div(
 page_sampling = div(
   titlePanel("Sampling"),
   tabsetPanel(type = "tabs",
+              tabPanel("MODIFIED Sampling from the Prior", page_priorsample_new),
               tabPanel("Sampling from the Prior", page_priorsample),
               tabPanel("Sampling from the Posterior", page_posteriorsample),
               tabPanel("Graphs", page_priorgraph),

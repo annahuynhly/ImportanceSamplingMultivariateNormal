@@ -82,6 +82,25 @@ divison_alt = function(num, denom){
 # MAIN FUNCTIONS                                               #
 ################################################################
 
+sample_prior_new = function(N, alpha01, alpha02, mu0, lambda0){
+  # a new way to sample the prior; this function name will be changed in the future.
+  # N: refers to the monte carlo sample size.
+  prior_samples = c()
+  for(i in 1:N){
+    sigma = 1/rgamma(1, shape = alpha01, rate = alpha02)
+    sample = rnorm(N, mu0, lambda0^2 * sigma^2) 
+    prior_samples = c(prior_samples, sample)
+  }
+  return(sample)
+}
+
+sample_prior_hyperparameters = function(gamma, alpha01, alpha02, m1, m2){
+  lambda0 = (m2 - m1)/(2 * sqrt(alpha02/alpha01) * qt((1 + gamma)/2, df = 2 * alpha01))
+  mu0 = (m2 - m1)/2
+  newlist = list("mu0" = mu0, "lambda0" = lambda0)
+  return(newlist)
+}
+
 sample_prior = function(alpha01, alpha02, mu_0, sigma_0){
   # Let 1/delta_{i} ~ gamma(alpha01_{i}, alpha02_{i}) for i = 1, 2, .., p where p is the sample size.
   # mu ~ N_{p}(mu_0, sigma_{0}^{2} * SIGMA) 
@@ -439,5 +458,3 @@ prior_post_mu_graph = function(prior_mu,
 #mu_0 = 0
 #sigma_0 = 2.5
 #x = sample_post(alpha01, alpha02, Y, N, mu_0, sigma_0)
-
-
