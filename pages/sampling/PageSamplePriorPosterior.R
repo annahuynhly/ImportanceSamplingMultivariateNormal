@@ -18,8 +18,7 @@ page_priorsample_new = div(
       selectInput(inputId = "priorsample_use_NEW", 
                   label = 'Do you want to use the values from the Prior Elicitation calculations?', 
                   choices = list("Yes" = "y", "No" = "n"), 
-                  selected = "n"
-      ),
+                  selected = "n"),
       
       conditionalPanel(
         condition = "input.priorsample_use_NEW == 'yes'",
@@ -73,6 +72,15 @@ page_priorsample_new = div(
           )
         )),
       ),
+      
+      selectInput(inputId = "prior_graph_hist", 
+                  label = 'Do you want to see the histogram of the samples', 
+                  choices = list("Yes" = "y", "No" = "n"), 
+                  selected = "n"),
+      
+      numericInput(inputId = "prior_graph_num",
+                   label = "The column of $\\mu$ used to generate the graph.",
+                   value = 1)
       
     ),
     mainPanel(

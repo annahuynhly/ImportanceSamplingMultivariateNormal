@@ -59,13 +59,54 @@ output$sample_prior_computation_NEW = renderPrint({
   prior_sample_values_NEW()
 })
 
+
 output$sample_prior_computations_graph_NEW = renderPlot({
-  hist(prior_sample_values_NEW(), prob = TRUE,
-       xlab = "Values of Mu",
-       ylab = "Density", 
-       main = "Density plot of Mu",
-       border = "#ffffff")
-  lines(density(prior_sample_values_NEW()), lwd = 2, lty = 2, col = "black")
+  if(input$priorsample_use_NEW == "n"){
+    hyperpara = sample_prior_hyperparameters(
+      gamma = input$virtual_uncertainty_NEW, 
+      alpha01 = create_necessary_vector(input$alpha01_NEW), 
+      alpha02 = create_necessary_vector(input$alpha02_NEW), 
+      m1 = create_necessary_vector(input$m1_NEW),
+      m2 = create_necessary_vector(input$m2_NEW)
+    )
+    alpha01 = create_necessary_vector(input$alpha01_NEW)
+    alpha02 = create_necessary_vector(input$alpha02_NEW)
+  } else if (input$priorsample_use_NEW == "y"){
+    hyperpara = sample_prior_hyperparameters(
+      gamma = input$virtual_uncertainty, 
+      alpha01 = prior_elicitation_values()$alpha01, 
+      alpha02 = prior_elicitation_values()$alpha02, 
+      m1 = create_necessary_vector(input$m1),
+      m2 = create_necessary_vector(input$m2)
+    )
+    alpha01 = create_necessary_vector(input$alpha01)
+    alpha02 = create_necessary_vector(input$alpha02)
+  }
+  mu0 = hyperpara$mu0
+  lambda0 = hyperpara$lambda0
+  
+  col = input$prior_graph_num
+  x = -10+20*c(0:1000)/1000
+  y = dt(x,2*alpha01[col])
+  scale = sqrt(alpha02[col]/alpha01[col])*lambda0[col]
+  xnew = mu0[col] + scale*x
+  ynew = y/scale
+  
+  if(input$prior_graph_hist == "y"){
+    hist(prior_sample_values_NEW(), prob = TRUE,
+         xlab = "Values of Mu",
+         ylab = "Density", 
+         main = "Density plot of Mu",
+         border = "#ffffff")
+    lines(xnew, ynew, lwd = 2, lty = 2)
+  } else {
+    plot(xnew, ynew, lwd = 2, type="l", 
+          xlab = "Values of Mu",
+          ylab = "Density", 
+          main = "Density plot of Mu")
+  }
+  
+  
 })
 
 
