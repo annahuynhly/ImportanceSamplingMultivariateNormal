@@ -2,6 +2,16 @@
 # BACKEND FOR SAMPLING                                         #
 ################################################################
 
+alpha01_prior = reactive({create_necessary_vector(input$alpha01_prior)})
+alpha02_prior = reactive({create_necessary_vector(input$alpha02_prior)})
+alpha01_post = reactive({create_necessary_vector(input$alpha01_post)})
+alpha02_post = reactive({create_necessary_vector(input$alpha02_post)})
+
+m1_prior = reactive({create_necessary_vector(input$m1_prior)})
+m2_prior = reactive({create_necessary_vector(input$m2_prior)})
+m1_post = reactive({create_necessary_vector(input$m1_post)})
+m2_post = reactive({create_necessary_vector(input$m2_post)})
+
 # creating test sample data (changes every time for fun!)
 test_sample_data = reactive({
   p = 3#5
@@ -26,12 +36,12 @@ output$sample_post_example_file = downloadHandler(
 
 prior_sample_values_NEW = eventReactive(input$submit_sample_prior_NEW, {
   if(input$priorsample_use_NEW == "y"){
-    hyperpara = sample_prior_hyperparameters(
+    hyperpara = sample_hyperparameters(
       gamma = input$virtual_uncertainty, 
       alpha01 = prior_elicitation_values()$alpha01, 
       alpha02 = prior_elicitation_values()$alpha02, 
-      m1 = create_necessary_vector(input$m1),
-      m2 = create_necessary_vector(input$m2)
+      m1 = m1_list(),
+      m2 = m2_list()
     )
     samples = sample_prior_new(N = input$prior_bigN_NEW, 
                                alpha01 = prior_elicitation_values()$alpha01, 
@@ -39,16 +49,17 @@ prior_sample_values_NEW = eventReactive(input$submit_sample_prior_NEW, {
                                mu0 = hyperpara$mu0, 
                                lambda0 = hyperpara$lambda0)
   } else if (input$priorsample_use_NEW == "n"){
-    hyperpara = sample_prior_hyperparameters(
-      gamma = input$virtual_uncertainty_NEW, 
-      alpha01 = create_necessary_vector(input$alpha01_NEW), 
-      alpha02 = create_necessary_vector(input$alpha02_NEW), 
-      m1 = create_necessary_vector(input$m1_NEW),
-      m2 = create_necessary_vector(input$m2_NEW)
+    hyperpara = sample_hyperparameters(
+      gamma = input$virtual_uncertainty_prior, 
+      alpha01 = alpha01_prior(), 
+      alpha02 = alpha02_prior(), 
+      m1 = m1_prior(),
+      m2 = m2_prior()
     )
+    # note: may want to make the code more efficient later.
     samples = sample_prior_new(N = input$prior_bigN_NEW, 
-                               alpha01 = create_necessary_vector(input$alpha01_NEW), 
-                               alpha02 = create_necessary_vector(input$alpha02_NEW), 
+                               alpha01 = alpha01_prior(), 
+                               alpha02 = alpha02_prior(), 
                                mu0 = hyperpara$mu0, 
                                lambda0 = hyperpara$lambda0)
   }
@@ -62,25 +73,25 @@ output$sample_prior_computation_NEW = renderPrint({
 
 output$sample_prior_computations_graph_NEW = renderPlot({
   if(input$priorsample_use_NEW == "n"){
-    hyperpara = sample_prior_hyperparameters(
-      gamma = input$virtual_uncertainty_NEW, 
-      alpha01 = create_necessary_vector(input$alpha01_NEW), 
-      alpha02 = create_necessary_vector(input$alpha02_NEW), 
-      m1 = create_necessary_vector(input$m1_NEW),
-      m2 = create_necessary_vector(input$m2_NEW)
+    hyperpara = sample_hyperparameters(
+      gamma = input$virtual_uncertainty_prior, 
+      alpha01 = alpha01_prior(),
+      alpha02 = alpha02_prior(),
+      m1 = m1_prior(),
+      m2 = m2_prior()
     )
-    alpha01 = create_necessary_vector(input$alpha01_NEW)
-    alpha02 = create_necessary_vector(input$alpha02_NEW)
+    alpha01 = alpha01_prior()
+    alpha02 = alpha02_prior()
   } else if (input$priorsample_use_NEW == "y"){
-    hyperpara = sample_prior_hyperparameters(
+    hyperpara = sample_hyperparameters(
       gamma = input$virtual_uncertainty, 
       alpha01 = prior_elicitation_values()$alpha01, 
       alpha02 = prior_elicitation_values()$alpha02, 
-      m1 = create_necessary_vector(input$m1),
-      m2 = create_necessary_vector(input$m2)
+      m1 = m1_list(),
+      m2 = m2_list()
     )
-    alpha01 = create_necessary_vector(input$alpha01)
-    alpha02 = create_necessary_vector(input$alpha02)
+    alpha01 = prior_elicitation_values()$alpha01
+    alpha02 = prior_elicitation_values()$alpha02 
   }
   mu0 = hyperpara$mu0
   lambda0 = hyperpara$lambda0
@@ -94,23 +105,21 @@ output$sample_prior_computations_graph_NEW = renderPlot({
   
   if(input$prior_graph_hist == "y"){
     hist(prior_sample_values_NEW(), prob = TRUE,
-         xlab = "Values of Mu",
-         ylab = "Density", 
+         xlab = "Values of Mu", ylab = "Density", 
          main = "Density plot of Mu",
          border = "#ffffff")
     lines(xnew, ynew, lwd = 2, lty = 2)
   } else {
     plot(xnew, ynew, lwd = 2, type="l", 
-          xlab = "Values of Mu",
-          ylab = "Density", 
+          xlab = "Values of Mu", ylab = "Density", 
           main = "Density plot of Mu")
   }
-  
   
 })
 
 
 # PRIOR CASE ###################################################
+# may delete; this doesn't seem to work
 
 prior_sample_values = eventReactive(input$submit_sample_prior, {
   if(input$priorsample_use == "y"){
@@ -145,6 +154,7 @@ output$sample_prior_computation = renderPrint({
 })
 
 # CODE FOR DOWNLOADING PRIOR CASE ##############################
+# also may not work at this stage.
 
 download_prior_sample_mu = reactive({
   data = as.data.frame(prior_sample_values()$mu)
@@ -215,26 +225,32 @@ input_Y_values = reactive({
 
 post_sample_values = reactive({
   if(input$postsample_use == 1){ # input values
-    sample_post(alpha01 = alpha01_list_ver2(), 
-                alpha02 = alpha02_list_ver2(), 
-                Y = input_Y_values(),
-                N = input$post_bigN, 
-                mu_0 = input$mu_0_ver2, 
-                sigma_0 = input$sigma_0_ver2)
+    sample_post_new(N = input$post_bigN, 
+                    Y = input_Y_values(), 
+                    gamma = input$virtual_uncertainty_post, 
+                    alpha01 = alpha01_post(), 
+                    alpha02 = alpha02_post(), 
+                    m1 = m1_post(), 
+                    m2 = m2_post()
+    )
   } else if (input$postsample_use == 2){ # same as elicit
-    sample_post(alpha01 = prior_elicitation_values()$alpha01, 
-                alpha02 = prior_elicitation_values()$alpha02,
-                Y = input_Y_values(),
-                N = input$post_bigN, 
-                mu_0 = prior_elicitation_values()$mu0, 
-                sigma_0 = prior_elicitation_values()$sigma0)
+    sample_post_new(N = input$post_bigN, 
+                    Y = input_Y_values(), 
+                    gamma = input$virtual_uncertainty_post, 
+                    alpha01 = prior_elicitation_values()$alpha01, 
+                    alpha02 = prior_elicitation_values()$alpha02,
+                    m1 = m1_list(), 
+                    m2 = m2_list()
+    )
   } else if (input$postsample_use == 3){ # same as prior
-    sample_post(alpha01 = alpha01_list(), 
-                alpha02 = alpha02_list(), 
-                Y = input_Y_values(),
-                N = input$post_bigN, 
-                mu_0 = input$mu_0, 
-                sigma_0 = input$sigma_0)
+    sample_post_new(N = input$post_bigN, 
+                    Y = input_Y_values(), 
+                    gamma = input$virtual_uncertainty_post, 
+                    alpha01 = alpha01_prior(),
+                    alpha02 = alpha02_prior(),
+                    m1 = m1_prior(), 
+                    m2 = m2_prior()
+    )
   }
 })
 
@@ -250,9 +266,8 @@ rbr_sample_values = reactive({
 # makes it so the output is delayed until the user submits the data
 sample_post_computations_outputs = eventReactive(input$submit_sample_post, {
   list(
-    "mu" = head(post_sample_values()$mu, 5),
-    "sigma" = head(post_sample_values()$sigma, 5),
-    "k_zeta" = post_sample_values()$k_zeta[1:25]
+    "xi_mu" = post_sample_values()$xi[,,1:5],
+    "mu" = head(post_sample_values()$mu_xi, 5)
   )
 })
 

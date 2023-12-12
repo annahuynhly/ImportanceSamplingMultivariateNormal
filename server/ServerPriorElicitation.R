@@ -6,15 +6,10 @@ const_list = reactive({create_necessary_vector(input$const_s)})
 m1_list = reactive({create_necessary_vector(input$m1)})
 m2_list = reactive({create_necessary_vector(input$m2)})
 
-alpha01_list = reactive({create_necessary_vector(input$alpha01)})
-alpha02_list = reactive({create_necessary_vector(input$alpha02)})
-alpha01_list_ver2 = reactive({create_necessary_vector(input$alpha01_ver2)})
-alpha02_list_ver2 = reactive({create_necessary_vector(input$alpha02_ver2)})
-
 prior_elicitation_values = eventReactive(input$submit_prior_elicit, {
   elicit_prior(gamma = input$virtual_uncertainty,
-               m1 = create_necessary_vector(input$m1),
-               m2 = create_necessary_vector(input$m2),
+               m1 = m1_list(),
+               m2 = m2_list(),
                s1 = create_necessary_vector(input$elicit_s1), 
                s2 = create_necessary_vector(input$elicit_s2), 
                alphaup = create_necessary_vector(input$alphaup), 

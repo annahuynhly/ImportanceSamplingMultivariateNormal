@@ -94,7 +94,7 @@ sample_prior_new = function(N, alpha01, alpha02, mu0, lambda0){
   return(sample)
 }
 
-sample_prior_hyperparameters = function(gamma, alpha01, alpha02, m1, m2){
+sample_hyperparameters = function(gamma, alpha01, alpha02, m1, m2){
   lambda0 = (m2 - m1)/(2 * sqrt(alpha02/alpha01) * qt((1 + gamma)/2, df = 2 * alpha01))
   mu0 = (m2 + m1)/2
   newlist = list("mu0" = mu0, "lambda0" = lambda0)
@@ -104,7 +104,7 @@ sample_prior_hyperparameters = function(gamma, alpha01, alpha02, m1, m2){
 prior_true_mu = function(gamma, alpha01, alpha02, m1, m2){
   # idea: no need to sample since the distribution is actually known.
   # n represents length here
-  data = sample_prior_hyperparameters(gamma, alpha01, alpha02, m1, m2)
+  data = sample_hyperparameters(gamma, alpha01, alpha02, m1, m2)
   mu0 = data$mu0
   lambda0 = data$lambda0
   # assuming alphas have the same length
@@ -232,11 +232,14 @@ sample_post = function(alpha01, alpha02, Y = FALSE, N, mu_0, sigma_0){
 }
 
 # below is incomplete
-sample_post_new = function(alpha01, alpha02, Y = FALSE, N, mu0, sigma0, lambda0){
+sample_post_new = function(N, Y, gamma, alpha01, alpha02, m1, m2){
+  data = sample_hyperparameters(gamma, alpha01, alpha02, m1, m2)
+  mu0 = data$mu0
+  lambda0 = data$lambda0
   # replace the new name later; this is to distinguish between the earlier version.
   if(length(alpha01) != length(alpha02)){
     # may want to turn into a helper function for readability later on?
-    return("Error: the vector for alpha_01 and beta_01 are of a different size.")
+    return("Error: the vector for alpha_01 and beta_02 are of a different size.")
   }
   p = length(alpha01)
   if(is.numeric(Y) == TRUE){
@@ -245,27 +248,43 @@ sample_post_new = function(alpha01, alpha02, Y = FALSE, N, mu0, sigma0, lambda0)
       return("Error: the value of n (size of Y) is too small.")
     }
     Yprime = t(Y)
-    Ybar = rowMeans(Yprime)
+    Ybar = rowMeans(Yprime) # rowMeans(t(Y))
     In = matrix(t(rep(1, n))) # identity column
     Ybar_t = matrix(Ybar,nrow=1, ncol = p) # transpose
     # NOTE: need to check if S was computed correctly... different in his notes than this
     # version
     #S = (1/(n-1)) * t(Y - In%*%Ybar_t) %*% (Y - In%*%Ybar_t)
-    S = (Y - In%*%Ybar_t) %*% t(Y - In%*%Ybar_t) # paper version - may be incorrect?
+    S = (1/(n-1)) * t(Y - In%*%rowMeans(t(Y))) %*% (Y - In%*%rowMeans(t(Y))) # paper version - may be incorrect?
   } else {
     return("Error: no data given.")
   }
   # instead of using solve, may need to move to an alt version (see helper functions)
-  Sigma_Y = find_inverse_alt((S + n/(1 + n * lambda0^2) * (Ybar - mu0) %*% tr(Ybar - mu0)))
-  mu_Y = ((n + 1/lambda0^2)^-1) * (mu0/lambda0^2 + n * Ybar)
+  Sigma_Y = find_inverse_alt((S + n/(1 + n * lambda0^2) * (rowMeans(t(Y)) - mu0) %*% t(rowMeans(t(Y)) - mu0)))
+  mu_Y = ((n + 1/lambda0^2)^-1) * (mu0/lambda0^2 + n * rowMeans(t(Y)))
   mu_Sigma = ((n + 1/lambda0^2)^-1) * find_inverse_alt(Sigma_Y)
   
   xi = rWishart(n = N, df = (n - p - 1), Sigma = Sigma_Y)
   mu_xi = mvrnorm(n = N, mu = mu_Y, Sigma = mu_Sigma)
   
+  return(list("xi" = xi, "mu_xi" = mu_xi))
 }
 
 
+#N = 100
+#p = 3
+#n = 100
+#mu = rep(0, p) #temporary dummy data -> MAY REPLACE?
+#sigma = diag(p) # identity matrix, for now.
+## generating Y. May have an option where the user inputs Y themselves - ask?
+#Y = mvrnorm(n = n, mu = mu, Sigma = sigma)
+#alpha01 = c(2, 2, 2)
+#alpha02 = c(5, 5, 5)
+#m1 = c(1, 1, 1)
+#m2 = c(9, 9, 9)
+#gamma = 0.99
+#data = sample_post_new(N, Y, gamma, alpha01, alpha02, m1, m2)
+#data$xi[,,1]
+#data$xi[,,1:5]
 
 
 
