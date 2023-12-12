@@ -84,14 +84,15 @@ page_priorsample_new = div(
       
     ),
     mainPanel(
+      withSpinner(plotOutput(outputId = "sample_prior_computations_graph_NEW")), 
       #withSpinner(verbatimTextOutput("sample_prior_computation_NEW"))
-      fluidRow(
-        splitLayout(
-          cellWidths = c("50%", "50%"), 
-          withSpinner(plotOutput(outputId = "sample_prior_computations_graph_NEW")), 
-          withSpinner(verbatimTextOutput("sample_prior_computation_NEW"))
-        ),
-      )
+      #fluidRow(
+      #  splitLayout(
+      #    cellWidths = c("50%", "50%"), 
+      #    withSpinner(plotOutput(outputId = "sample_prior_computations_graph_NEW")), 
+      #    withSpinner(verbatimTextOutput("sample_prior_computation_NEW"))
+      #  ),
+      #)
     ),
   )
 )

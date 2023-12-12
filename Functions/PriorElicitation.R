@@ -46,11 +46,11 @@ elicit_prior = function(gamma, m1, m2, s1, s2, alphaup_vect, alphalow_vect){
     alpha02[j] = beta
   }
   
-  #sigma0 = (m2 - m1)/(2*s1)
   sigma0 = (m2 - m1)/(2*s2)
+  lambda0 = (m2 - m1)/(2 * sqrt(alpha02/alpha01) * qt((1 + gamma)/2, df = 2 * alpha01))
   
   newlist = list("c1" = c1, "c2" = c2, "alpha01" = alpha01, "alpha02" = alpha02,
-                 "mu0" = mu0, "sigma0" = sigma0, "z0" = z0)
+                 "mu0" = mu0, "sigma0" = sigma0, "lambda0" = lambda0, "z0" = z0)
   return(newlist)
 }
 

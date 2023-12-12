@@ -96,9 +96,25 @@ sample_prior_new = function(N, alpha01, alpha02, mu0, lambda0){
 
 sample_prior_hyperparameters = function(gamma, alpha01, alpha02, m1, m2){
   lambda0 = (m2 - m1)/(2 * sqrt(alpha02/alpha01) * qt((1 + gamma)/2, df = 2 * alpha01))
-  mu0 = (m2 - m1)/2
+  mu0 = (m2 + m1)/2
   newlist = list("mu0" = mu0, "lambda0" = lambda0)
   return(newlist)
+}
+
+prior_true_mu = function(gamma, alpha01, alpha02, m1, m2){
+  # idea: no need to sample since the distribution is actually known.
+  # n represents length here
+  data = sample_prior_hyperparameters(gamma, alpha01, alpha02, m1, m2)
+  mu0 = data$mu0
+  lambda0 = data$lambda0
+  # assuming alphas have the same length
+  n = length(alpha01)
+  mu = rep(0, n)
+  for(i in 1:n){
+    t_val = qt(gamma, df = alpha01[i] * 2)
+    mu[i] = mu0[i] + sqrt(alpha02[i]/alpha01[i]) * lambda0[i] * t_val
+  }
+  return(mu)
 }
 
 sample_prior = function(alpha01, alpha02, mu_0, sigma_0){
@@ -234,19 +250,24 @@ sample_post_new = function(alpha01, alpha02, Y = FALSE, N, mu0, sigma0, lambda0)
     Ybar_t = matrix(Ybar,nrow=1, ncol = p) # transpose
     # NOTE: need to check if S was computed correctly... different in his notes than this
     # version
-    S = (1/(n-1)) * t(Y - In%*%Ybar_t) %*% (Y - In%*%Ybar_t)
+    #S = (1/(n-1)) * t(Y - In%*%Ybar_t) %*% (Y - In%*%Ybar_t)
+    S = (Y - In%*%Ybar_t) %*% t(Y - In%*%Ybar_t) # paper version - may be incorrect?
   } else {
     return("Error: no data given.")
   }
   # instead of using solve, may need to move to an alt version (see helper functions)
   Sigma_Y = find_inverse_alt((S + n/(1 + n * lambda0^2) * (Ybar - mu0) %*% tr(Ybar - mu0)))
   mu_Y = ((n + 1/lambda0^2)^-1) * (mu0/lambda0^2 + n * Ybar)
-  mu_Sigma = ((n + 1/lambda0^2)^-1) * Sigma_Y
+  mu_Sigma = ((n + 1/lambda0^2)^-1) * find_inverse_alt(Sigma_Y)
   
   xi = rWishart(n = N, df = (n - p - 1), Sigma = Sigma_Y)
-  mu_xi = mvrnorm(n = N, mu = mu_Y, Sigma = )
+  mu_xi = mvrnorm(n = N, mu = mu_Y, Sigma = mu_Sigma)
   
 }
+
+
+
+
 
 
 sample_rbr_mu = function(prior_mu, post_mu, delta){
