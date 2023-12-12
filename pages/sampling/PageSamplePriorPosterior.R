@@ -11,6 +11,8 @@ page_priorsample_new = div(
       
       actionButton(inputId = "submit_sample_prior_NEW", label = "Submit Data"),
       
+      downloadButton(outputId = 'plot_prior_mu', label = 'Download Plot'),
+      
       numericInput(inputId = "prior_bigN_NEW",
                    label = 'Insert N, the monte carlo sample size.',
                    value = 100),
@@ -180,8 +182,8 @@ page_postsample_new = div(
       p("The values shown display limited information, but can be downloaded. (Please 
         press the buttons after you submit, or nothing will load.)"),
       downloadButton("postsample_download_mu", "Download $\\mu$"),
-      downloadButton("postsample_download_sigma", "Download $\\Sigma$"),
-      downloadButton("postsample_download_k_zeta", "Download $K(\\zeta)$"),
+      downloadButton("postsample_download_xi", "Download $\\Xi$"),
+      #downloadButton("postsample_download_k_zeta", "Download $K(\\zeta)$"),
       p(""),
       withSpinner(verbatimTextOutput("sample_post_computation"))
     ),

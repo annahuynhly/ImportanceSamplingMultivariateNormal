@@ -105,14 +105,17 @@ output$sample_prior_computations_graph_NEW = renderPlot({
   
   if(input$prior_graph_hist == "y"){
     hist(prior_sample_values_NEW(), prob = TRUE,
-         xlab = "Values of Mu", ylab = "Density", 
-         main = "Density plot of Mu",
+         xlab = TeX(paste("Value of", r'($\mu$)', col)),
+         ylab = "Density", 
+         main = TeX(paste("Density plot of", r'($\mu$)', col)),
          border = "#ffffff")
     lines(xnew, ynew, lwd = 2, lty = 2)
   } else {
     plot(xnew, ynew, lwd = 2, type="l", 
-          xlab = "Values of Mu", ylab = "Density", 
-          main = "Density plot of Mu")
+         xlab = TeX(paste("Value of", r'($\mu$)', col)),
+         ylab = "Density", 
+         main = TeX(paste("Density plot of", r'($\mu$)', col))
+    )
   }
   
 })
@@ -277,7 +280,7 @@ output$sample_post_computation = renderPrint({
 
 # cleaning the data before being downloaded - changing the column names.
 download_post_sample_mu = reactive({
-  data = as.data.frame(post_sample_values()$mu)
+  data = as.data.frame(post_sample_values()$mu_xi)
   for(i in 1:ncol(data)){
     colnames(data)[i] = paste("mu", i, sep = " ")
   }
@@ -291,11 +294,12 @@ output$postsample_download_mu = downloadHandler(
   }
 )
 
-output$postsample_download_sigma = downloadHandler(
-  filename = "postsample_sigma.csv",
+output$postsample_download_xi = downloadHandler(
+  filename = "postsample_xi.csv",
   content = function(file) {
     # Note: difficult to change the column names for this particular case.
-    write.csv(post_sample_values()$sigma, file, row.names = FALSE)
+    # todo: try to edit it later...
+    write.csv(post_sample_values()$xi, file, row.names = FALSE)
   }
 )
 output$postsample_download_k_zeta = downloadHandler(
@@ -304,7 +308,6 @@ output$postsample_download_k_zeta = downloadHandler(
     write.csv(post_sample_values()$k_zeta, file, row.names = FALSE)
   }
 )
-
 
 # GRAPHING FUNCTIONS ###########################################
 
@@ -344,3 +347,61 @@ output$sample_rbr_graph = renderPlot({
     lty_type = as.numeric(input$prior_lty_type),
     transparency = input$prior_transparency)
 })
+
+## the new download is below
+
+sample_prior_computations_graph_DOWNLOAD = function(){
+  if(input$priorsample_use_NEW == "n"){
+    hyperpara = sample_hyperparameters(
+      gamma = input$virtual_uncertainty_prior, 
+      alpha01 = alpha01_prior(),
+      alpha02 = alpha02_prior(),
+      m1 = m1_prior(),
+      m2 = m2_prior()
+    )
+    alpha01 = alpha01_prior()
+    alpha02 = alpha02_prior()
+  } else if (input$priorsample_use_NEW == "y"){
+    hyperpara = sample_hyperparameters(
+      gamma = input$virtual_uncertainty, 
+      alpha01 = prior_elicitation_values()$alpha01, 
+      alpha02 = prior_elicitation_values()$alpha02, 
+      m1 = m1_list(),
+      m2 = m2_list()
+    )
+    alpha01 = prior_elicitation_values()$alpha01
+    alpha02 = prior_elicitation_values()$alpha02 
+  }
+  mu0 = hyperpara$mu0
+  lambda0 = hyperpara$lambda0
+  
+  col = input$prior_graph_num
+  x = -10+20*c(0:1000)/1000
+  y = dt(x,2*alpha01[col])
+  scale = sqrt(alpha02[col]/alpha01[col])*lambda0[col]
+  xnew = mu0[col] + scale*x
+  ynew = y/scale
+  
+  if(input$prior_graph_hist == "y"){
+    hist(prior_sample_values_NEW(), prob = TRUE,
+         xlab = "Values of Mu", ylab = "Density", 
+         main = "Density plot of Mu",
+         border = "#ffffff")
+    lines(xnew, ynew, lwd = 2, lty = 2)
+  } else {
+    plot(xnew, ynew, lwd = 2, type="l", 
+         xlab = "Values of Mu", ylab = "Density", 
+         main = "Density plot of Mu")
+  }
+  
+}
+
+output$plot_prior_mu = downloadHandler(
+  filename = "Prior Mu Plot.png",
+  content = function(file){
+    png(file)
+    sample_prior_computations_graph_DOWNLOAD()
+    dev.off()
+  })
+
+
