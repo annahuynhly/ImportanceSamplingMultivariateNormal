@@ -19,6 +19,8 @@ page_elicitsigma = div(
       
       actionButton(inputId = "submit_prior_elicit", label = "Submit Data"),
       
+      downloadButton(outputId = 'download_prior_elicit_sigma', label = 'Download Plot'),
+      
       numericInput(inputId = "virtual_uncertainty",
                    label = 'Insert the virtual uncertainty, $\\gamma$.',
                    value = 0.99),

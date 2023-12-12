@@ -215,6 +215,40 @@ sample_post = function(alpha01, alpha02, Y = FALSE, N, mu_0, sigma_0){
   return(newlist)
 }
 
+# below is incomplete
+sample_post_new = function(alpha01, alpha02, Y = FALSE, N, mu0, sigma0, lambda0){
+  # replace the new name later; this is to distinguish between the earlier version.
+  if(length(alpha01) != length(alpha02)){
+    # may want to turn into a helper function for readability later on?
+    return("Error: the vector for alpha_01 and beta_01 are of a different size.")
+  }
+  p = length(alpha01)
+  if(is.numeric(Y) == TRUE){
+    n = nrow(Y)
+    if(n < (2*p)){
+      return("Error: the value of n (size of Y) is too small.")
+    }
+    Yprime = t(Y)
+    Ybar = rowMeans(Yprime)
+    In = matrix(t(rep(1, n))) # identity column
+    Ybar_t = matrix(Ybar,nrow=1, ncol = p) # transpose
+    # NOTE: need to check if S was computed correctly... different in his notes than this
+    # version
+    S = (1/(n-1)) * t(Y - In%*%Ybar_t) %*% (Y - In%*%Ybar_t)
+  } else {
+    return("Error: no data given.")
+  }
+  # instead of using solve, may need to move to an alt version (see helper functions)
+  Sigma_Y = find_inverse_alt((S + n/(1 + n * lambda0^2) * (Ybar - mu0) %*% tr(Ybar - mu0)))
+  mu_Y = ((n + 1/lambda0^2)^-1) * (mu0/lambda0^2 + n * Ybar)
+  mu_Sigma = ((n + 1/lambda0^2)^-1) * Sigma_Y
+  
+  xi = rWishart(n = N, df = (n - p - 1), Sigma = Sigma_Y)
+  mu_xi = mvrnorm(n = N, mu = mu_Y, Sigma = )
+  
+}
+
+
 sample_rbr_mu = function(prior_mu, post_mu, delta){
   if(ncol(prior_mu) != ncol(post_mu)){
     return("Error: the number of columns for the prior mu and posterior 
