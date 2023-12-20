@@ -33,9 +33,9 @@ source("./pages/algorithm_description.R")
 source("./pages/contact.R")
 source("./pages/home.R")
 
+source("./functions/HelperFunctions.R")
 source("./functions/PriorElicitation.R")
 source("./functions/Sampling.R")
-source("./functions/HelperFunctions.R")
 
 ################################################################
 # FRONTEND                                                     #

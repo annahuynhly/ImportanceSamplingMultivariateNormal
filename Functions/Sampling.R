@@ -321,7 +321,7 @@ sample_rbr_mu = function(prior_mu, post_mu, delta){
 
 # note: this might also work for the posterior as well...
 mu_graph = function(mu, type = "prior", col_num,
-                    delta,
+                    delta, smooth_num = 1,
                     colour_choice = c("blue", "blue"),
                     lty_type = 2,
                     transparency = 0.1){
@@ -330,7 +330,7 @@ mu_graph = function(mu, type = "prior", col_num,
   mu_values = mu[,col_num]
   # TODO: see latex support later for graphs - was able to for a paper.
   #title = TeX(paste(r'($\mu$)', "sample text for testing", sep = " "))
-  title = TeX(paste("Graph of the", type, r'(of $\mu$)', col_num, sep = " "))
+  title = TeX(paste("Graph of the", type, "of $\\mu_{", col_num, "}$"))
   
   xlab_title = TeX(paste(r'($\mu$)', col_num, sep = " "))
   
@@ -343,12 +343,18 @@ mu_graph = function(mu, type = "prior", col_num,
   grid = seq_alt(mu_values, delta)
   
   # Plots of the Prior and the Posterior
-  hist(mu_values, 
-       main = title, ylab = "Densities", xlab = xlab_title, 
-       col = hist_col, border = "#ffffff",
-       breaks = grid,
-       prob = TRUE)
-  lines(density(mu_values), lwd = 2, lty = lty_type, col = colour_choice[2])
+  mu_plot = hist(mu_values, breaks = grid,
+                 main = title, ylab = "Densities", xlab = xlab_title, 
+                 col = hist_col, border = "#ffffff", prob = TRUE)
+  
+  if(smooth_num == 1){
+    lines(density(mu_values), lwd = 2, lty = lty_type, col = colour_choice[2])
+  } else {
+    line_plot_vals = average_vector_values(mu_plot$density, smooth_num)
+    lines(mu_plot$mids, line_plot_vals, 
+          lwd = 2, lty = lty_type, col = colour_choice[2])
+  }
+  
 }
 
 # separate function needs to exist based on the type of what rbr is.
@@ -520,15 +526,28 @@ prior_post_mu_graph = function(prior_mu,
 ## TESTING!!!
 
 
-#p = 3
-#mu = rep(0, p) 
-#sigma = diag(p) 
-#n = 100
-#Y = mvrnorm(n = n, mu = mu, Sigma = sigma)
+p = 3
+mu = rep(0, p) 
+sigma = diag(p) 
+n = 100
+Y = mvrnorm(n = n, mu = mu, Sigma = sigma)
 
-#alpha01 = c(3.149414, 3.149414, 3.149414)
-#alpha02 = c(5.748669, 5.748669, 5.748669)
-#N = 1000
-#mu_0 = 0
-#sigma_0 = 2.5
-#x = sample_post(alpha01, alpha02, Y, N, mu_0, sigma_0)
+alpha01 = c(3.149414, 3.149414, 3.149414)
+alpha02 = c(5.748669, 5.748669, 5.748669)
+N = 1000
+mu_0 = 0
+sigma_0 = 2.5
+x = sample_post(alpha01, alpha02, Y, N, mu_0, sigma_0)
+
+example = mu_graph(mu = x$mu, type = "posterior", col_num = 1,
+         delta = 0.05, smooth_num = 3,
+         colour_choice = c("blue", "blue"),
+         lty_type = 2,
+         transparency = 0.1)
+
+#lines(example$mids, c(example$density))
+
+
+
+
+

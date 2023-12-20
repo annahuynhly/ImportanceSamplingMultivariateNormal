@@ -118,14 +118,12 @@ page_postsample_new = div(
       
       actionButton(inputId = "submit_sample_post", label = "Submit Data"),
       
-      downloadButton(outputId = 'plot_post_mu', label = 'Download Plot'),
-      
       numericInput(inputId = "post_bigN",
                    label = 'Insert N, the monte carlo sample size',
                    value = 1000),
       
       selectInput(inputId = "postsample_use", 
-                  label = 'Which kind of values do you want to use?', 
+                  label = 'Which values do you want to use?', 
                   choices = list("Input values" = 1, 
                                  "Same values as elicitation" = 2,
                                  "Same values as prior" = 3), 
@@ -179,7 +177,15 @@ page_postsample_new = div(
       
       numericInput(inputId = "post_graph_num",
                    label = "The column of $\\mu$ used to generate the graph.",
-                   value = 1)
+                   value = 1),
+      
+      numericInput(inputId = "post_graph_delta",
+                   label = "$\\delta$, the meaningful difference.",
+                   value = 0.05),
+      
+      sliderInput(inputId = "post_graph_smoother", 
+                  label = "Number of Average Points (Smoother)", 
+                  min = 1, max = 15, value = 3, step = 2)
       
     ),
     mainPanel(
@@ -187,9 +193,9 @@ page_postsample_new = div(
       downloadButton(outputId = "sample_post_example_file", label = "Download Sample"),
       p("The values shown display limited information, but can be downloaded. (Please 
         press the buttons after you submit, or nothing will load.)"),
-      downloadButton("postsample_download_mu", "Download $\\mu$"),
-      downloadButton("postsample_download_xi", "Download $\\Xi$"),
-      #downloadButton("postsample_download_k_zeta", "Download $K(\\zeta)$"),
+      downloadButton(outputId = 'plot_post_mu', label = 'Download Plot'),
+      downloadButton(outputId = "postsample_download_mu", label = "Download $\\mu$"),
+      downloadButton(outputId = "postsample_download_xi", label = "Download $\\Xi$"),
       p(""),
       
       tabPanel("Plots",

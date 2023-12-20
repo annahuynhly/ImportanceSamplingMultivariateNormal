@@ -74,3 +74,42 @@ create_necessary_vector = function(x){
     return("Invalid vector.")
   }
 }
+
+average_vector_values = function(vector, num_average_pts = 3){
+  # num_average_pts: the number of density bins closely added to each other to get
+  # a smoother density plot. (Reduce peaks.)
+  if(num_average_pts %% 2 == 0){
+    # Note: the even case is harder to code. For this instance, since the number of average points
+    # will be pre-determined for the user (in terms of the plots), I have decided to not add
+    # even functionality for now.
+    return("Error: num_average_pts must be an odd number.")
+  }
+  
+  if(num_average_pts == 1){
+    return(vector)
+  } 
+  new_vector = rep(0, length(vector))
+  
+  pts = 0
+  num_neighbours = floor(num_average_pts/2)
+  for(i in 1:length(vector)){
+    if(i <= num_neighbours | (length(vector) - i) < num_neighbours){ # Edge points case
+      if(i == 1 | i == length(vector)){
+        new_vector[i] = vector[i]
+      } else {
+        if (i <= num_neighbours){
+          pts = i - 1
+        } else if ((length(vector) - i) < num_neighbours){
+          pts = length(vector) - i
+        }
+        new_vector[i] = sum(vector[(i-pts):(i+pts)])/(2*pts + 1)
+      }
+    } else {
+      lower_int = i - num_neighbours
+      upper_int = i + num_neighbours
+      new_vector[i] = sum(vector[lower_int:upper_int])/(2*num_neighbours + 1)
+    }
+  }
+  
+  return(new_vector)
+}
