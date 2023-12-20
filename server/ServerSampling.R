@@ -15,7 +15,8 @@ m2_post = reactive({create_necessary_vector(input$m2_post)})
 # creating test sample data (changes every time for fun!)
 test_sample_data = reactive({
   p = 3#5
-  mu = rep(0, p) 
+  mu = rep(2, p)
+  #mu = rep(0, p) 
   sigma = diag(p) 
   n = 100
   Y = mvrnorm(n = n, mu = mu, Sigma = sigma)
@@ -105,16 +106,16 @@ output$sample_prior_computations_graph_NEW = renderPlot({
   
   if(input$prior_graph_hist == "y"){
     hist(prior_sample_values_NEW(), prob = TRUE,
-         xlab = TeX(paste("Value of", r'($\mu$)', col)),
+         xlab = TeX(paste("Value of $\\mu_{", col, "}$")),
          ylab = "Density", 
          main = TeX(paste("Density plot of", r'($\mu$)', col)),
          border = "#ffffff")
     lines(xnew, ynew, lwd = 2, lty = 2)
   } else {
     plot(xnew, ynew, lwd = 2, type="l", 
-         xlab = TeX(paste("Value of", r'($\mu$)', col)),
+         xlab = TeX(paste("Value of $\\mu_{", col, "}$")),
          ylab = "Density", 
-         main = TeX(paste("Density plot of", r'($\mu$)', col))
+         main = TeX(paste("Density plot of $\\mu_{", col, "}$"))
     )
   }
   
@@ -269,8 +270,8 @@ rbr_sample_values = reactive({
 # makes it so the output is delayed until the user submits the data
 sample_post_computations_outputs = eventReactive(input$submit_sample_post, {
   list(
-    "xi_mu" = post_sample_values()$xi[,,1:5],
-    "mu" = head(post_sample_values()$mu_xi, 5)
+    "xi" = post_sample_values()$xi[,,1:5],
+    "mu_xi" = head(post_sample_values()$mu_xi, 5)
   )
 })
 
@@ -323,17 +324,33 @@ output$sample_prior_graph = renderPlot({
     transparency = input$prior_transparency)
 })
 
-
-output$sample_post_graph = renderPlot({
+# rename this..
+the_sample_post_graph = eventReactive(input$submit_sample_post, {
   mu_graph(
-    mu = post_sample_values()$mu, 
+    mu = post_sample_values()$mu_xi, 
     type = "Posterior",
-    col_num = input$mu_col,
-    delta = input$graph_delta,
-    colour_choice = c(convert_to_hex(input$prior_colour_hist),
-                      convert_to_hex(input$prior_colour_line)),
-    lty_type = as.numeric(input$prior_lty_type),
-    transparency = input$prior_transparency)
+    col_num = input$post_graph_num,
+    delta = 0.05, #input$graph_delta,
+    colour_choice = c("blue", "blue"),
+    lty_type = 2,
+    transparency = 0.1)
+  
+  #mu_graph(
+  #  mu = post_sample_values()$mu_xi, 
+  #  type = "Posterior",
+  #  col_num = 1, #input$post_graph_num,
+  #  delta = 0.99, #input$graph_delta,
+  #  colour_choice = c(convert_to_hex(input$prior_colour_hist),
+  #                    convert_to_hex(input$prior_colour_line)),
+  #  lty_type = as.numeric(input$prior_lty_type),
+  #  transparency = input$prior_transparency)
+})
+
+
+###
+# this was modified
+output$sample_post_graph = renderPlot({
+  the_sample_post_graph()
 })
 
 output$sample_rbr_graph = renderPlot({
@@ -384,14 +401,17 @@ sample_prior_computations_graph_DOWNLOAD = function(){
   
   if(input$prior_graph_hist == "y"){
     hist(prior_sample_values_NEW(), prob = TRUE,
-         xlab = "Values of Mu", ylab = "Density", 
-         main = "Density plot of Mu",
+         xlab = TeX(paste("Value of $\\mu_{", col, "}$")),
+         ylab = "Density", 
+         main = TeX(paste("Density plot of", r'($\mu$)', col)),
          border = "#ffffff")
     lines(xnew, ynew, lwd = 2, lty = 2)
   } else {
     plot(xnew, ynew, lwd = 2, type="l", 
-         xlab = "Values of Mu", ylab = "Density", 
-         main = "Density plot of Mu")
+         xlab = TeX(paste("Value of $\\mu_{", col, "}$")),
+         ylab = "Density", 
+         main = TeX(paste("Density plot of $\\mu_{", col, "}$"))
+    )
   }
   
 }
@@ -402,6 +422,33 @@ output$plot_prior_mu = downloadHandler(
     png(file)
     sample_prior_computations_graph_DOWNLOAD()
     dev.off()
-  })
+  }
+)
+
+sample_post_computations_graph_DOWNLOAD = function(){
+  mu_graph(
+    mu = post_sample_values()$mu_xi, 
+    type = "Posterior",
+    col_num = input$post_graph_num,
+    delta = 0.05, #input$graph_delta,
+    colour_choice = c("blue", "blue"),
+    lty_type = 2,
+    transparency = 0.1)
+}
+
+output$plot_post_mu = downloadHandler(
+  filename = "Post Mu Plot.png",
+  content = function(file){
+    png(file)
+    sample_post_computations_graph_DOWNLOAD()
+    dev.off()
+  }
+)
+
+
+
+
+
+
 
 

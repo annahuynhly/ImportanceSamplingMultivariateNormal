@@ -35,16 +35,19 @@ elicit_prior_graphs = reactive({
     x3 = sqrt(1/x)
     dens3 = 2*(x^(3/2))*dgamma(x,alpha,beta)
     plot(x3,dens3,
-         main = TeX(paste("Prior Density of ", r'($\sigma$)', graph_num)),
-         xlab=TeX(paste(r'($\sigma$)', graph_num)),
-         ylab="Prior Density",
-         type="l")
+         main = TeX(paste("Prior Density of $\\sigma_{", graph_num, "}$")),
+         xlab = TeX(paste("$\\sigma_{", graph_num, "}$")),
+         ylab = "Prior Density",
+         type = "l")
   } else if (input$elicit_sigma_graph_type == 2){
     x3 = z0*sqrt(1/x)
     dens3 = (2/z0)*(x^(3/2))*dgamma(x, alpha, beta)
     plot(x3, dens3,
-         main = TeX(paste("Prior Density of ", r'($\sigma$)', graph_num, r'(\cdot z)')),
-         xlab = TeX(paste(r'($\sigma$)', graph_num, r'(\cdot z)', "(", prob_z, ")")),
+         main = TeX(paste("Prior Density of $\\sigma_{", graph_num, 
+                          '}\\cdot z_{t}, t = \\frac{1+\\gamma}{2}$')),
+         xlab = TeX(paste('$\\sigma_{', graph_num, 
+                          '} \\cdot z_{t}, t = \\frac{1+\\gamma}{2}$')),
+         #xlab = TeX(paste(r'($\sigma$)', graph_num, r'(\cdot z_{\frac{1}{\gamma + 2}})')),
          ylab = "Prior Density",
          type = "l")
   }
@@ -73,16 +76,19 @@ elicit_prior_graphs_download = function(){
     x3 = sqrt(1/x)
     dens3 = 2*(x^(3/2))*dgamma(x,alpha,beta)
     plot(x3,dens3,
-         main = TeX(paste("Prior Density of ", r'($\sigma$)', graph_num)),
-         xlab=TeX(paste(r'($\sigma$)', graph_num)),
-         ylab="Prior Density",
-         type="l")
+         main = TeX(paste("Prior Density of $\\sigma_{", graph_num, "}$")),
+         xlab = TeX(paste("$\\sigma_{", graph_num, "}$")),
+         ylab = "Prior Density",
+         type = "l")
   } else if (input$elicit_sigma_graph_type == 2){
     x3 = z0*sqrt(1/x)
     dens3 = (2/z0)*(x^(3/2))*dgamma(x, alpha, beta)
     plot(x3, dens3,
-         main = TeX(paste("Prior Density of ", r'($\sigma$)', graph_num, r'(\cdot z)')),
-         xlab = TeX(paste(r'($\sigma$)', graph_num, r'(\cdot z)', "(", prob_z, ")")),
+         main = TeX(paste("Prior Density of $\\sigma_{", graph_num, 
+                          '}\\cdot z_{t}, t = \\frac{1+\\gamma}{2}$')),
+         xlab = TeX(paste('$\\sigma_{', graph_num, 
+                          '} \\cdot z_{t}, t = \\frac{1+\\gamma}{2}$')),
+         #xlab = TeX(paste(r'($\sigma$)', graph_num, r'(\cdot z_{\frac{1}{\gamma + 2}})')),
          ylab = "Prior Density",
          type = "l")
   }

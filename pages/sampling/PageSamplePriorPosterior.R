@@ -118,6 +118,8 @@ page_postsample_new = div(
       
       actionButton(inputId = "submit_sample_post", label = "Submit Data"),
       
+      downloadButton(outputId = 'plot_post_mu', label = 'Download Plot'),
+      
       numericInput(inputId = "post_bigN",
                    label = 'Insert N, the monte carlo sample size',
                    value = 1000),
@@ -175,6 +177,10 @@ page_postsample_new = div(
         )),
       ),
       
+      numericInput(inputId = "post_graph_num",
+                   label = "The column of $\\mu$ used to generate the graph.",
+                   value = 1)
+      
     ),
     mainPanel(
       file_upload_example,
@@ -185,7 +191,16 @@ page_postsample_new = div(
       downloadButton("postsample_download_xi", "Download $\\Xi$"),
       #downloadButton("postsample_download_k_zeta", "Download $K(\\zeta)$"),
       p(""),
-      withSpinner(verbatimTextOutput("sample_post_computation"))
+      
+      tabPanel("Plots",
+        fluidRow(
+          splitLayout(
+            cellWidths = c("60%", "40%"), 
+                withSpinner(plotOutput("sample_post_graph")),
+                withSpinner(verbatimTextOutput("sample_post_computation"))
+          )
+        ),
+      ),
     ),
   )
 )
