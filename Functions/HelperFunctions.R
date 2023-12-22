@@ -113,3 +113,39 @@ average_vector_values = function(vector, num_average_pts = 3){
   
   return(new_vector)
 }
+
+seq_alt = function(values, delta){
+  # creates a sequence and includes the last value, even if it isn't captured
+  # by the original sequence.
+  min = floor(min(values))
+  max = ceiling(max(values))
+  grid = seq(min, max, by = delta)
+  if(!(max %in% grid) == TRUE){
+    grid = c(grid, max)
+  }
+  return(grid)
+}
+
+find_inverse_alt = function(matrix){
+  # issue with solve(...): doesn't ensure the function is positive definite.
+  # this ensures that it is.
+  x = eigen(matrix, symmetric = TRUE, only.values=FALSE)
+  Q = x$vectors
+  V_inv = diag(1/x$values)
+  B = Q%*%sqrt(V_inv)
+  inverse_matrix = B%*%t(B)
+  return(inverse_matrix)
+}
+
+divison_alt = function(num, denom){
+  # assumption: length(num) == length(denom)
+  x = c()
+  for(i in 1:length(num)){
+    if(denom[i] == 0){
+      x = c(x, NaN)
+    } else {
+      x = c(x, num[i]/denom[i])
+    }
+  }
+  return(x)
+}

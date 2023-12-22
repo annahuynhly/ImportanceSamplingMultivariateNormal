@@ -62,23 +62,7 @@ page_priorsample_new = div(
           )
         )),
         
-        #fluidRow(box(
-        #  width = 12,
-        #  splitLayout(
-        #    textInput(inputId = "mu_0_NEW",
-        #              label = 'Insert $\\mu_{0}$',
-        #              value = "12, 12, 12"),
-        #    textInput(inputId = "sigma_0_NEW",
-        #              label = 'Insert $\\sigma_{0}$',
-        #              value = "1.22, 1.22, 1.22"),
-        #  )
-        #)),
       ),
-      
-      selectInput(inputId = "prior_graph_hist", 
-                  label = 'Do you want to see the histogram of the samples', 
-                  choices = list("Yes" = "y", "No" = "n"), 
-                  selected = "n"),
       
       numericInput(inputId = "prior_graph_num",
                    label = "The column of $\\mu$ used to generate the graph.",
@@ -180,7 +164,7 @@ page_postsample_new = div(
                    value = 1),
       
       numericInput(inputId = "post_graph_delta",
-                   label = "$\\delta$, the meaningful difference.",
+                   label = "The meaningful difference (length of the bins)",
                    value = 0.05),
       
       sliderInput(inputId = "post_graph_smoother", 
@@ -215,38 +199,65 @@ page_postsample_new = div(
 # PORTION FOR GRAPH BUILDING                                   #
 ################################################################
 
-page_priorgraph = div(
+page_comparison_graphs = div(
   titlePanel("Plots for $\\mu$"), 
   sidebarLayout(
     sidebarPanel(
       width = 3,
-      numericInput(inputId = "mu_col", 
+      numericInput(inputId = "comparison_mu_col", 
                    label = 'The column of $\\mu$ used to generate the graph.',
                    value = 1),
-      sliderInput(
-        inputId = "graph_delta",
-        label = "The meaningful difference (length of the bins)",
-        min = 0.01, max = 1, value = 0.1,
+      
+      sliderInput(inputId = "comparison_graph_delta",
+                  label = "The meaningful difference (length of the bins)",
+                  min = 0.01, max = 1, value = 0.1),
+      
+      sliderInput(inputId = "comparison_smoother", 
+                  label = "Number of Average Points (Smoother)", 
+                  min = 1, max = 15, value = 3, step = 2),
+      
+      selectInput(inputId = "comparison_modify_which",
+                  label = 'Select line to modify',
+                  choices = list("Prior" = 'prior', "Posterior" = 'post',
+                                 "Relative belief ratio" = 'rbr'),
+                  selected = 'prior'), 
+      
+      conditionalPanel(
+        condition = "input.comparison_modify_which == 'prior'",
+        textInput(inputId = "comparison_prior_col",
+                  label = 'Input colour of the prior',
+                  value = "FF007F"), 
+        # NOTE: lty type not added yet.
+        selectInput(inputId = "comparison_prior_lty", 
+                    label = 'Select line type of the prior', 
+                    choices = list("0" = 0, "1" = 1, "2" = 2, 
+                                   "3" = 3, "4" = 4, "5" = 5, "6" = 6),
+                    selected = 2),
+      ),
+      conditionalPanel(
+        condition = "input.comparison_modify_which == 'post'",
+        textInput(inputId = "comparison_post_col",
+                  label = 'Input colour of the posterior',
+                  value = "FF00FF"), 
+        selectInput(inputId = "comparison_post_lty", 
+                    label = 'Select line type of the posterior', 
+                    choices = list("0" = 0, "1" = 1, "2" = 2, 
+                                   "3" = 3, "4" = 4, "5" = 5, "6" = 6),
+                    selected = 2),
+      ),
+      conditionalPanel(
+        condition = "input.comparison_modify_which == 'rbr'",
+        textInput(inputId = "comparison_rbr_col",
+                  label = 'Input colour of the relative belief ratio',
+                  value = "7F00FF"), 
+        selectInput(inputId = "comparison_rbr_lty", 
+                    label = 'Select line type of the relative belief ratio', 
+                    choices = list("0" = 0, "1" = 1, "2" = 2, 
+                                   "3" = 3, "4" = 4, "5" = 5, "6" = 6),
+                    selected = 2),
       ),
       
-      #numericInput(inputId = "graph_delta",
-      #             label = 'The meaningful difference (length of the bins).',
-      #             value = 0.1),
-      textInput(inputId = "prior_colour_hist",
-                label = 'Input the colour of the histogram',
-                value = "6699FF"
-      ), 
-      textInput(inputId = "prior_colour_line",
-                label = 'Input the colour of the line',
-                value = "FF6666"
-      ), 
-      selectInput(inputId = "prior_lty_type", 
-                  label = 'Select a line type', 
-                  choices = list("0" = 0, "1" = 1, "2" = 2, 
-                                 "3" = 3, "4" = 4, "5" = 5, "6" = 6),
-                  selected = 2
-      ),
-      sliderInput(inputId = "prior_transparency", 
+      sliderInput(inputId = "comparison_transparency", 
                   label = "Scale for colour transparency",
                   min = 0, max = 1, value = 0.2
       ), 
@@ -256,9 +267,8 @@ page_priorgraph = div(
       tabPanel("Plots",
         fluidRow(
           splitLayout(
-            cellWidths = c("33%", "33%"), 
-            withSpinner(plotOutput("sample_prior_graph")), 
-            withSpinner(plotOutput("sample_post_graph")),
+            cellWidths = c("50%", "50%"), 
+            withSpinner(plotOutput("sample_priorpost_graph")), 
             withSpinner(plotOutput("sample_rbr_graph"))
           )
         ),
@@ -274,8 +284,9 @@ page_priorgraph = div(
 page_sampling = div(
   titlePanel("Sampling"),
   tabsetPanel(type = "tabs",
-              tabPanel("MODIFIED Sampling from the Prior", page_priorsample_new),
-              tabPanel("MODIFIED Sampling from the Posterior", page_postsample_new),
+              tabPanel("Sampling from the Prior", page_priorsample_new),
+              tabPanel("Sampling from the Posterior", page_postsample_new),
+              tabPanel("Comparison Plots for Mu", page_comparison_graphs),
               #tabPanel("Sampling from the Prior", page_priorsample),
               #tabPanel("Sampling from the Posterior", page_posteriorsample),
               #tabPanel("Graphs", page_priorgraph),

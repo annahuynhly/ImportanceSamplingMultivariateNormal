@@ -42,46 +42,12 @@ onion = function(dimension){
   return(next_corr)
 }
 
-seq_alt = function(values, delta){
-  # creates a sequence and includes the last value, even if it isn't captured
-  # by the original sequence.
-  min = floor(min(values))
-  max = ceiling(max(values))
-  grid = seq(min, max, by = delta)
-  if(!(max %in% grid) == TRUE){
-    grid = c(grid, max)
-  }
-  return(grid)
-}
-
-find_inverse_alt = function(matrix){
-  # issue with solve(...): doesn't ensure the function is positive definite.
-  # this ensures that it is.
-  x = eigen(matrix, symmetric = TRUE, only.values=FALSE)
-  Q = x$vectors
-  V_inv = diag(1/x$values)
-  B = Q%*%sqrt(V_inv)
-  inverse_matrix = B%*%t(B)
-  return(inverse_matrix)
-}
-
-divison_alt = function(num, denom){
-  # assumption: length(num) == length(denom)
-  x = c()
-  for(i in 1:length(num)){
-    if(denom[i] == 0){
-      x = c(x, NaN)
-    } else {
-      x = c(x, num[i]/denom[i])
-    }
-  }
-  return(x)
-}
-
 ################################################################
 # MAIN FUNCTIONS                                               #
 ################################################################
 
+# this graph shouldn't be necessary; we don't need to draw samples since
+# we know the true distribution.
 sample_prior_new = function(N, alpha01, alpha02, mu0, lambda0){
   # a new way to sample the prior; this function name will be changed in the future.
   # N: refers to the monte carlo sample size.
@@ -117,121 +83,6 @@ prior_true_mu = function(gamma, alpha01, alpha02, m1, m2){
   return(mu)
 }
 
-sample_prior = function(alpha01, alpha02, mu_0, sigma_0){
-  # Let 1/delta_{i} ~ gamma(alpha01_{i}, alpha02_{i}) for i = 1, 2, .., p where p is the sample size.
-  # mu ~ N_{p}(mu_0, sigma_{0}^{2} * SIGMA) 
-  if(length(alpha01) != length(alpha02)){
-    return("Error: the vector for alpha_01 and beta_01 are of a different size.")
-  }
-  p = length(alpha01)
-  deltas = c() 
-  for(i in 1:p){
-    gam = rgamma(1, shape = alpha01[i], scale = alpha02[i]) 
-    deltas = c(deltas, gam)
-  }
-  # Making diag(delta_{1}, delta_{2}, ..., delta_{p})
-  diagtri = diag(p)*deltas
-  
-  # Obtain R using onion method
-  R = onion(p)
-  
-  # Find SIGMA
-  SIGMA = diagtri^{1/2} * R * diagtri^{1/2}
-  
-  # Generate normal rvs
-  z_vector = rnorm(n = p, mean = 0, sd = 1)
-  
-  # Finally generating mu
-  mu = mu_0 + sigma_0 * diag(SIGMA^{1/2}) * z_vector
-  
-  newlist = list("mu" = mu, "sigma" = diag(SIGMA), "R" = R)
-  
-  return(newlist)
-}
-
-sample_multiple_prior = function(n, alpha01, alpha02, mu_0, sigma_0){
-  mu_vectors = c()
-  sigma_vectors = c()
-  R_vectors = list() # recall, R is from the onion method
-  for(i in 1:n){
-    sample = sample_prior(alpha01, alpha02, mu_0, sigma_0)
-    mu_vectors = rbind(mu_vectors, sample$mu)
-    sigma_vectors = rbind(sigma_vectors, sample$sigma)
-    #print(sample$R) # debugging
-    R_vectors[[i]] = sample$R
-  }
-  newlist = list("mu" = mu_vectors, "sigma" = sigma_vectors, 
-                 "R" = R_vectors)
-  return(newlist)
-}
-
-#mu = rep(0, p) #temporary dummy data -> MAY REPLACE?
-#sigma = diag(p) # identity matrix, for now.
-# generating Y. May have an option where the user inputs Y themselves - ask?
-#Y = mvrnorm(n = n, mu = mu, Sigma = sigma)
-
-sample_post = function(alpha01, alpha02, Y = FALSE, N, mu_0, sigma_0){
-  if(length(alpha01) != length(alpha02)){
-    return("Error: the vector for alpha_01 and beta_01 are of a different size.")
-  }
-  p = length(alpha01)
-  if(is.numeric(Y) == TRUE){
-    n = nrow(Y)
-    if(n < (2*p)){
-      return("Error: the value of n (size of Y) is too small.")
-    }
-    Yprime = t(Y)
-    Ybar = rowMeans(Yprime)
-    In = matrix(t(rep(1, n))) # identity column
-    Ybar_t = matrix(Ybar,nrow=1, ncol = p) # transpose
-    S = (1/(n-1)) * t(Y - In%*%Ybar_t) %*% (Y - In%*%Ybar_t)
-  } else {
-    return("Error: no data given.")
-  }
-  
-  # getting the A(Y) formula
-  AY = (n-1)*S + n*(n * sigma_0^2 + 1)^(-1) * ((Ybar - mu_0) %*% t(Ybar - mu_0))
-  
-  # finding the inverse.
-  inverse_AY = find_inverse_alt(AY)
-  
-  zetas = rWishart(n = N, df = (n - p - 1), Sigma = inverse_AY)
-  
-  temp_mean = (mu_0/(sigma_0^{2}) + n * Ybar)/(1/sigma_0^{2}+n) 
-  mui_matrix = c()
-  SIGMA_i_matrices = list()
-  for(i in 1:N){
-    SIGMA_i = find_inverse_alt(zetas[,,i])
-    SIGMA_i_matrices[[i]] = SIGMA_i
-    temp_variance = ((1/sigma_0^{2}) + n)^{-1} * SIGMA_i
-    # need to do the rounding things again...
-    mu_i = mvrnorm(n = 1, mu = temp_mean, Sigma = temp_variance)
-    mui_matrix = rbind(matrix = mui_matrix, c(mu_i)) 
-  }
-  
-  # getting the k(SIGMA) function
-  K_Sigma_vect = c()
-  for(i in 1:N){
-    k_Sigma = 1
-    sigma_ii = diag(SIGMA_i_matrices[[i]])
-    #sigma_ii = diag(find_inverse_alt(zetas[,,i])) # getting the diagonals
-    for(i in 1:p){
-      prod = (sigma_ii[i])^(-alpha01[i] - (p+1)/2) * exp(-alpha02[i]/sigma_ii[i])
-      k_Sigma = k_Sigma * prod
-    }
-    K_Sigma_vect = c(K_Sigma_vect, k_Sigma)
-  }
-  
-  # test for h: let h(mu, Sigma) = mu_1 (first coordinate of vector mu)
-  #INh = sum(mui_matrix[, 1]*K_Sigma_vect)/sum(K_Sigma_vect)
-  
-  newlist = list("mu" = mui_matrix, "sigma" = SIGMA_i_matrices,
-                 "k_zeta" = K_Sigma_vect)
-  
-  return(newlist)
-}
-
-# below is incomplete
 sample_post_new = function(N, Y, gamma, alpha01, alpha02, m1, m2){
   data = sample_hyperparameters(gamma, alpha01, alpha02, m1, m2)
   mu0 = data$mu0
@@ -269,49 +120,39 @@ sample_post_new = function(N, Y, gamma, alpha01, alpha02, m1, m2){
   return(list("xi" = xi, "mu_xi" = mu_xi))
 }
 
-
-#N = 100
-#p = 3
-#n = 100
-#mu = rep(0, p) #temporary dummy data -> MAY REPLACE?
-#sigma = diag(p) # identity matrix, for now.
-## generating Y. May have an option where the user inputs Y themselves - ask?
-#Y = mvrnorm(n = n, mu = mu, Sigma = sigma)
-#alpha01 = c(2, 2, 2)
-#alpha02 = c(5, 5, 5)
-#m1 = c(1, 1, 1)
-#m2 = c(9, 9, 9)
-#gamma = 0.99
-#data = sample_post_new(N, Y, gamma, alpha01, alpha02, m1, m2)
-#data$xi[,,1]
-#data$xi[,,1:5]
-
-
-
-
-sample_rbr_mu = function(prior_mu, post_mu, delta){
-  if(ncol(prior_mu) != ncol(post_mu)){
-    return("Error: the number of columns for the prior mu and posterior 
-           mu are not equal.")
+sample_rbr_new = function(gamma, delta, alpha01, alpha02, m1, m2, mu_post){
+  
+  p = length(alpha01)
+  mu_prior = sample_hyperparameters(gamma, alpha01, alpha02, m1, m2)
+  mu_prior_matrix = c()
+  mu_post_matrix = c()
+  rbr_matrix = c()
+  grid_matrix = c()
+  
+  for(i in 1:p){
+    grid = seq_alt(mu_post[, i], delta)
+    
+    # mostly to obtain the midpoints used for the graph
+    post_plot = hist(mu_post[, i], breaks = grid, plot = FALSE)
+    new_grid = post_plot$mids 
+    grid_matrix = cbind(grid_matrix, new_grid)
+    mu_post_matrix = cbind(mu_post_matrix, post_plot$density)
+    
+    # getting the values from the prior to compare to the posterior
+    x1 = mu_prior$mu0[i]
+    x2 = sqrt(alpha01[i]/alpha02[i])
+    x3 = mu_prior$lambda0[i]
+    t_dist = dt(new_grid, df = 2 * alpha01[i])  
+    
+    mu_prior_matrix = cbind(mu_prior_matrix, x1 + x2 * x3 * t_dist)
+    
+    # obtaining the relative belief ratio
+    rbr_matrix = cbind(rbr_matrix, post_plot$density/mu_prior_matrix[,i])
   }
-  # note: delta is the length of the bins.
-  rbr = list()
-  rbr_sequence = list()
-  for(i in 1:ncol(prior_mu)){
-    # we first start by focusing on each individual column.
-    min_val = floor(min(prior_mu[,i], post_mu[,i]))
-    max_val = ceiling(max(prior_mu[,i], post_mu[,i]))
-    grid = seq(min_val, max_val, by = delta)
-    if(!(max_val %in% grid) == TRUE){
-      grid = c(grid, max)
-    }
-    prior_density = hist(prior_mu[,i], prob = TRUE, breaks = grid)
-    post_density = hist(post_mu[,i], prob = TRUE, breaks = grid)
-    rbr_density = divison_alt(prior_density$counts, post_density$counts)
-    rbr[[i]] = rbr_density
-    rbr_sequence[[i]] = prior_density$mids # can be prior or posterior
-  }
-  newlist = list("rbr" = rbr, "rbr_sequence" = rbr_sequence)
+  
+  newlist = list("grid" = grid_matrix, "prior_mu" = mu_prior_matrix, 
+                 "post_mu" = mu_post_matrix, "rbr_mu" = rbr_matrix)
+  
   return(newlist)
 }
 
@@ -332,7 +173,7 @@ mu_graph = function(mu, type = "prior", col_num,
   #title = TeX(paste(r'($\mu$)', "sample text for testing", sep = " "))
   title = TeX(paste("Graph of the", type, "of $\\mu_{", col_num, "}$"))
   
-  xlab_title = TeX(paste(r'($\mu$)', col_num, sep = " "))
+  xlab_title = TeX(paste("$\\mu_{", col_num, "}$", sep = ""))
   
   rgb_version = col2rgb(colour_choice[1])
   
@@ -357,197 +198,134 @@ mu_graph = function(mu, type = "prior", col_num,
   
 }
 
-# separate function needs to exist based on the type of what rbr is.
-rbr_mu_graph = function(mu, type = "rbr", col_num,
-                        grid_vals,
-                        colour_choice = c("blue", "blue"),
-                        lty_type = 2,
-                        transparency = 0.1){
-  mu_values = mu[[col_num]]
-  mu_values = unlist(mu_values)
-  grid = grid_vals[[col_num]]
-  grid = unlist(grid)
-  
-  title = TeX(paste("Graph of the", type, r'(of $\mu$)', col_num, sep = " "))
-  
-  xlab_title = TeX(paste(r'($\mu$)', col_num, sep = " "))
-  
-  rgb_version = col2rgb(colour_choice[1])
-  
-  hist_col = rgb(rgb_version[1]/255, rgb_version[2]/255, rgb_version[3]/255, 
-                 alpha = transparency)
-  
-  # Plotting
-  hist(mu_values, 
-       main = title, ylab = "Densities", xlab = xlab_title, 
-       col = hist_col, border = "#ffffff",
-       breaks = grid,
-       prob = TRUE)
-  lines(density(mu_values, na.rm = TRUE), lwd = 2, lty = lty_type, col = colour_choice[2])
-}
-  
-
-
-#rbr_mu_graph(mu = x$rbr, type = "rbr", 1,
-#                        grid_vals = x$rbr_sequence,
-#                       colour_choice = c("blue", "blue"),
-#                        lty_type = 2,
-#                        transparency = 0.1)
-
-
-# need to test below
-
-# double check why mu_0 and sigma_0 are vectors ere..?
-
-#test = sample_multiple_prior(n = 1000, 
-#                             alpha01 = x$alpha01, 
-#                             alpha02 = x$alpha02, 
-#                             mu_0 = x$mu0, 
-#                             sigma_0 = x$sigma0)
-
-#test$mu
-#test$mu[,1] # this is for mu 1
-#plot(density(test$mu[,1]))
-
-
-#test2 = sample_post(alpha01 = c(2, 2, 2), 
-#                    alpha02 = c(4, 4, 4), 
-#                    n = 100, N = 100, mu_0 = 0, sigma_0 = 1)
-# error with this code...
-#x = sample_rbr_mu(test$mu, test2$mu, 0.5)
-
-#delta = 0.5
-#min_val = floor(min(test$mu[,1], test2$mu[,1]))
-#max_val = ceiling(max(test$mu[,1], test2$mu[,1]))
-#grid = seq(min_val, max_val, by = delta)
-#if(!(max_val %in% grid) == TRUE){
-#  grid = c(grid, max)
-#}
-
-#prior_density = hist(test$mu[1,], prob = TRUE, breaks = grid)
-#post_density = hist(test2$mu[1,], prob = TRUE, breaks = grid)
-#prior_density$mids
-
-#x1 = divison_alt(prior_density$counts, post_density$counts)
-
-#v = matrix(, nrow = 100, ncol = 0) # empty matrix
-#cbind(v, rep(0, 100))
-
-#prior_mu_graph(test$mu, col_num = 1)
-
-################################################################
-# DISCARDED - MAY BE USED LATER                                #
-################################################################
-
-test_matrix_symmetry = function(matrix){
-  # Note: issue with the isSymmetric function where it doesn't count for
-  # past a certain decimal place.
-  ans = TRUE
-  for(i in 1:nrow(matrix)){
-    for(j in 1:ncol(matrix)){
-      if(matrix[i,j]!=matrix[j,i]){
-        ans = FALSE;break}
-    }
-  }
-  return(ans)
-}
-
-test_matrix_symmetry = function(matrix){all(matrix==t(matrix))}
-
-ensure_positive_definite = function(matrix){
-  i = 5 # start the iteration. 
-  # 5 is an arbitrary start, but if we start at i we will get the 0 matrix.
-  is_pos_def = TRUE
-  while(is_pos_def == TRUE){
-    test_matrix = round(matrix, i)
-    if(test_matrix_symmetry(test_matrix) == TRUE){
-      if(is.positive.definite(test_matrix) == TRUE){
-        i = i + 1
-      } else {
-        is_pos_def = FALSE
-      }
-    } else {
-      is_pof_def = FALSE
-    }
-  }
-  if(i == 1){
-    return("Error: matrix is not symmetric or positive definite at all.")
-  } else {
-    return(round(matrix, i-1))
-  }
-}
-
-# reason: we need 3 graphs due to the inconsistent endpoints
-prior_post_mu_graph = function(prior_mu,
-                               post_mu,
-                               col_num,
-                               delta,
-                               colour_hist = c("blue", "red"),
+mu_graph_comparison = function(grid, mu_prior, mu_post, col_num,
+                               smooth_num = 1,
+                               colour_choice = c("blue", "red"),
                                lty_type = 2,
                                transparency = 0.1){
-  post_mu_values = post_mu[,col_num]
-  prior_mu_values = prior_mu[,col_num]
-  # see latex support later for graphs - was able to for a paper.
-  title = paste("Graph of the Prior of mu", col_num, sep = " ")
-  xlab_title = paste("mu", col_num, sep = " ")
+  # note: assumes that we have the mu_prior and mu_post from the other
+  # function (sample_rbr_new)
   
-  prior_rgb_version = col2rgb(colour_hist[1])
-  post_rgb_version = col2rgb(colour_hist[2])
-  prior_hist_col = rgb(prior_rgb_version[1]/255, 
-                       prior_rgb_version[2]/255, 
-                       prior_rgb_version[3]/255, 
+  rgb_prior = col2rgb(colour_choice[1])
+  rgb_post = col2rgb(colour_choice[2])
+  
+  prior_area_col = rgb(rgb_prior[1]/255, rgb_prior[2]/255, rgb_prior[3]/255, 
                        alpha = transparency)
-  post_hist_col = rgb(post_rgb_version[1]/255, 
-                      post_rgb_version[2]/255, 
-                      post_rgb_version[3]/255, 
+  post_area_col = rgb(rgb_post[1]/255, rgb_post[2]/255, rgb_post[3]/255, 
                       alpha = transparency)
   
-  # getting the sequence values
-  min = min(floor(min(post_mu_values)), floor(min(prior_mu_values)))
-  max = max(ceiling(max(post_mu_values)), ceiling(max(prior_mu_values)))
-  grid = seq(min, max, by = delta)
-  if(!(max %in% grid) == TRUE){
-    grid = c(grid, max)
-  }
+  # makes a graph that compares the prior and the posterior.
+  max_val = max(c(max(mu_prior[,col_num]), max(mu_post[,col_num])))
+  min_val = min(c(min(mu_prior[,col_num]), min(mu_post[,col_num])))
   
-  # Plots of the Prior and the Posterior
-  prior_plot = hist(prior_mu_values, breaks = grid, prob = TRUE)
-  post_plot = hist(post_mu_values, breaks = grid, prob = TRUE)
-  plot(prior_plot, main = title, ylab = "Densities", xlab = xlab_title, 
-       col = prior_hist_col, border = "#ffffff")
-  plot(post_plot, add = T, col = post_hist_col, border = "#ffffff")
-  lines(density(prior_mu_values), lwd = 2, lty = lty_type, col = "black")
-  lines(density(post_mu_values), lwd = 2, lty = lty_type, col = "black")
+  # first plotting the prior
+  plot(grid[, col_num], 
+       mu_prior[, col_num],
+       type = "l", col = colour_choice[1],
+       ylim = c(min_val, max_val), 
+       main = TeX(paste("Graph of the Prior and Posterior of $\\mu_{", col_num, "}$")),
+       ylab = "Density",
+       xlab = TeX(paste("Value of $\\mu_{$", col_num, "}$")))
+  # second plotting the posterior
+  lines(grid[, col_num], 
+        average_vector_values(mu_post[, col_num], smooth_num),
+        type = "l", col = colour_choice[2])
+  
+  # adding the area under the graph plot
+  polygon(grid[, col_num], mu_prior[, col_num], col = prior_area_col, border = NA)
+  polygon(grid[, col_num], 
+          average_vector_values(mu_post[, col_num], smooth_num), 
+          col = post_area_col, border = NA)
 }
 
+# separate function needs to exist based on the type of what rbr is.
+rbr_mu_graph = function(grid, mu, type = "rbr", col_num,
+                        smooth_num = 1,
+                        colour_choice = "darkgreen",
+                        lty_type = 2,
+                        transparency = 0.1){
+  title = TeX(paste("Graph of the", type, "of $\\mu_{", col_num, "}$"))
+  
+  rbr_rgb = col2rgb(colour_choice)
+  
+  rbr_area_col = rgb(rbr_rgb[1]/255, rbr_rgb[2]/255, rbr_rgb[3]/255, 
+                    alpha = transparency)
+  
+  # first plotting the prior
+  plot(grid[, col_num], 
+       average_vector_values(mu[, col_num], smooth_num),
+       type = "l", col = colour_choice,
+       main = title, ylab = "Density",
+       xlab = TeX(paste("Value of $\\mu_{$", col_num, "}$")))
+  
+  # adding the area under the graph plot
+  polygon(grid[, col_num], 
+          average_vector_values(mu[, col_num], smooth_num),
+          col = rbr_area_col, border = NA)
+}
+
+#gamma = 0.05
+#alpha01 = c(3.149414, 3.149414, 3.149414)
+#alpha02 = c(5.748669, 5.748669, 5.748669)
+#m1 = c(2, 2, 2)
+#m2 = c(10, 10, 10)
+
+#mu0 = 0
+#lambda0 = 2.5
+#N = 1000
+
+#test = sample_prior_new(N, alpha01, alpha02, mu0, lambda0)
+
+
+#p = 3
+#mu = rep(0, p) 
+#sigma = diag(p) 
+#n = 100
+#Y = mvrnorm(n = n, mu = mu, Sigma = sigma)
+
+#test = sample_post_new(N, Y, gamma, alpha01, alpha02, m1, m2)
+
+#mu_values = test$mu_xi
+#delta = 0.05
+
+#test2 = sample_rbr_new(gamma, delta, alpha01, alpha02, m1, m2, mu_post = mu_values)
+
+#mu_graph_comparison(grid = test2$grid, 
+#                    mu_prior = test2$prior_mu, 
+#                    mu_post = test2$post_mu,  
+#                    col_num = 3,
+#                    colour_choice = c("blue", "red"),
+#                    lty_type = 2,
+#                    transparency = 0.1)
+
+#mu_plot = hist(mu_values, breaks = grid, prob = TRUE)
+
+#mu_plot$mids # note: this should be the grid
+#mu_plot$density
+
+# getting the values from the prior to compare to the posterior
+# should match the posterior values.
+#mu_prior = sample_hyperparameters(gamma, alpha01, alpha02, m1, m2)
+#mu_prior_dist = c()
+#for(i in 1:length(alpha01)){
+#  x1 = mu_prior$mu0[i]
+#  x2 = sqrt(alpha01[i]/alpha02[i])
+#  x3 = mu_prior$lambda0[i]
+#  t_dist = dt(mu_plot$mids, df = 2 * alpha01[i])  
+#  mu_prior_dist = cbind(mu_prior_dist, x1 + x2 * x3 * t_dist)
+#}
+
+
+# getting the relative belief ratio
+#rbr = mu_plot$density/mu_prior_dist[,1]
+#lines(mu_plot$mids, rbr)
 
 
 
-## TESTING!!!
-
-
-p = 3
-mu = rep(0, p) 
-sigma = diag(p) 
-n = 100
-Y = mvrnorm(n = n, mu = mu, Sigma = sigma)
-
-alpha01 = c(3.149414, 3.149414, 3.149414)
-alpha02 = c(5.748669, 5.748669, 5.748669)
-N = 1000
-mu_0 = 0
-sigma_0 = 2.5
-x = sample_post(alpha01, alpha02, Y, N, mu_0, sigma_0)
-
-example = mu_graph(mu = x$mu, type = "posterior", col_num = 1,
-         delta = 0.05, smooth_num = 3,
-         colour_choice = c("blue", "blue"),
-         lty_type = 2,
-         transparency = 0.1)
+#example = mu_graph(mu = x$mu, type = "posterior", col_num = 1,
+#         delta = 0.05, smooth_num = 3,
+#         colour_choice = c("blue", "blue"),
+#         lty_type = 2,
+#         transparency = 0.1)
 
 #lines(example$mids, c(example$density))
-
-
-
-
-

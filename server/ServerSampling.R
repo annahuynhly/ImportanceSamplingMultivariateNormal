@@ -71,7 +71,6 @@ output$sample_prior_computation_NEW = renderPrint({
   prior_sample_values_NEW()
 })
 
-
 output$sample_prior_computations_graph_NEW = renderPlot({
   if(input$priorsample_use_NEW == "n"){
     hyperpara = sample_hyperparameters(
@@ -104,26 +103,14 @@ output$sample_prior_computations_graph_NEW = renderPlot({
   xnew = mu0[col] + scale*x
   ynew = y/scale
   
-  if(input$prior_graph_hist == "y"){
-    hist(prior_sample_values_NEW(), prob = TRUE,
-         xlab = TeX(paste("Value of $\\mu_{", col, "}$")),
-         ylab = "Density", 
-         main = TeX(paste("Density plot of", r'($\mu$)', col)),
-         border = "#ffffff")
-    lines(xnew, ynew, lwd = 2, lty = 2)
-  } else {
-    plot(xnew, ynew, lwd = 2, type="l", 
-         xlab = TeX(paste("Value of $\\mu_{", col, "}$")),
-         ylab = "Density", 
-         main = TeX(paste("Density plot of $\\mu_{", col, "}$"))
-    )
-  }
+  plot(xnew, ynew, lwd = 2, type="l", 
+       xlab = TeX(paste("Value of $\\mu_{", col, "}$")),
+       ylab = "Density", 
+       main = TeX(paste("Density plot of $\\mu_{", col, "}$")))
   
 })
 
-
 # PRIOR CASE ###################################################
-# may delete; this doesn't seem to work
 
 prior_sample_values = eventReactive(input$submit_sample_prior, {
   if(input$priorsample_use == "y"){
@@ -153,12 +140,7 @@ prior_sample_computation_summary = eventReactive(input$submit_sample_prior, {
   )
 })
 
-output$sample_prior_computation = renderPrint({
-  prior_sample_computation_summary()
-})
-
 # CODE FOR DOWNLOADING PRIOR CASE ##############################
-# also may not work at this stage.
 
 download_prior_sample_mu = reactive({
   data = as.data.frame(prior_sample_values()$mu)
@@ -188,28 +170,6 @@ download_prior_sample_R = reactive({
   }
   data
 })
-
-# actually downloading the data.
-output$priorsample_download_mu = downloadHandler(
-  filename = "priorsample_mu.csv",
-  content = function(file) {
-    write.csv(download_prior_sample_mu(), file, row.names = FALSE)
-  }
-)
-
-output$priorsample_download_sigma = downloadHandler(
-  filename = "priorsample_sigma.csv",
-  content = function(file) {
-    write.csv(download_prior_sample_sigma(), file, row.names = FALSE)
-  }
-)
-
-output$priorsample_download_R = downloadHandler(
-  filename = "priorsample_R.csv",
-  content = function(file) {
-    write.csv(download_prior_sample_R(), file, row.names = FALSE)
-  }
-)
 
 # PRIOR CASE ###################################################
 
@@ -249,22 +209,13 @@ post_sample_values = reactive({
   } else if (input$postsample_use == 3){ # same as prior
     sample_post_new(N = input$post_bigN, 
                     Y = input_Y_values(), 
-                    gamma = input$virtual_uncertainty_post, 
+                    gamma = input$virtual_uncertainty_prior, 
                     alpha01 = alpha01_prior(),
                     alpha02 = alpha02_prior(),
                     m1 = m1_prior(), 
                     m2 = m2_prior()
     )
   }
-})
-
-# previous location for sample post computations.
-
-# plotting for the relative belief ratio
-rbr_sample_values = reactive({
-  sample_rbr_mu(prior_mu = prior_sample_values()$mu, 
-                post_mu = post_sample_values()$mu, 
-                delta = input$graph_delta)
 })
 
 # makes it so the output is delayed until the user submits the data
@@ -303,26 +254,63 @@ output$postsample_download_xi = downloadHandler(
     write.csv(post_sample_values()$xi, file, row.names = FALSE)
   }
 )
-output$postsample_download_k_zeta = downloadHandler(
-  filename = "postsample_k_zeta.csv",
-  content = function(file) {
-    write.csv(post_sample_values()$k_zeta, file, row.names = FALSE)
-  }
-)
 
 # GRAPHING FUNCTIONS ###########################################
 
-output$sample_prior_graph = renderPlot({
-  mu_graph(
-    mu = prior_sample_values()$mu, 
-    type = "Prior",
-    col_num = input$mu_col,
-    delta = input$graph_delta,
-    colour_choice = c(convert_to_hex(input$prior_colour_hist),
-                      convert_to_hex(input$prior_colour_line)),
-    lty_type = as.numeric(input$prior_lty_type),
-    transparency = input$prior_transparency)
+# plotting for the relative belief ratio
+rbr_sample_values = reactive({
+  if(input$postsample_use == 1){ # input values
+    # NOTE: may need to fix the first parameter based on other values
+    sample_rbr_new(gamma = input$virtual_uncertainty_post, 
+                   delta = input$comparison_graph_delta, 
+                   alpha01 = alpha01_post(), 
+                   alpha02 = alpha02_post(), 
+                   m1 = m1_post(), 
+                   m2 = m2_post(),
+                   mu_post = post_sample_values()$mu_xi)
+  } else if (input$postsample_use == 2){ # same as elicit
+    sample_rbr_new(gamma = input$virtual_uncertainty_post, 
+                   delta = input$comparison_graph_delta, 
+                   alpha01 = prior_elicitation_values()$alpha01, 
+                   alpha02 = prior_elicitation_values()$alpha02,
+                   m1 = m1_list(), 
+                   m2 = m2_list(),
+                   mu_post = post_sample_values()$mu_xi)
+  } else if (input$postsample_use == 3){ # same as prior
+    sample_rbr_new(gamma = input$virtual_uncertainty_prior, 
+                   delta = input$comparison_graph_delta, 
+                   alpha01 = alpha01_prior(),
+                   alpha02 = alpha02_prior(),
+                   m1 = m1_prior(), 
+                   m2 = m2_prior(),
+                   mu_post = post_sample_values()$mu_xi)
+  }
 })
+
+output$sample_priorpost_graph = renderPlot({
+  mu_graph_comparison(grid = rbr_sample_values()$grid, 
+                      mu_prior = rbr_sample_values()$prior_mu, 
+                      mu_post = rbr_sample_values()$post_mu, 
+                      col_num = input$comparison_mu_col,
+                      smooth_num = input$comparison_smoother,
+                      colour_choice = c(convert_to_hex(input$comparison_prior_col), 
+                                       convert_to_hex(input$comparison_post_col)),
+                      lty_type = 2, # hardcoded for now; edit later
+                      transparency = 0 #input$comparison_transparency
+  )
+})
+
+output$sample_rbr_graph = renderPlot({
+  rbr_mu_graph(grid = rbr_sample_values()$grid, 
+               mu = rbr_sample_values()$rbr_mu, 
+               type = "relative belief ratio", 
+               smooth_num = input$comparison_smoother,
+               col_num = input$comparison_mu_col,
+               colour_choice = convert_to_hex(input$comparison_rbr_col),
+               lty_type = as.numeric(input$comparison_rbr_lty),
+               transparency = input$comparison_transparency)
+})
+
 
 # rename this..
 the_sample_post_graph = eventReactive(input$submit_sample_post, {
@@ -352,18 +340,6 @@ the_sample_post_graph = eventReactive(input$submit_sample_post, {
 # this was modified
 output$sample_post_graph = renderPlot({
   the_sample_post_graph()
-})
-
-output$sample_rbr_graph = renderPlot({
-  rbr_mu_graph(
-    mu = rbr_sample_values()$rbr, 
-    type = "RBR",
-    col_num = input$mu_col,
-    grid_vals = rbr_sample_values()$rbr_sequence,
-    colour_choice = c(convert_to_hex(input$prior_colour_hist),
-                      convert_to_hex(input$prior_colour_line)),
-    lty_type = as.numeric(input$prior_lty_type),
-    transparency = input$prior_transparency)
 })
 
 ## the new download is below
