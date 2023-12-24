@@ -86,7 +86,7 @@ prior_true_mu = function(gamma, alpha01, alpha02, m1, m2){
 sample_post_new = function(N, Y, gamma, alpha01, alpha02, m1, m2){
   data = sample_hyperparameters(gamma, alpha01, alpha02, m1, m2)
   mu0 = data$mu0
-  lambda0 = data$lambda0
+  lambda0 = max(data$lambda0)
   # replace the new name later; this is to distinguish between the earlier version.
   if(length(alpha01) != length(alpha02)){
     # may want to turn into a helper function for readability later on?
@@ -109,6 +109,7 @@ sample_post_new = function(N, Y, gamma, alpha01, alpha02, m1, m2){
   } else {
     return("Error: no data given.")
   }
+  
   # instead of using solve, may need to move to an alt version (see helper functions)
   Sigma_Y = find_inverse_alt((S + n/(1 + n * lambda0^2) * (rowMeans(t(Y)) - mu0) %*% t(rowMeans(t(Y)) - mu0)))
   mu_Y = ((n + 1/lambda0^2)^-1) * (mu0/lambda0^2 + n * rowMeans(t(Y)))
@@ -201,7 +202,7 @@ mu_graph = function(mu, type = "prior", col_num,
 mu_graph_comparison = function(grid, mu_prior, mu_post, col_num,
                                smooth_num = 1,
                                colour_choice = c("blue", "red"),
-                               lty_type = 2,
+                               lty_type = c(2, 2),
                                transparency = 0.1){
   # note: assumes that we have the mu_prior and mu_post from the other
   # function (sample_rbr_new)
@@ -221,7 +222,9 @@ mu_graph_comparison = function(grid, mu_prior, mu_post, col_num,
   # first plotting the prior
   plot(grid[, col_num], 
        mu_prior[, col_num],
-       type = "l", col = colour_choice[1],
+       type = "l", 
+       lty = lty_type[1],
+       col = colour_choice[1],
        ylim = c(min_val, max_val), 
        main = TeX(paste("Graph of the Prior and Posterior of $\\mu_{", col_num, "}$")),
        ylab = "Density",
@@ -229,10 +232,13 @@ mu_graph_comparison = function(grid, mu_prior, mu_post, col_num,
   # second plotting the posterior
   lines(grid[, col_num], 
         average_vector_values(mu_post[, col_num], smooth_num),
-        type = "l", col = colour_choice[2])
+        type = "l", col = colour_choice[2],
+        lty = lty_type[2])
   
   # adding the area under the graph plot
-  polygon(grid[, col_num], mu_prior[, col_num], col = prior_area_col, border = NA)
+  #polygon(grid[, col_num], 
+  #        force_bounds_0(mu_prior[, col_num]), 
+  #        col = prior_area_col, border = NA)
   polygon(grid[, col_num], 
           average_vector_values(mu_post[, col_num], smooth_num), 
           col = post_area_col, border = NA)
@@ -254,7 +260,9 @@ rbr_mu_graph = function(grid, mu, type = "rbr", col_num,
   # first plotting the prior
   plot(grid[, col_num], 
        average_vector_values(mu[, col_num], smooth_num),
-       type = "l", col = colour_choice,
+       type = "l", 
+       lty = lty_type,
+       col = colour_choice,
        main = title, ylab = "Density",
        xlab = TeX(paste("Value of $\\mu_{$", col_num, "}$")))
   

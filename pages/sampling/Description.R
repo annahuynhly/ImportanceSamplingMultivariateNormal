@@ -3,8 +3,12 @@
 ################################################################
 
 file_upload_example = div(
-  p("When uploading a .csv file, the file must have a header. Each column is associated with the values of
-    $Y_{i}$."),
+  p("At the moment, this website exclusively accepts .csv files with a specific structure.  
+    Ensure that your file includes a header, where each column corresponds to a distinct 
+    variable:"),
+  br(),
+  p("Y = (Y1, Y2, Y3, ..., YN)"),
+  br(),
   p("You can download an example below of an example for the format:"),
 )
 

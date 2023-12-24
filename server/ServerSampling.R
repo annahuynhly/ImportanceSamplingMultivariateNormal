@@ -33,6 +33,15 @@ output$sample_post_example_file = downloadHandler(
   }
 )
 
+observeEvent(input$post_download_info, {
+  # Show a modal when the button is pressed
+  shinyalert(html = TRUE, text = tagList(
+    file_upload_example,
+    br(),
+    downloadButton(outputId = "sample_post_example_file", label = "Download Sample"),
+  ))
+})
+
 # PRIOR CASE (MODIFIED) ########################################
 
 prior_sample_values_NEW = eventReactive(input$submit_sample_prior_NEW, {
@@ -293,10 +302,11 @@ output$sample_priorpost_graph = renderPlot({
                       mu_post = rbr_sample_values()$post_mu, 
                       col_num = input$comparison_mu_col,
                       smooth_num = input$comparison_smoother,
-                      colour_choice = c(convert_to_hex(input$comparison_prior_col), 
-                                       convert_to_hex(input$comparison_post_col)),
-                      lty_type = 2, # hardcoded for now; edit later
-                      transparency = 0 #input$comparison_transparency
+                      colour_choice = c(input$comparison_prior_col, 
+                                        input$comparison_post_col),
+                      lty_type = c(as.numeric(input$comparison_prior_lty), 
+                                   as.numeric(input$comparison_post_lty)), 
+                      transparency = input$comparison_transparency
   )
 })
 
@@ -306,7 +316,7 @@ output$sample_rbr_graph = renderPlot({
                type = "relative belief ratio", 
                smooth_num = input$comparison_smoother,
                col_num = input$comparison_mu_col,
-               colour_choice = convert_to_hex(input$comparison_rbr_col),
+               colour_choice = input$comparison_rbr_col,
                lty_type = as.numeric(input$comparison_rbr_lty),
                transparency = input$comparison_transparency)
 })
@@ -320,19 +330,10 @@ the_sample_post_graph = eventReactive(input$submit_sample_post, {
     col_num = input$post_graph_num,
     delta = input$post_graph_delta,
     smooth_num = input$post_graph_smoother,
-    colour_choice = c("blue", "blue"),
+    colour_choice = c(input$post_line_col, 
+                      input$post_hist_col),
     lty_type = 2,
-    transparency = 0.1)
-  
-  #mu_graph(
-  #  mu = post_sample_values()$mu_xi, 
-  #  type = "Posterior",
-  #  col_num = 1, #input$post_graph_num,
-  #  delta = 0.99, #input$graph_delta,
-  #  colour_choice = c(convert_to_hex(input$prior_colour_hist),
-  #                    convert_to_hex(input$prior_colour_line)),
-  #  lty_type = as.numeric(input$prior_lty_type),
-  #  transparency = input$prior_transparency)
+    transparency = input$post_transparency)
 })
 
 
@@ -407,10 +408,12 @@ sample_post_computations_graph_DOWNLOAD = function(){
     mu = post_sample_values()$mu_xi, 
     type = "Posterior",
     col_num = input$post_graph_num,
-    delta = 0.05, #input$graph_delta,
-    colour_choice = c("blue", "blue"),
+    delta = input$post_graph_delta,
+    smooth_num = input$post_graph_smoother,
+    colour_choice = c(input$post_line_col, 
+                      input$post_hist_col),
     lty_type = 2,
-    transparency = 0.1)
+    transparency = input$post_transparency)
 }
 
 output$plot_post_mu = downloadHandler(
@@ -424,8 +427,39 @@ output$plot_post_mu = downloadHandler(
 
 
 
+output$comparison_download_plot = downloadHandler(
+  filename = "Comparison Plot.png",
+  content = function(file){
+    png(file)
+    mu_graph_comparison(grid = rbr_sample_values()$grid, 
+                        mu_prior = rbr_sample_values()$prior_mu, 
+                        mu_post = rbr_sample_values()$post_mu, 
+                        col_num = input$comparison_mu_col,
+                        smooth_num = input$comparison_smoother,
+                        colour_choice = c(input$comparison_prior_col, 
+                                          input$comparison_post_col),
+                        lty_type = c(as.numeric(input$comparison_prior_lty), 
+                                     as.numeric(input$comparison_post_lty)), 
+                        transparency = input$comparison_transparency)
+    dev.off()
+  }
+)
 
-
+output$rbr_download_plot = downloadHandler(
+  filename = "RBR Plot.png",
+  content = function(file){
+    png(file)
+    rbr_mu_graph(grid = rbr_sample_values()$grid, 
+                 mu = rbr_sample_values()$rbr_mu, 
+                 type = "relative belief ratio", 
+                 smooth_num = input$comparison_smoother,
+                 col_num = input$comparison_mu_col,
+                 colour_choice = input$comparison_rbr_col,
+                 lty_type = as.numeric(input$comparison_rbr_lty),
+                 transparency = input$comparison_transparency)
+    dev.off()
+  }
+)
 
 
 

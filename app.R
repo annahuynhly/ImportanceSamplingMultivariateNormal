@@ -8,6 +8,9 @@ library(shinycssloaders) # for loading screens
 library(latex2exp) # for latex within graphs
 library(shinydashboard)
 library(shinyanimate)
+library(shinyalert)
+library(colourpicker)
+library(shinydisconnect)
 
 # For the functions
 library(expm) # used for the onion method 
@@ -56,6 +59,11 @@ ui = navbarPage(title = "Importance Sampling for Multivariate Normal Calculation
 ################################################################
 
 server = function(input, output, session) {
+  
+  observeEvent(input$disconnect, {
+    session$close()
+  })
+  
   # convert the inputs into vectors to be used for computations
   source(file.path("server", "ServerPriorElicitation.R"),  local = TRUE)$value
   source(file.path("server", "ServerSampling.R"),  local = TRUE)$value

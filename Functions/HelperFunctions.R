@@ -149,3 +149,10 @@ divison_alt = function(num, denom){
   }
   return(x)
 }
+
+force_bounds_0 = function(v){
+  # idea: force the first and last values of a vector to be zero
+  # needs to be moved
+  v = v[2:(length(v)-1)]
+  v = c(0, v, 0)
+}

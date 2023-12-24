@@ -11,7 +11,7 @@ page_priorsample_new = div(
       
       actionButton(inputId = "submit_sample_prior_NEW", label = "Submit Data"),
       
-      downloadButton(outputId = 'plot_prior_mu', label = 'Download Plot'),
+      downloadButton(outputId = 'plot_prior_mu', label = 'Plot'),
       
       numericInput(inputId = "prior_bigN_NEW",
                    label = 'Insert N, the monte carlo sample size.',
@@ -23,8 +23,8 @@ page_priorsample_new = div(
                   selected = "n"),
       
       conditionalPanel(
-        condition = "input.priorsample_use_NEW == 'yes'",
-        p("The values from the previous section will be used!")
+        condition = "input.priorsample_use_NEW == 'y'",
+        p("Values from the previous section will be used!")
       ),
       
       conditionalPanel(
@@ -100,8 +100,15 @@ page_postsample_new = div(
                 multiple = FALSE,
                 accept = c("text/csv", "text/comma-separated-values,text/plain", ".csv")),
       
-      actionButton(inputId = "submit_sample_post", label = "Submit Data"),
       
+      fluidRow(box(
+        width = 12,
+        splitLayout(
+          actionButton(inputId = "submit_sample_post", label = "Submit Data"),
+          actionButton(inputId = "post_download_info", label = "How to Submit")
+        )
+      )),
+    
       numericInput(inputId = "post_bigN",
                    label = 'Insert N, the monte carlo sample size',
                    value = 1000),
@@ -115,12 +122,12 @@ page_postsample_new = div(
       
       conditionalPanel(
         condition = "input.postsample_use == 2",
-        p("The values from the elicitation of the prior will be used!")
+        p("Values from the elicitation of the prior will be used!")
       ),
       
       conditionalPanel(
         condition = "input.postsample_use == 3",
-        p("The values inputted in the sampling of the prior will be used!")
+        p("Values inputted in the sampling of the prior will be used!")
       ),
       
       conditionalPanel(
@@ -159,38 +166,50 @@ page_postsample_new = div(
         )),
       ),
       
-      numericInput(inputId = "post_graph_num",
-                   label = "The column of $\\mu$ used to generate the graph.",
-                   value = 1),
-      
-      numericInput(inputId = "post_graph_delta",
-                   label = "The meaningful difference (length of the bins)",
-                   value = 0.05),
-      
-      sliderInput(inputId = "post_graph_smoother", 
-                  label = "Number of Average Points (Smoother)", 
-                  min = 1, max = 15, value = 3, step = 2)
       
     ),
     mainPanel(
-      file_upload_example,
-      downloadButton(outputId = "sample_post_example_file", label = "Download Sample"),
-      p("The values shown display limited information, but can be downloaded. (Please 
-        press the buttons after you submit, or nothing will load.)"),
-      downloadButton(outputId = 'plot_post_mu', label = 'Download Plot'),
-      downloadButton(outputId = "postsample_download_mu", label = "Download $\\mu$"),
-      downloadButton(outputId = "postsample_download_xi", label = "Download $\\Xi$"),
-      p(""),
-      
-      tabPanel("Plots",
-        fluidRow(
-          splitLayout(
-            cellWidths = c("60%", "40%"), 
-                withSpinner(plotOutput("sample_post_graph")),
-                withSpinner(verbatimTextOutput("sample_post_computation"))
-          )
+      downloadButton(outputId = 'plot_post_mu', label = 'Plot'),
+      downloadButton(outputId = "postsample_download_mu", label = "$\\mu$"),
+      downloadButton(outputId = "postsample_download_xi", label = "$\\Xi$"),
+      withSpinner(plotOutput("sample_post_graph")),
+
+      fluidRow(
+        column(4, 
+               numericInput(inputId = "post_graph_num",
+                            label = "The column of $\\mu$ to generate the graph.",
+                            value = 1),
         ),
+        column(4, 
+               numericInput(inputId = "post_graph_delta",
+                            label = "Length of the bins)",
+                            value = 0.05),
+        ),
+        column(4, 
+               sliderInput(inputId = "post_graph_smoother", 
+                           label = "Number of Average Points (Smoother)", 
+                           min = 1, max = 15, value = 3, step = 2)
+        )
       ),
+      
+      fluidRow(
+        column(4, 
+               colourInput(inputId = "post_line_col",
+                           label = 'Input colour of the line plot',
+                           value = "#4287f5"), 
+        ),
+        column(4, 
+               colourInput(inputId = "post_hist_col",
+                           label = 'Input colour of the histogram',
+                           value = "#4287f5"), 
+        ),
+        column(4, 
+               sliderInput(inputId = "post_transparency", 
+                           label = "Scale for colour transparency",
+                           min = 0, max = 1, value = 0.2), 
+        )
+      ),
+      
     ),
   )
 )
@@ -204,17 +223,16 @@ page_comparison_graphs = div(
   sidebarLayout(
     sidebarPanel(
       width = 3,
+      
+      downloadButton(outputId = 'comparison_download_plot', 
+                     label = 'Prior/Posterior Plot'),
+      
+      downloadButton(outputId = 'rbr_download_plot', 
+                     label = 'RBR Plot'),
+      
       numericInput(inputId = "comparison_mu_col", 
-                   label = 'The column of $\\mu$ used to generate the graph.',
+                   label = 'The column of $\\mu$ to generate the graph.',
                    value = 1),
-      
-      sliderInput(inputId = "comparison_graph_delta",
-                  label = "The meaningful difference (length of the bins)",
-                  min = 0.01, max = 1, value = 0.1),
-      
-      sliderInput(inputId = "comparison_smoother", 
-                  label = "Number of Average Points (Smoother)", 
-                  min = 1, max = 15, value = 3, step = 2),
       
       selectInput(inputId = "comparison_modify_which",
                   label = 'Select line to modify',
@@ -224,9 +242,10 @@ page_comparison_graphs = div(
       
       conditionalPanel(
         condition = "input.comparison_modify_which == 'prior'",
-        textInput(inputId = "comparison_prior_col",
-                  label = 'Input colour of the prior',
-                  value = "FF007F"), 
+        
+        colourInput(inputId = "comparison_prior_col",
+                    label = 'Input colour of the prior',
+                    value = "FF007F"),
         # NOTE: lty type not added yet.
         selectInput(inputId = "comparison_prior_lty", 
                     label = 'Select line type of the prior', 
@@ -236,9 +255,9 @@ page_comparison_graphs = div(
       ),
       conditionalPanel(
         condition = "input.comparison_modify_which == 'post'",
-        textInput(inputId = "comparison_post_col",
-                  label = 'Input colour of the posterior',
-                  value = "FF00FF"), 
+        colourInput(inputId = "comparison_post_col",
+                    label = 'Input colour of the posterior',
+                    value = "FF00FF"), 
         selectInput(inputId = "comparison_post_lty", 
                     label = 'Select line type of the posterior', 
                     choices = list("0" = 0, "1" = 1, "2" = 2, 
@@ -247,20 +266,15 @@ page_comparison_graphs = div(
       ),
       conditionalPanel(
         condition = "input.comparison_modify_which == 'rbr'",
-        textInput(inputId = "comparison_rbr_col",
-                  label = 'Input colour of the relative belief ratio',
-                  value = "7F00FF"), 
+        colourInput(inputId = "comparison_rbr_col",
+                    label = 'Input colour of the relative belief ratio',
+                    value = "7F00FF"), 
         selectInput(inputId = "comparison_rbr_lty", 
                     label = 'Select line type of the relative belief ratio', 
                     choices = list("0" = 0, "1" = 1, "2" = 2, 
                                    "3" = 3, "4" = 4, "5" = 5, "6" = 6),
                     selected = 2),
       ),
-      
-      sliderInput(inputId = "comparison_transparency", 
-                  label = "Scale for colour transparency",
-                  min = 0, max = 1, value = 0.2
-      ), 
       
     ),
     mainPanel(
@@ -273,6 +287,25 @@ page_comparison_graphs = div(
           )
         ),
       ),
+      
+      fluidRow(
+        column(4, 
+               sliderInput(inputId = "comparison_graph_delta",
+                           label = "Length of the bins",
+                           min = 0.01, max = 1, value = 0.1),
+        ),
+        column(4, 
+               sliderInput(inputId = "comparison_smoother", 
+                           label = "Number of Average Points (Smoother)", 
+                           min = 1, max = 15, value = 3, step = 2),
+        ),
+        column(4, 
+               sliderInput(inputId = "comparison_transparency", 
+                           label = "Scale for colour transparency",
+                           min = 0, max = 1, value = 0.2), 
+        )
+      ),
+      
     ),
   ),
 )
