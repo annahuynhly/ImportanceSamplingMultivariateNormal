@@ -65,7 +65,7 @@ page_priorsample_new = div(
       ),
       
       numericInput(inputId = "prior_graph_num",
-                   label = "The column of $\\mu$ used to generate the graph.",
+                   label = "The column of $\\mu$ used for the graph.",
                    value = 1)
       
     ),
@@ -100,6 +100,7 @@ page_postsample_new = div(
                 multiple = FALSE,
                 accept = c("text/csv", "text/comma-separated-values,text/plain", ".csv")),
       
+      p("Note: you will need to resubmit if you make any changes with the inputs below."),
       
       fluidRow(box(
         width = 12,
@@ -177,7 +178,7 @@ page_postsample_new = div(
       fluidRow(
         column(4, 
                numericInput(inputId = "post_graph_num",
-                            label = "The column of $\\mu$ to generate the graph.",
+                            label = "The column of $\\mu$ for the graph.",
                             value = 1),
         ),
         column(4, 
@@ -187,7 +188,7 @@ page_postsample_new = div(
         ),
         column(4, 
                sliderInput(inputId = "post_graph_smoother", 
-                           label = "Number of Average Points (Smoother)", 
+                           label = "# of Average Points (Smoother)", 
                            min = 1, max = 15, value = 3, step = 2)
         )
       ),
@@ -231,7 +232,7 @@ page_comparison_graphs = div(
                      label = 'RBR Plot'),
       
       numericInput(inputId = "comparison_mu_col", 
-                   label = 'The column of $\\mu$ to generate the graph.',
+                   label = 'The column of $\\mu$ for the graph.',
                    value = 1),
       
       selectInput(inputId = "comparison_modify_which",
@@ -296,7 +297,7 @@ page_comparison_graphs = div(
         ),
         column(4, 
                sliderInput(inputId = "comparison_smoother", 
-                           label = "Number of Average Points (Smoother)", 
+                           label = "# of Average Points (Smoother)", 
                            min = 1, max = 15, value = 3, step = 2),
         ),
         column(4, 
