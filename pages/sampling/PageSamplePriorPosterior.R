@@ -1,4 +1,92 @@
 ################################################################
+<<<<<<< HEAD
+=======
+# SAMPLING FROM THE PRIOR                                      #
+################################################################
+
+page_priorsample_new = div(
+  # note: this is a new way to sample. may need to replace the other page.
+  titlePanel("Sampling from the Prior (MODIFIED)"),
+  sidebarLayout(
+    sidebarPanel(
+      width = 3,
+      
+      actionButton(inputId = "submit_sample_prior_NEW", label = "Submit Data"),
+      
+      downloadButton(outputId = 'plot_prior_mu', label = 'Plot'),
+      
+      numericInput(inputId = "prior_bigN_NEW",
+                   label = 'Insert N, the monte carlo sample size.',
+                   value = 100),
+      
+      selectInput(inputId = "priorsample_use_NEW", 
+                  label = 'Do you want to use the values from the Prior Elicitation calculations?', 
+                  choices = list("Yes" = "y", "No" = "n"), 
+                  selected = "n"),
+      
+      conditionalPanel(
+        condition = "input.priorsample_use_NEW == 'y'",
+        p("Values from the previous section will be used!")
+      ),
+      
+      conditionalPanel(
+        condition = "input.priorsample_use_NEW == 'n'",
+        
+        numericInput(inputId = "virtual_uncertainty_prior",
+                     label = 'Insert the virtual uncertainty, $\\gamma$.',
+                     value = 0.99),
+        
+        fluidRow(box(
+          width = 12,
+          splitLayout(
+            textInput(
+              inputId = "alpha01_prior",
+              label = "$\\alpha_{011}, ..., \\alpha_{01p}$",
+              value = "3.15, 3.15, 3.15"),
+            textInput(
+              inputId = "alpha02_prior",
+              label = "$\\alpha_{021}, ..., \\alpha_{02p}$",
+              value = "5.75, 5.75, 5.75"),
+          )
+        )),
+        
+        fluidRow(box(
+          width = 12,
+          splitLayout(
+            textInput(
+              inputId = "m1_prior",
+              label = "$m_{11}, m_{12}, ..., m_{1p}$",
+              value = "-5,-5,-5"),
+            textInput(
+              inputId = "m2_prior",
+              label = "$m_{21}, m_{22}, ..., m_{2p}$",
+              value = "5,5,5"),
+          )
+        )),
+        
+      ),
+      
+      numericInput(inputId = "prior_graph_num",
+                   label = "The column of $\\mu$ used for the graph.",
+                   value = 1)
+      
+    ),
+    mainPanel(
+      withSpinner(plotOutput(outputId = "sample_prior_computations_graph_NEW")), 
+      #withSpinner(verbatimTextOutput("sample_prior_computation_NEW"))
+      #fluidRow(
+      #  splitLayout(
+      #    cellWidths = c("50%", "50%"), 
+      #    withSpinner(plotOutput(outputId = "sample_prior_computations_graph_NEW")), 
+      #    withSpinner(verbatimTextOutput("sample_prior_computation_NEW"))
+      #  ),
+      #)
+    ),
+  )
+)
+
+################################################################
+>>>>>>> a5d18e6ec4ea413a0b9721bd67b9eb3cc77677ec
 # USING IMPORTANCE SAMPLING FOR THE POSTERIOR                  #
 ################################################################
 
@@ -15,6 +103,7 @@ page_postsample_new = div(
                 multiple = FALSE,
                 accept = c("text/csv", "text/comma-separated-values,text/plain", ".csv")),
       
+      p("Note: you will need to resubmit if you make any changes with the inputs below."),
       
       fluidRow(box(
         width = 12,
@@ -94,7 +183,7 @@ page_postsample_new = div(
       fluidRow(
         column(4, 
                numericInput(inputId = "post_graph_num",
-                            label = "The column of $\\mu$ to generate the graph.",
+                            label = "The column of $\\mu$ for the graph.",
                             value = 1),
         ),
         column(4, 
@@ -104,7 +193,7 @@ page_postsample_new = div(
         ),
         column(4, 
                sliderInput(inputId = "post_graph_smoother", 
-                           label = "Number of Average Points (Smoother)", 
+                           label = "# of Average Points (Smoother)", 
                            min = 1, max = 15, value = 3, step = 2)
         )
       ),
@@ -148,7 +237,7 @@ page_comparison_graphs = div(
                      label = 'RBR Plot'),
       
       numericInput(inputId = "comparison_mu_col", 
-                   label = 'The column of $\\mu$ to generate the graph.',
+                   label = 'The column of $\\mu$ for the graph.',
                    value = 1),
       
       selectInput(inputId = "comparison_modify_which",
@@ -213,7 +302,7 @@ page_comparison_graphs = div(
         ),
         column(4, 
                sliderInput(inputId = "comparison_smoother", 
-                           label = "Number of Average Points (Smoother)", 
+                           label = "# of Average Points (Smoother)", 
                            min = 1, max = 15, value = 3, step = 2),
         ),
         column(4, 
