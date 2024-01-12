@@ -2,15 +2,107 @@
 # ELICITING FROM THE PRIOR                                     #
 ################################################################
 
-elicit_prior = function(gamma, m1, m2, s1, s2, alphaup_vect, alphalow_vect){
+elicit_prior_sigma_function = function(p, gamma, s1, s2, upper_bd, lower_bd){
+  # p: the number of dimensions (user needs to manually insert)
   # gamma: probability corresponding to virtual certainty
-  # alphaup: bounds on alpha in the gamma_rate(alpha, beta) dist.
+  # s1: defined in the paper lol
+  # s2: defined in the paper lol
+  # upper_bd: lower bound of the iteration for alpha0i
+  # lower_bd: upper bound of the iteration for alpha0i
   
-  if(length(m1) == length(m2)){
-    p = length(m1)
-  } else {
-    return("Error: length of m1, m2 are not equal.")
+  vectors_of_interest = list(s1, s2, upper_bd, lower_bd)
+  for(i in vectors_of_interest){
+    if(length(i) != p){
+      return("Error: there is a vector that doesn't have length p.")
+    }
   }
+  
+  gam = (1+gamma)/2
+  z0 = qnorm(gam,0,1)
+  c1 = (z0/s1)**2
+  c2 = (z0/s2)**2
+  
+  alpha01 = numeric()
+  alpha02 = numeric()
+  
+  for(j in 1:p){
+    # iterate until prob content of s1<= sigma*z0 <= s2 is within eps of p 
+    eps = .0001
+    maxits = 100
+    alphalow = lower_bd[j]
+    alphaup = upper_bd[j]
+    for (i in 1:maxits){
+      alpha = (alphalow + alphaup)/2
+      beta = qgamma(gam, alpha, 1)/c1[j]
+      test = pgamma(beta*c2[j], alpha, 1)
+      if (abs(test-(1-gam)) <= eps) {
+        break
+      }
+      if(test < 1 - gam){
+        alphaup = alpha
+      } else if (test > 1 - gam){ # later: see if the else if is causing an error to make the code efficient
+        alphalow = alpha
+      }
+    }
+    alpha01[j] = alpha
+    alpha02[j] = beta
+  }
+  
+  newlist = list("c1" = c1, "c2" = c2, "alpha01" = alpha01, "alpha02" = alpha02, "z0" = z0)
+  return(newlist)
+}
+
+elicit_prior_mu_function = function(p, gamma, m1, m2, s1, s2, alpha01, alpha02){
+ 
+  vectors_of_interest = list(m1, m2, s1, s2, alpha01, alpha02)
+  for(i in vectors_of_interest){
+    if(length(i) != p){
+      return("Error: there is a vector that doesn't have length p.")
+    }
+  }
+  mu0 = (m1 + m2)/2 # multivariate mu_0
+  
+  sigma0 = (m2 - m1)/(2 * s2)
+  lambda0 = (m2 - m1)/(2 * sqrt(alpha02/alpha01) * qt((1 + gamma)/2, df = 2 * alpha01))
+  
+  mu = rep(0, p)
+  for(i in 1:p){
+    t_val = qt(gamma, df = alpha01[i] * 2)
+    mu[i] = mu0[i] + sqrt(alpha02[i]/alpha01[i]) * lambda0[i] * t_val
+  }
+  
+  newlist = list("mu0" = mu0, "sigma0" = sigma0, "lambda0" = lambda0,
+                 "mu" = mu)
+  return(newlist)
+}
+
+
+
+
+
+
+
+################################################################
+# DISCARDED CODE (kept for rough)                              #
+################################################################
+
+# note: for the first page, may need to fix m1 and m2 temporarily to get the graph
+# before loading the new section. (or replace it into two functions later)
+elicit_prior = function(p, gamma, m1, m2, s1, s2, upper_bd, lower_bd){
+  # p: the number of dimensions (user needs to manually insert)
+  # gamma: probability corresponding to virtual certainty
+  # s1: defined in the paper lol
+  # s2: defined in the paper lol
+  # upper_bd: lower bound of the iteration for alpha0i
+  # lower_bd: upper bound of the iteration for alpha0i
+  
+  vectors_of_interest = list(m1, m2, s1, s2, upper_bd, lower_bd)
+  for(i in new_col){
+    if(length(i) != p){
+      return("Error: there is a vector that doesn't have length p.")
+    }
+  }
+  
   mu0 = (m1+m2)/2 # multivariate mu_0
   
   # note: add another condition to check to ensure the rest of the lengths are the same.
@@ -27,8 +119,8 @@ elicit_prior = function(gamma, m1, m2, s1, s2, alphaup_vect, alphalow_vect){
     # iterate until prob content of s1<= sigma*z0 <= s2 is within eps of p 
     eps = .0001
     maxits = 100
-    alphalow = alphalow_vect[j]
-    alphaup = alphaup_vect[j]
+    alphalow = lower_bd[j]
+    alphaup = upper_bd[j]
     for (i in 1:maxits){
       alpha = (alphalow + alphaup)/2
       beta = qgamma(gam, alpha, 1)/c1[j]
@@ -54,9 +146,10 @@ elicit_prior = function(gamma, m1, m2, s1, s2, alphaup_vect, alphalow_vect){
   return(newlist)
 }
 
-################################################################
-# DISCARDED CODE (kept for rough)                              #
-################################################################
+
+
+
+
 
 elicit_mu = function(alpha, beta, gamma, s1, s2){
   # This function finds the two values of gamma which we are subtracting.
