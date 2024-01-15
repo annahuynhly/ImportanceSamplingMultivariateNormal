@@ -2,16 +2,6 @@
 # DESCRIPTION FOR SAMPLING FROM THE PRIOR                      #
 ################################################################
 
-file_upload_example = div(
-  p("At the moment, this website exclusively accepts .csv files with a specific structure.  
-    Ensure that your file includes a header, where each column corresponds to a distinct 
-    variable:"),
-  br(),
-  p("Y = (Y1, Y2, Y3, ..., YN)"),
-  br(),
-  p("You can download an example below of an example for the format:"),
-)
-
 page_samplingdescription = div(
   # Code for adding latex
   tags$head(

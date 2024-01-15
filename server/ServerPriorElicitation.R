@@ -8,13 +8,75 @@ const_list = reactive({create_necessary_vector(input$const_s)})
 m1_list = reactive({create_necessary_vector(input$m1)})
 m2_list = reactive({create_necessary_vector(input$m2)})
 
-prior_elicitation_sigma_values = eventReactive(input$submit_prior_elicit_sigma, {
+# the input if the user uploads a .txt file
+prior_sigma_uploaded_text = reactive({
+  tryCatch(
+    {
+      df = read.csv(input$prior_sigma_file_txt$datapath, header = TRUE)
+    },
+    error = function(e) {
+      # return a safeError if a parsing error occurs
+      stop(safeError(e))
+    }
+  )
+  df
+})
+
+# the input if the user uploads a .csv file
+prior_sigma_uploaded_csv = reactive({
+  tryCatch(
+    {
+      df = read.csv(input$prior_sigma_file_csv$datapath, header = TRUE)
+    },
+    error = function(e) {
+      # return a safeError if a parsing error occurs
+      stop(safeError(e))
+    }
+  )
+  df
+})
+
+# Getting the values for the elicitation for the prior of sigma
+
+# Type 1: manual inputs
+prior_elicitation_sigma_manual = eventReactive(input$submit_prior_elicit_sigma, {
   elicit_prior_sigma_function(p = input$num_dimensions,
                               gamma = input$virtual_uncertainty,
                               s1 = create_necessary_vector(input$elicit_s1), 
                               s2 = create_necessary_vector(input$elicit_s2), 
                               upper_bd = create_necessary_vector(input$alphaup), 
                               lower_bd = create_necessary_vector(input$alphalow))
+})
+
+# Type 2: .txt inputs
+prior_elicitation_sigma_txt = eventReactive(input$submit_prior_elicit_sigma, {
+  elicit_prior_sigma_function(p = input$num_dimensions,
+                              gamma = input$virtual_uncertainty,
+                              s1 = prior_sigma_uploaded_text()$s1, 
+                              s2 = prior_sigma_uploaded_text()$s2, 
+                              upper_bd = prior_sigma_uploaded_text()$upper_bd, 
+                              lower_bd = prior_sigma_uploaded_text()$lower_bd)
+})
+
+# Type 3: .csv inputs
+prior_elicitation_sigma_csv = eventReactive(input$submit_prior_elicit_sigma, {
+  elicit_prior_sigma_function(p = input$num_dimensions,
+                              gamma = input$virtual_uncertainty,
+                              s1 = prior_sigma_uploaded_csv()$s1, 
+                              s2 = prior_sigma_uploaded_csv()$s2, 
+                              upper_bd = prior_sigma_uploaded_csv()$upper_bd, 
+                              lower_bd = prior_sigma_uploaded_csv()$lower_bd)
+})
+
+# This is the version that we end up using.
+prior_elicitation_sigma_values = eventReactive(input$submit_prior_elicit_sigma, {
+  if(input$prior_sigma_input_type == "manual"){
+    prior_elicitation_sigma_manual()
+  } else if (input$prior_sigma_input_type == "txt"){
+    prior_elicitation_sigma_txt()
+  } else if (input$prior_sigma_input_type == "csv"){
+    prior_elicitation_sigma_csv()
+  }
 })
 
 # This includes the raw results printed out; 
@@ -69,7 +131,6 @@ output$elicit_prior_graph = renderPlot({
   elicit_prior_graphs()
 })
 
-
 # The plot for it to be saved
 output$download_prior_elicit_sigma = downloadHandler(
   filename = "Prior Elicit Sigma Plot.png",
@@ -78,6 +139,49 @@ output$download_prior_elicit_sigma = downloadHandler(
     elicit_prior_graphs()
     dev.off()
 })
+
+dummy_data = data.frame(s1 = c(2, 2, 2), s2 = c(10,10,10),
+                        lower_bd = c(0,0,0), upper_bd = c(50,50,50),
+                        m1 = c(-5,-5,-5), m2 = c(5,5,5))
+
+# sample file - for users to understand the format
+output$prior_sigma_txt_example = downloadHandler(
+  filename = "prior_sigma_example.txt",
+  content = function(file) {
+    write.csv(dummy_data, file)
+  }
+)
+
+# For telling the user how to input .txt files
+observeEvent(input$prior_sigma_submit_info_txt, {
+  # Show a modal when the button is pressed
+  shinyalert(html = TRUE, text = tagList(
+    prior_sigma_upload_instructions_txt,
+    br(),
+    downloadButton(outputId = "prior_sigma_txt_example", 
+                   label = "Download Sample"),
+  ))
+})
+
+# sample file - for users to understand the format
+output$prior_sigma_csv_example = downloadHandler(
+  filename = "prior_sigma_example.csv",
+  content = function(file) {
+    write.csv(dummy_data, file)
+  }
+)
+
+# For telling the user how to input .csv files
+observeEvent(input$prior_sigma_submit_info_csv, {
+  # Show a modal when the button is pressed
+  shinyalert(html = TRUE, text = tagList(
+    prior_sigma_upload_instructions_csv,
+    br(),
+    downloadButton(outputId = "prior_sigma_csv_example", 
+                   label = "Download Sample"),
+  ))
+})
+
 
 # Prior Elicitation for mu_{i} #################################
 

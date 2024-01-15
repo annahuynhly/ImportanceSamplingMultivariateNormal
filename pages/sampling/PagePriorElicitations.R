@@ -29,35 +29,55 @@ page_elicitsigma = div(
                    label = 'Insert the virtual uncertainty, $\\gamma$.',
                    value = 0.99),
       
+      selectInput(inputId = "prior_sigma_input_type",
+                  label = 'How do you want to enter the data?',
+                  choices = list("Manually" = "manual",
+                                 "Text file" = "txt",
+                                 "CSV file" = "csv")),
+      
       p("For below, you need to insert $s_{1} \\leq \\sigma z_{0} \\leq s_{2}$ 
         holds with virtual certainty."),
-      fluidRow(box(
-        width = 12,
-        splitLayout(
-          textInput(
-            inputId = "elicit_s1",
-            label = "Insert $s_{1}$",
-            value = "2, 2, 2"),
-          textInput(
-            inputId = "elicit_s2",
-            label = "Insert $s_{2}$",
-            value = "10, 10, 10"),
-        )
-      )),
       
-      fluidRow(box(
-        width = 12,
-        splitLayout(
-          textInput(
-            inputId = "alphalow",
-            label = "Lower bd of $\\alpha_{0i}$",
-            value = "0, 0, 0"),
-          textInput(
-            inputId = "alphaup",
-            label = "Upper bd of $\\alpha_{0i}$",
-            value = "50, 50, 50"),
-        )
-      )),
+      conditionalPanel(
+        condition = "input.prior_sigma_input_type == 'manual'",
+        fluidRow(box(width = 12,
+          splitLayout(
+            textInput(inputId = "elicit_s1", label = "Insert $s_{1}$", value = "2,2,2"),
+            textInput(inputId = "elicit_s2", label = "Insert $s_{2}$", value = "10,10,10"),
+          )
+        )),
+        
+        fluidRow(box(width = 12,
+          splitLayout(
+            textInput(inputId = "alphalow", label = "Lower bd of $\\alpha_{0i}$",
+                      value = "0,0,0"),
+            textInput(inputId = "alphaup", label = "Upper bd of $\\alpha_{0i}$",
+                      value = "50,50,50"),
+          )
+        )),
+      ), # end of conditional panel
+      
+      conditionalPanel(
+        condition = "input.prior_sigma_input_type == 'txt'",
+        
+        fileInput(inputId = "prior_sigma_file_txt", 
+                  label = "Choose .txt File",
+                  multiple = FALSE,
+                  accept = c("text/csv", "text/comma-separated-values,text/plain", ".csv")),
+        
+        actionButton(inputId = "prior_sigma_submit_info_txt", label = "How to Submit")
+      ),
+      
+      conditionalPanel(
+        condition = "input.prior_sigma_input_type == 'csv'",
+        
+        fileInput(inputId = "prior_sigma_file_csv", 
+                  label = "Choose .csv File",
+                  multiple = FALSE,
+                  accept = c("text/csv", "text/comma-separated-values,text/plain", ".csv")),
+        
+        actionButton(inputId = "prior_sigma_submit_info_csv", label = "How to Submit")
+      ),
       
       selectInput(inputId = "elicit_sigma_graph_type",
                   label = "Select which type of graph to view.",

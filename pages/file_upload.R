@@ -1,0 +1,39 @@
+################################################################
+# FILE UPLOAD INFORMATION - INSTRUCTIONS FOR USER              #
+################################################################
+
+# instructions for prior elicitation - sigma
+prior_sigma_upload_instructions_txt = div(
+  p("In order for this to work, the file must contain the following headers:"),
+  br(),
+  p("s1"),
+  p("s2"),
+  p("lower_bd: this is the lower bound value for the initial value of the iteration to determine alpha0i's."),
+  p("upper_bd: this is the upper bound value for the initial value of the iteration to determine alpha0i's."),
+  br(),
+  p("Check below for a working sample for how the upload file should be uploaded.")
+)
+
+prior_sigma_upload_instructions_csv = div(
+  p("In order for this to work, the file must contain the following headers:"),
+  br(),
+  p("s1"),
+  p("s2"),
+  p("lower_bd: this is the lower bound value for the initial value of the iteration to determine alpha0i's."),
+  p("upper_bd: this is the upper bound value for the initial value of the iteration to determine alpha0i's."),
+  br(),
+  p("Check below for a working sample for how the upload file should be uploaded.")
+)
+
+
+
+# this is the original one - for the posterior
+file_upload_example = div(
+  p("At the moment, this website exclusively accepts .csv files with a specific structure.  
+    Ensure that your file includes a header, where each column corresponds to a distinct 
+    variable:"),
+  br(),
+  p("Y = (Y1, Y2, Y3, ..., YN)"),
+  br(),
+  p("You can download an example below of an example for the format:"),
+)

@@ -29,12 +29,13 @@ options(scipen = 999)
 
 # Accessing other R-codes
 #source("routes.R") # Note: re-add later once we have an abundance of pages.
+source("./pages/home.R")
+source("./pages/contact.R")
+source("./pages/file_upload.R")
 source("./pages/sampling/Description.R")
 source("./pages/sampling/PagePriorElicitations.R")
 source("./pages/sampling/PageSamplePriorPosterior.R")
 source("./pages/algorithm_description.R")
-source("./pages/contact.R")
-source("./pages/home.R")
 
 source("./functions/HelperFunctions.R")
 source("./functions/PriorElicitation.R")
