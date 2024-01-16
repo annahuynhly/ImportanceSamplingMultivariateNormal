@@ -48,7 +48,8 @@ elicit_prior_sigma_function = function(p, gamma, s1, s2, upper_bd, lower_bd){
     alpha02[j] = beta
   }
   
-  newlist = list("c1" = c1, "c2" = c2, "alpha01" = alpha01, "alpha02" = alpha02, "z0" = z0)
+  newlist = list("c1" = c1, "c2" = c2, "alpha01" = alpha01, "alpha02" = alpha02, "z0" = z0,
+                 "s1" = s1, "s2" = s2)
   return(newlist)
 }
 
@@ -75,11 +76,6 @@ elicit_prior_mu_function = function(p, gamma, m1, m2, s1, s2, alpha01, alpha02){
                  "mu" = mu)
   return(newlist)
 }
-
-
-
-
-
 
 
 ################################################################

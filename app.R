@@ -66,6 +66,7 @@ server = function(input, output, session) {
   })
   
   # convert the inputs into vectors to be used for computations
+  source(file.path("server", "ServerPriorInstructions.R"),  local = TRUE)$value
   source(file.path("server", "ServerPriorElicitation.R"),  local = TRUE)$value
   source(file.path("server", "ServerSampling.R"),  local = TRUE)$value
   

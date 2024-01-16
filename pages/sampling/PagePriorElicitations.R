@@ -66,7 +66,7 @@ page_elicitsigma = div(
                   accept = c("text/csv", "text/comma-separated-values,text/plain", ".csv")),
         
         actionButton(inputId = "prior_sigma_submit_info_txt", label = "How to Submit")
-      ),
+      ), # end of conditional panel
       
       conditionalPanel(
         condition = "input.prior_sigma_input_type == 'csv'",
@@ -77,12 +77,13 @@ page_elicitsigma = div(
                   accept = c("text/csv", "text/comma-separated-values,text/plain", ".csv")),
         
         actionButton(inputId = "prior_sigma_submit_info_csv", label = "How to Submit")
-      ),
+      ), # end of conditional panel
       
       selectInput(inputId = "elicit_sigma_graph_type",
                   label = "Select which type of graph to view.",
                   choices = list("Prior Density of Sigma" = 1,
                                  "Prior Density of Sigma * z" = 2)),
+      
       numericInput(inputId = "prior_elicit_sigma_graphnum", 
                    label = 'The index of $\\alpha_{01}, \\alpha_{02}$ for the graph.',
                    value = 1),
@@ -92,7 +93,7 @@ page_elicitsigma = div(
       tabPanel("Relative Belief Plot of w0",
         fluidRow(
           splitLayout(
-            cellWidths = c("50%", "50%"), 
+            cellWidths = c("60%", "50%"), 
               withSpinner(plotOutput(outputId = "elicit_prior_graph")), 
               withSpinner(tableOutput(outputId = "prior_elicit_sigma_table"))
               #withSpinner(verbatimTextOutput("elicit_prior_calculation"))
@@ -118,22 +119,55 @@ page_elicitmu = div(
       
       downloadButton(outputId = 'download_prior_elicit_mu_plot', label = 'Download Plot'),
       
-      fluidRow(box(
-        width = 12,
-        splitLayout(
-          textInput(
-            inputId = "m1",
-            label = "$m_{11}, m_{12}, ..., m_{1p}$",
-            value = "-5,-5,-5"),
-          textInput(
-            inputId = "m2",
-            label = "$m_{21}, m_{22}, ..., m_{2p}$",
-            value = "5,5,5"),
-        )
-      )),
+      selectInput(inputId = "prior_mu_input_type",
+                  label = 'How do you want to enter the data?',
+                  choices = list("Manually" = "manual",
+                                 "Text file" = "txt",
+                                 "CSV file" = "csv")),
       
+      conditionalPanel(
+        condition = "input.prior_mu_input_type == 'manual'",
+        
+        fluidRow(box(
+          width = 12,
+          splitLayout(
+            textInput(
+              inputId = "m1",
+              label = "$m_{11}, m_{12}, ..., m_{1p}$",
+              value = "-5,-5,-5"),
+            textInput(
+              inputId = "m2",
+              label = "$m_{21}, m_{22}, ..., m_{2p}$",
+              value = "5,5,5"),
+          )
+        )),
+      ), # end of conditional panel
+      
+      conditionalPanel(
+        condition = "input.prior_mu_input_type == 'txt'",
+        
+        fileInput(inputId = "prior_mu_file_txt", 
+                  label = "Choose .txt File",
+                  multiple = FALSE,
+                  accept = c("text/csv", "text/comma-separated-values,text/plain", ".csv")),
+        
+        actionButton(inputId = "prior_mu_submit_info_txt", label = "How to Submit")
+        
+      ),
+      
+      conditionalPanel(
+        condition = "input.prior_mu_input_type == 'csv'",
+        
+        fileInput(inputId = "prior_mu_file_csv", 
+                  label = "Choose .txt File",
+                  multiple = FALSE,
+                  accept = c("text/csv", "text/comma-separated-values,text/plain", ".csv")),
+        
+        actionButton(inputId = "prior_mu_submit_info_csv", label = "How to Submit")
+      ),
+    
       numericInput(inputId = "prior_elicit_mu_graphnum",
-                   label = "The column of $\\mu$ used to generate the graph.",
+                   label = "The index of $\\mu$ for the graph.",
                    value = 1)
       
     ),
@@ -142,7 +176,7 @@ page_elicitmu = div(
       #withSpinner(verbatimTextOutput("sample_prior_computation_NEW"))
       fluidRow(
         splitLayout(
-          cellWidths = c("50%", "50%"), 
+          cellWidths = c("60%", "50%"), 
           withSpinner(plotOutput(outputId = "prior_elicit_mu_graph")), 
           withSpinner(tableOutput(outputId = "prior_elicit_mu_table"))
         ),

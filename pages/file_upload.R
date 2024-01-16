@@ -2,30 +2,27 @@
 # FILE UPLOAD INFORMATION - INSTRUCTIONS FOR USER              #
 ################################################################
 
-# instructions for prior elicitation - sigma
-prior_sigma_upload_instructions_txt = div(
+# instructions for prior elicitation - sigma (text file)
+prior_sigma_upload_instructions = div(
   p("In order for this to work, the file must contain the following headers:"),
   br(),
-  p("s1"),
-  p("s2"),
+  p("s1: as defined in the description."),
+  p("s2: as defined in the description."),
   p("lower_bd: this is the lower bound value for the initial value of the iteration to determine alpha0i's."),
   p("upper_bd: this is the upper bound value for the initial value of the iteration to determine alpha0i's."),
   br(),
   p("Check below for a working sample for how the upload file should be uploaded.")
 )
 
-prior_sigma_upload_instructions_csv = div(
+# instructions for prior elicitation - mu (text file)
+prior_mu_upload_instructions = div(
   p("In order for this to work, the file must contain the following headers:"),
   br(),
-  p("s1"),
-  p("s2"),
-  p("lower_bd: this is the lower bound value for the initial value of the iteration to determine alpha0i's."),
-  p("upper_bd: this is the upper bound value for the initial value of the iteration to determine alpha0i's."),
+  p("m1: as defined in the description."),
+  p("m2: as defined in the description."),
   br(),
   p("Check below for a working sample for how the upload file should be uploaded.")
 )
-
-
 
 # this is the original one - for the posterior
 file_upload_example = div(

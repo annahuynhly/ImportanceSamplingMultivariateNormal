@@ -140,60 +140,83 @@ output$download_prior_elicit_sigma = downloadHandler(
     dev.off()
 })
 
-dummy_data = data.frame(s1 = c(2, 2, 2), s2 = c(10,10,10),
-                        lower_bd = c(0,0,0), upper_bd = c(50,50,50),
-                        m1 = c(-5,-5,-5), m2 = c(5,5,5))
-
-# sample file - for users to understand the format
-output$prior_sigma_txt_example = downloadHandler(
-  filename = "prior_sigma_example.txt",
-  content = function(file) {
-    write.csv(dummy_data, file)
-  }
-)
-
-# For telling the user how to input .txt files
-observeEvent(input$prior_sigma_submit_info_txt, {
-  # Show a modal when the button is pressed
-  shinyalert(html = TRUE, text = tagList(
-    prior_sigma_upload_instructions_txt,
-    br(),
-    downloadButton(outputId = "prior_sigma_txt_example", 
-                   label = "Download Sample"),
-  ))
-})
-
-# sample file - for users to understand the format
-output$prior_sigma_csv_example = downloadHandler(
-  filename = "prior_sigma_example.csv",
-  content = function(file) {
-    write.csv(dummy_data, file)
-  }
-)
-
-# For telling the user how to input .csv files
-observeEvent(input$prior_sigma_submit_info_csv, {
-  # Show a modal when the button is pressed
-  shinyalert(html = TRUE, text = tagList(
-    prior_sigma_upload_instructions_csv,
-    br(),
-    downloadButton(outputId = "prior_sigma_csv_example", 
-                   label = "Download Sample"),
-  ))
-})
-
-
 # Prior Elicitation for mu_{i} #################################
 
-prior_elicitation_mu_values = eventReactive(input$submit_prior_elicit_mu, {
+# the input if the user uploads a .txt file
+prior_mu_uploaded_text = reactive({
+  tryCatch(
+    {
+      df = read.csv(input$prior_mu_file_txt$datapath, header = TRUE)
+    },
+    error = function(e) {
+      # return a safeError if a parsing error occurs
+      stop(safeError(e))
+    }
+  )
+  df
+})
+
+# the input if the user uploads a .csv file
+prior_mu_uploaded_csv = reactive({
+  tryCatch(
+    {
+      df = read.csv(input$prior_mu_file_csv$datapath, header = TRUE)
+    },
+    error = function(e) {
+      # return a safeError if a parsing error occurs
+      stop(safeError(e))
+    }
+  )
+  df
+})
+
+# Getting the values for the elicitation for the prior of mu
+
+# Type 1: manual inputs
+prior_elicitation_mu_manual = eventReactive(input$submit_prior_elicit_mu, {
   elicit_prior_mu_function(p = input$num_dimensions, 
                            gamma = input$virtual_uncertainty, 
                            m1 = m1_list(), 
                            m2 = m2_list(), 
-                           s1 = create_necessary_vector(input$elicit_s1), 
-                           s2 = create_necessary_vector(input$elicit_s2), 
+                           s1 = prior_elicitation_sigma_values()$s1, 
+                           s2 = prior_elicitation_sigma_values()$s2, 
                            alpha01 = prior_elicitation_sigma_values()$alpha01, 
                            alpha02 = prior_elicitation_sigma_values()$alpha02)
+})
+
+# Type 2: .txt inputs
+prior_elicitation_mu_txt = eventReactive(input$submit_prior_elicit_mu, {
+  elicit_prior_mu_function(p = input$num_dimensions, 
+                           gamma = input$virtual_uncertainty, 
+                           m1 = prior_mu_uploaded_text()$m1, 
+                           m2 = prior_mu_uploaded_text()$m2, 
+                           s1 = prior_elicitation_sigma_values()$s1, 
+                           s2 = prior_elicitation_sigma_values()$s2, 
+                           alpha01 = prior_elicitation_sigma_values()$alpha01, 
+                           alpha02 = prior_elicitation_sigma_values()$alpha02)
+})
+
+# Type 3: .csv inputs
+prior_elicitation_mu_csv = eventReactive(input$submit_prior_elicit_mu, {
+  elicit_prior_mu_function(p = input$num_dimensions, 
+                           gamma = input$virtual_uncertainty, 
+                           m1 = prior_mu_uploaded_csv()$m1, 
+                           m2 = prior_mu_uploaded_csv()$m2, 
+                           s1 = prior_elicitation_sigma_values()$s1, 
+                           s2 = prior_elicitation_sigma_values()$s2, 
+                           alpha01 = prior_elicitation_sigma_values()$alpha01, 
+                           alpha02 = prior_elicitation_sigma_values()$alpha02)
+})
+
+# This is the version that we end up using.
+prior_elicitation_mu_values = eventReactive(input$submit_prior_elicit_mu, {
+  if(input$prior_mu_input_type == "manual"){
+    prior_elicitation_mu_manual()
+  } else if (input$prior_mu_input_type == "txt"){
+    prior_elicitation_mu_txt()
+  } else if (input$prior_mu_input_type == "csv"){
+    prior_elicitation_mu_csv()
+  }
 })
 
 # Table
