@@ -63,20 +63,12 @@ elicit_prior_mu_function = function(p, gamma, m1, m2, s1, s2, alpha01, alpha02){
   }
   mu0 = (m1 + m2)/2 # multivariate mu_0
   
-  sigma0 = (m2 - m1)/(2 * s2)
   lambda0 = (m2 - m1)/(2 * sqrt(alpha02/alpha01) * qt((1 + gamma)/2, df = 2 * alpha01))
   
-  mu = rep(0, p)
-  for(i in 1:p){
-    t_val = qt(gamma, df = alpha01[i] * 2)
-    mu[i] = mu0[i] + sqrt(alpha02[i]/alpha01[i]) * lambda0[i] * t_val
-  }
+  newlist = list("mu0" = mu0, "lambda0" = lambda0)
   
-  newlist = list("mu0" = mu0, "sigma0" = sigma0, "lambda0" = lambda0,
-                 "mu" = mu)
   return(newlist)
 }
-
 
 ################################################################
 # DISCARDED CODE (kept for rough)                              #
@@ -141,10 +133,6 @@ elicit_prior = function(p, gamma, m1, m2, s1, s2, upper_bd, lower_bd){
                  "mu0" = mu0, "sigma0" = sigma0, "lambda0" = lambda0, "z0" = z0)
   return(newlist)
 }
-
-
-
-
 
 
 elicit_mu = function(alpha, beta, gamma, s1, s2){

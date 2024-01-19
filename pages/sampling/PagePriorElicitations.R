@@ -47,11 +47,13 @@ page_elicitsigma = div(
           )
         )),
         
+        p("Bounds for the iterative processes determining these values for $\\alpha_{0i}$:"),
+        
         fluidRow(box(width = 12,
           splitLayout(
-            textInput(inputId = "alphalow", label = "Lower bd of $\\alpha_{0i}$",
+            textInput(inputId = "alphalow", label = "Lower bound",
                       value = "0,0,0"),
-            textInput(inputId = "alphaup", label = "Upper bd of $\\alpha_{0i}$",
+            textInput(inputId = "alphaup", label = "Upper bound",
                       value = "50,50,50"),
           )
         )),

@@ -323,12 +323,9 @@ rbr_mu_graph = function(grid, mu, type = "rbr", col_num,
 #  mu_prior_dist = cbind(mu_prior_dist, x1 + x2 * x3 * t_dist)
 #}
 
-
 # getting the relative belief ratio
 #rbr = mu_plot$density/mu_prior_dist[,1]
 #lines(mu_plot$mids, rbr)
-
-
 
 #example = mu_graph(mu = x$mu, type = "posterior", col_num = 1,
 #         delta = 0.05, smooth_num = 3,

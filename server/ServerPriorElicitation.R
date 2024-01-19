@@ -223,9 +223,7 @@ prior_elicitation_mu_values = eventReactive(input$submit_prior_elicit_mu, {
 output$prior_elicit_mu_table = renderTable({
   data.frame(index  = seq(1, as.numeric(input$num_dimensions)),
              mu0 = prior_elicitation_mu_values()$mu0,
-             sigma0 = prior_elicitation_mu_values()$sigma0,
-             lambda0 = prior_elicitation_mu_values()$lambda0,
-             mu = prior_elicitation_mu_values()$mu)
+             lambda0 = prior_elicitation_mu_values()$lambda0)
 })
 
 # Graph
