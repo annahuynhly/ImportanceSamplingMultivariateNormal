@@ -1,6 +1,13 @@
 page_home = div(
   titlePanel("Home Page"),
-  p("WEBSITE UNDER CONSTRUCTION!!"),
+  
+  p("The technical details underlying the algorithms implemented on this website can be found in the following paper:"),
+  tags$div(
+    tags$a(href="https://www.utstat.toronto.edu/mikevans/multnormregrees/paper.pdf", 
+           "Prior Elicitation and Posterior Calculations for Linear Models with Normal Error"),
+  ),
+  br(),
+  p("Note: currently the link does not work; it will be updated once the paper is finished."),
   
   disconnectMessage(
     text = "Your session timed out, reload the application.",
@@ -12,6 +19,6 @@ page_home = div(
     refreshColour = "#0c0c70"
   ),
   
-  actionButton("disconnect", "Disconnect the app")
+  #actionButton("disconnect", "Disconnect the app")
 )
 

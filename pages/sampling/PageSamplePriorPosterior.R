@@ -14,7 +14,7 @@ page_priorsample_new = div(
       downloadButton(outputId = 'plot_prior_mu', label = 'Plot'),
       
       numericInput(inputId = "prior_bigN_NEW",
-                   label = 'Insert N, the monte carlo sample size.',
+                   label = 'Insert N, the Monte Carlo sample size.',
                    value = 100),
       
       selectInput(inputId = "priorsample_use_NEW", 

@@ -85,3 +85,9 @@ observeEvent(input$prior_mu_submit_info_csv, {
                    label = "Download Sample"),
   ))
 })
+
+# Table
+output$prior_sigma_txt_example_table = renderDT(
+  dummy_data
+)
+

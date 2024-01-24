@@ -11,6 +11,7 @@ library(shinyanimate)
 library(shinyalert)
 library(colourpicker)
 library(shinydisconnect)
+library(DT) # for tables
 
 # For the functions
 library(expm) # used for the onion method 
@@ -45,14 +46,33 @@ source("./functions/Sampling.R")
 # FRONTEND                                                     #
 ################################################################
 
-ui = navbarPage(title = "Importance Sampling for Multivariate Normal Calculations",
-                tabPanel("Home", page_home),
-                tabPanel("Prior Elicitation", page_prior_elicit),
-                tabPanel("Sampling", page_sampling),
-                #tabPanel("Algorithm", page_algorithm),
-                tabPanel("Contact", page_contact),
-                id = "navbarID",
-                theme = shinythemes::shinytheme("journal"), # may want to change theme
+# will remove the below once we work on the multivariate normal regression
+page_ph1 = div(
+  titlePanel("Place holder page"),
+  p("WEBSITE UNDER CONSTRUCTION!!"),
+)
+
+page_ph2 = div(
+  titlePanel("Place holder page"),
+  p("WEBSITE UNDER CONSTRUCTION!!"),
+)
+  
+ui = navbarPage(
+  title = "Prior Elicitation and Posterior Calculations for Linear Models with Normal Error",
+  tabPanel("Home", page_home),
+  navbarMenu(
+    "Multivariate Normal",
+    tabPanel("Prior Elicitation", page_prior_elicit),
+    tabPanel("Posterior Computations", page_sampling)
+  ),
+  navbarMenu(
+    "Multivariate Normal Regression",
+    tabPanel("placeholder1", page_ph1),
+    tabPanel("placeholder2", page_ph2)
+  ),
+  tabPanel("Contact & Credits", page_contact),
+  id = "navbarID",
+  theme = shinythemes::shinytheme("journal"), # may want to change theme
 )
 
 ################################################################
