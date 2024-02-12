@@ -5,7 +5,23 @@
 page_post_comp_description = div(
   titlePanel("Description"),
   p("currently a placeholder; will add more details later."),
-  p("todo: add details on how to upload the .csv file.")
+  hr(),
+  h4("How to Submit .txt or .csv files"),
+  p("At the moment, this website exclusively accepts .csv or .txt files with a specific structure. Ensure that your file includes a header, where each column corresponds to a distinct variable:"),
+  p("$Y = (Y_{1}, Y_{2}, Y_{3}, ..., Y_{N})$"),
+  p("You may download the samples below for the acceptable format of .txt or .csv files to get an idea of how to upload."),
+  downloadButton(outputId = "post_computation_input_example_csv", label = "Download .csv"),
+  downloadButton(outputId = "post_computation_input_example_txt", label = "Download .txt"),
+  hr(),
+  p("If you cannot download the following samples above, note that the .txt file appears as is:"),
+  p("\"Y1\",\"Y2\",\"Y3\""),
+  p("1.76312851911246,2.45276003285563,0.661806566932632"),
+  p("2.89995319903158,2.63143675558349,0.0285393909422083"),
+  p("1.28504391922971,2.94688870456367,3.34204091589147"),
+  br(),
+  p("Esentially, each item must be separated by commas instead of spaces. Alternatively, the .csv file is formatted as follows:"),
+  DTOutput('post_comp_example_csv_table')
+  
 )
 
 ################################################################
@@ -21,71 +37,47 @@ page_posteriorcomputations = div(
       width = 3,
       
       fileInput(inputId = "sample_post_Y", 
-                label = "Choose CSV File",
+                label = "Upload File for Y",
                 multiple = FALSE,
                 accept = c("text/csv", "text/comma-separated-values,text/plain", ".csv")),
       
       p("Note: you will need to resubmit if you make any changes with the inputs below."),
       
-      fluidRow(box(
-        width = 12,
-        splitLayout(
-          actionButton(inputId = "submit_sample_post", label = "Submit Data"),
-          actionButton(inputId = "post_download_info", label = "How to Submit")
-        )
-      )),
+      actionButton(inputId = "submit_sample_post", label = "Submit Data"),
+      #actionButton(inputId = "post_download_info", label = "How to Submit"),
     
       numericInput(inputId = "post_bigN",
-                   label = 'Insert N, the monte carlo sample size',
+                   label = 'Insert N, the Monte Carlo sample size',
                    value = 1000),
       
       # note: may make it so the user needs to go from start to finish;
       # in other words, remove this feature.
-      selectInput(inputId = "postsample_use", 
+      selectInput(inputId = "post_comp_use", 
                   label = 'What values of the hyperparameters do you want to use?', 
                   choices = list("Same values as elicitation" = 1,
                                  "Input values" = 2), 
                   selected = 1),
       
       conditionalPanel(
-        condition = "input.postsample_use == 2",
+        condition = "input.post_comp_use == 2",
         p("Values from the elicitation of the prior will be used!")
       ),
       
       conditionalPanel(
-        condition = "input.postsample_use == 2",
-
-        numericInput(inputId = "virtual_uncertainty_post",
-                     label = 'Insert the virtual uncertainty, $\\gamma$.',
-                     value = 0.99),
+        condition = "input.post_comp_use == 2",
         
-        fluidRow(box(
-          width = 12,
-          splitLayout(
-            textInput(
-              inputId = "alpha01_post",
-              label = "$\\alpha_{011}, ..., \\alpha_{01p}$",
-              value = "3.15, 3.15, 3.15"),
-            textInput(
-              inputId = "alpha02_post",
-              label = "$\\alpha_{021}, ..., \\alpha_{02p}$",
-              value = "5.75, 5.75, 5.75"),
-          )
-        )),
+        numericInput(inputId = "num_dimensions_post",
+                     label = 'Insert the number of dimensions, $p$.',
+                     min = 1, max = 10000000, step = 1, value = 3),
         
-        fluidRow(box(
-          width = 12,
-          splitLayout(
-            textInput(
-              inputId = "m1_post",
-              label = "$m_{11}, m_{12}, ..., m_{1p}$",
-              value = "-5,-5,-5"),
-            textInput(
-              inputId = "m2_post",
-              label = "$m_{21}, m_{22}, ..., m_{2p}$",
-              value = "5,5,5"),
-          )
-        )),
+        textInput(inputId = "mu0_post",
+                  label = "$\\mu_{01}, ..., \\mu_{0p}$",
+                  value = "0, 0, 0"),
+        
+        textInput(inputId = "lambda0_post",
+                  label = "$\\lambda_{021}, ..., \\lambda_{02p}$",
+                  value = "1, 1, 1"),
+        
       ),
       
       
@@ -142,6 +134,7 @@ page_posteriorcomputations = div(
 
 page_comparison_graphs = div(
   titlePanel("Plots for $\\mu$"), 
+  p("Note: will not work unless the user inputs the data from the previous section."),
   sidebarLayout(
     sidebarPanel(
       width = 3,
@@ -239,12 +232,10 @@ page_comparison_graphs = div(
 page_sampling = div(
   titlePanel("Posterior Computations"),
   tabsetPanel(type = "tabs",
-              tabPanel("Description", page_samplingdescription),
+              tabPanel("Description", page_post_comp_description),
               tabPanel("Sampling from the Posterior", page_posteriorcomputations),
               tabPanel("Comparison Plots for Mu", page_comparison_graphs),
               #tabPanel("Graphs", page_priorgraph),
   )
 )
-
-
 

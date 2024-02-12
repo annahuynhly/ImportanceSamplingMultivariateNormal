@@ -14,6 +14,7 @@ library(shinydisconnect)
 library(DT) # for tables
 
 # For the functions
+library(dplyr) 
 library(expm) # used for the onion method 
 library(stringr)
 library(varhandle)
@@ -34,13 +35,13 @@ source("./pages/home.R")
 source("./pages/contact.R")
 source("./pages/file_upload.R")
 source("./pages/sampling/Description.R")
-source("./pages/sampling/PagePriorElicitations.R")
-source("./pages/sampling/PageSamplePriorPosterior.R")
+source("./pages/PagePriorElicitations.R")
+source("./pages/PagePosteriorComputations.R")
 source("./pages/algorithm_description.R")
 
 source("./functions/HelperFunctions.R")
 source("./functions/PriorElicitation.R")
-source("./functions/Sampling.R")
+source("./functions/PosteriorComputations.R")
 
 ################################################################
 # FRONTEND                                                     #
@@ -88,7 +89,7 @@ server = function(input, output, session) {
   # convert the inputs into vectors to be used for computations
   source(file.path("server", "ServerPriorInstructions.R"),  local = TRUE)$value
   source(file.path("server", "ServerPriorElicitation.R"),  local = TRUE)$value
-  source(file.path("server", "ServerSampling.R"),  local = TRUE)$value
+  source(file.path("server", "ServerPosteriorComputations.R"),  local = TRUE)$value
   
   observe(addHoverAnim(session, 'AnnaImg', 'rubberBand'))
   observe(addHoverAnim(session, 'MikeImg', 'tada'))

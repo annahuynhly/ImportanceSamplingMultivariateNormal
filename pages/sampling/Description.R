@@ -1,6 +1,4 @@
-################################################################
-# DESCRIPTION FOR SAMPLING FROM THE PRIOR                      #
-################################################################
+
 
 page_samplingdescription = div(
   # Code for adding latex

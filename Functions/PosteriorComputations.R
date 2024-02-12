@@ -46,20 +46,6 @@ onion = function(dimension){
 # MAIN FUNCTIONS                                               #
 ################################################################
 
-# this graph shouldn't be necessary; we don't need to draw samples since
-# we know the true distribution.
-sample_prior_new = function(N, alpha01, alpha02, mu0, lambda0){
-  # a new way to sample the prior; this function name will be changed in the future.
-  # N: refers to the monte carlo sample size.
-  prior_samples = c()
-  for(i in 1:N){
-    sigma = 1/rgamma(1, shape = alpha01, rate = alpha02)
-    sample = rnorm(N, mu0, lambda0^2 * sigma^2) 
-    prior_samples = c(prior_samples, sample)
-  }
-  return(sample)
-}
-
 sample_hyperparameters = function(gamma, alpha01, alpha02, m1, m2){
   lambda0 = (m2 - m1)/(2 * sqrt(alpha02/alpha01) * qt((1 + gamma)/2, df = 2 * alpha01))
   mu0 = (m2 + m1)/2
@@ -83,16 +69,16 @@ prior_true_mu = function(gamma, alpha01, alpha02, m1, m2){
   return(mu)
 }
 
-sample_post_new = function(N, Y, gamma, alpha01, alpha02, m1, m2){
-  data = sample_hyperparameters(gamma, alpha01, alpha02, m1, m2)
-  mu0 = data$mu0
-  lambda0 = max(data$lambda0)
+######################################################
+# this is the function being used - need to change some of it
+# this is the function being used - need to change some of it
+sample_post_computations = function(N, Y, p, mu0, lambda0){
   # replace the new name later; this is to distinguish between the earlier version.
-  if(length(alpha01) != length(alpha02)){
+  if((p != length(mu0)) & (p != length(lambda0))){
     # may want to turn into a helper function for readability later on?
-    return("Error: the vector for alpha_01 and beta_02 are of a different size.")
+    return("Error: the vector for mu0 and lambda0 are of a different size.")
   }
-  p = length(alpha01)
+  
   if(is.numeric(Y) == TRUE){
     n = nrow(Y)
     if(n < (2*p)){
@@ -101,11 +87,10 @@ sample_post_new = function(N, Y, gamma, alpha01, alpha02, m1, m2){
     Yprime = t(Y)
     Ybar = rowMeans(Yprime) # rowMeans(t(Y))
     In = matrix(t(rep(1, n))) # identity column
-    Ybar_t = matrix(Ybar,nrow=1, ncol = p) # transpose
-    # NOTE: need to check if S was computed correctly... different in his notes than this
-    # version
+    Ybar_t = matrix(Ybar, nrow=1, ncol = p) # transpose
+    
     #S = (1/(n-1)) * t(Y - In%*%Ybar_t) %*% (Y - In%*%Ybar_t)
-    S = (1/(n-1)) * t(Y - In%*%rowMeans(t(Y))) %*% (Y - In%*%rowMeans(t(Y))) # paper version - may be incorrect?
+    S = (1/(n-1)) * t(Y - In%*%rowMeans(t(Y))) %*% (Y - In%*%rowMeans(t(Y))) 
   } else {
     return("Error: no data given.")
   }
@@ -121,7 +106,9 @@ sample_post_new = function(N, Y, gamma, alpha01, alpha02, m1, m2){
   return(list("xi" = xi, "mu_xi" = mu_xi))
 }
 
-sample_rbr_new = function(gamma, delta, alpha01, alpha02, m1, m2, mu_post){
+######################################################
+
+compute_rbr = function(gamma, delta, alpha01, alpha02, m1, m2, mu_post){
   
   p = length(alpha01)
   mu_prior = sample_hyperparameters(gamma, alpha01, alpha02, m1, m2)

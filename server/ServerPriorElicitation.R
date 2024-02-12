@@ -116,10 +116,8 @@ elicit_prior_graphs = function(){
     x3 = z0*sqrt(1/x)
     dens3 = (2/z0)*(x^(3/2))*dgamma(x, alpha, beta)
     plot(x3, dens3,
-         main = TeX(paste("Prior Density of $\\sigma_{", graph_num, 
-                          '}\\cdot z_{0}$')),
-         xlab = TeX(paste('$\\sigma_{', graph_num, 
-                          '} \\cdot z_{0}$')),
+         main = TeX(paste("Prior Density of $\\sigma_{", graph_num, '}\\cdot z_{0}$')),
+         xlab = TeX(paste('$\\sigma_{', graph_num, '} \\cdot z_{0}$')),
          ylab = "Prior Density",
          type = "l")
   }
@@ -171,6 +169,7 @@ prior_mu_uploaded_csv = reactive({
 })
 
 # Getting the values for the elicitation for the prior of mu
+
 
 # Type 1: manual inputs
 prior_elicitation_mu_manual = eventReactive(input$submit_prior_elicit_mu, {

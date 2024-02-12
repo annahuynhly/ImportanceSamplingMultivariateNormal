@@ -91,3 +91,50 @@ output$prior_sigma_txt_example_table = renderDT(
   dummy_data
 )
 
+################################################################
+# POSTERIOR COMPUTATIONS EXAMPLE                               #
+################################################################
+
+# creating test sample data (changes every time for fun!)
+test_sample_data = reactive({
+  p = 3#5
+  mu = rep(2, p)
+  #mu = rep(0, p) 
+  sigma = diag(p) 
+  n = 100
+  Y = mvrnorm(n = n, mu = mu, Sigma = sigma)
+  data = as.data.frame(Y)
+  colnames(data) = c("Y1", "Y2", "Y3") #c("Y1", "Y2", "Y3", "Y4", "Y5")
+  data
+})
+
+# test data for uploading Y_{1i}s - csv
+output$post_computation_input_example_csv = downloadHandler(
+  filename = "Y_example.csv",
+  content = function(file) {
+    write.csv(test_sample_data(), file, row.names = FALSE)
+  }
+)
+
+# test data for uploading Y_{1i}s - txt
+output$post_computation_input_example_txt = downloadHandler(
+  filename = "Y_example.txt",
+  content = function(file) {
+    write.csv(test_sample_data(), file, row.names = FALSE)
+  }
+)
+
+
+observeEvent(input$post_download_info, {
+  # Show a modal when the button is pressed
+  shinyalert(html = TRUE, text = tagList(
+    file_upload_example,
+    br(),
+    downloadButton(outputId = "post_computation_input_example_csv", label = "Download Sample"),
+  ))
+})
+
+output$post_comp_example_csv_table = renderDT(
+  test_sample_data()
+)
+

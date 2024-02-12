@@ -1,50 +1,6 @@
 ################################################################
-# BACKEND FOR SAMPLING                                         #
+# BACKEND FOR POSTERIOR COMPUTATIONS                           #
 ################################################################
-
-alpha01_prior = reactive({create_necessary_vector(input$alpha01_prior)})
-alpha02_prior = reactive({create_necessary_vector(input$alpha02_prior)})
-alpha01_post = reactive({create_necessary_vector(input$alpha01_post)})
-alpha02_post = reactive({create_necessary_vector(input$alpha02_post)})
-
-m1_prior = reactive({create_necessary_vector(input$m1_prior)})
-m2_prior = reactive({create_necessary_vector(input$m2_prior)})
-m1_post = reactive({create_necessary_vector(input$m1_post)})
-m2_post = reactive({create_necessary_vector(input$m2_post)})
-
-# creating test sample data (changes every time for fun!)
-test_sample_data = reactive({
-  p = 3#5
-  mu = rep(2, p)
-  #mu = rep(0, p) 
-  sigma = diag(p) 
-  n = 100
-  Y = mvrnorm(n = n, mu = mu, Sigma = sigma)
-  data = as.data.frame(Y)
-  colnames(data) = c("Y1", "Y2", "Y3") #c("Y1", "Y2", "Y3", "Y4", "Y5")
-  data
-})
-
-# test data for uploading Y_{1i}s
-output$sample_post_example_file = downloadHandler(
-  filename = "Y_example.csv",
-  content = function(file) {
-    write.csv(test_sample_data(), file, row.names = FALSE)
-  }
-)
-
-observeEvent(input$post_download_info, {
-  # Show a modal when the button is pressed
-  shinyalert(html = TRUE, text = tagList(
-    file_upload_example,
-    br(),
-    downloadButton(outputId = "sample_post_example_file", label = "Download Sample"),
-  ))
-})
-
-
-
-# PRIOR CASE ###################################################
 
 input_Y_values = reactive({
   #as.matrix(test_sample_data())
@@ -57,36 +13,27 @@ input_Y_values = reactive({
       stop(safeError(e))
     }
   )
+  df = df[,grepl("Y", colnames(df))]
+  #df = df %>% select(contains("Y")) # doesn't seem like select works anymore
   as.matrix(df)
+  #Y_values = as.matrix(df)
+  #Y_values = Y_values %>% select(contains("Y"))
 })
 
 post_sample_values = reactive({
-  if(input$postsample_use == 1){ # input values
-    sample_post_new(N = input$post_bigN, 
-                    Y = input_Y_values(), 
-                    gamma = input$virtual_uncertainty_post, 
-                    alpha01 = alpha01_post(), 
-                    alpha02 = alpha02_post(), 
-                    m1 = m1_post(), 
-                    m2 = m2_post()
+  if(input$post_comp_use == 1){ # default option - use from the prior elicitation
+    sample_post_computations(N = input$post_bigN,
+                             Y = input_Y_values(), 
+                             p = input$num_dimensions,
+                             mu0 = prior_elicitation_mu_values()$mu0,
+                             lambda0 = prior_elicitation_mu_values()$lambda0
     )
-  } else if (input$postsample_use == 2){ # same as elicit
-    sample_post_new(N = input$post_bigN, 
-                    Y = input_Y_values(), 
-                    gamma = input$virtual_uncertainty_post, 
-                    alpha01 = prior_elicitation_values()$alpha01, 
-                    alpha02 = prior_elicitation_values()$alpha02,
-                    m1 = m1_list(), 
-                    m2 = m2_list()
-    )
-  } else if (input$postsample_use == 3){ # same as prior
-    sample_post_new(N = input$post_bigN, 
-                    Y = input_Y_values(), 
-                    gamma = input$virtual_uncertainty_prior, 
-                    alpha01 = alpha01_prior(),
-                    alpha02 = alpha02_prior(),
-                    m1 = m1_prior(), 
-                    m2 = m2_prior()
+  } else if (input$post_comp_use == 2){ # use what is manually inserted
+    sample_post_computations(N = input$post_bigN, 
+                             Y = input_Y_values(), 
+                             p = input$num_dimensions_post,
+                             mu0 = create_necessary_vector(input$mu0_post),
+                             lambda0 = create_necessary_vector(input$lambda0_post)
     )
   }
 })
@@ -131,39 +78,21 @@ output$postsample_download_xi = downloadHandler(
 # GRAPHING FUNCTIONS ###########################################
 
 # plotting for the relative belief ratio
-rbr_sample_values = reactive({
-  if(input$postsample_use == 1){ # input values
-    # NOTE: may need to fix the first parameter based on other values
-    sample_rbr_new(gamma = input$virtual_uncertainty_post, 
-                   delta = input$comparison_graph_delta, 
-                   alpha01 = alpha01_post(), 
-                   alpha02 = alpha02_post(), 
-                   m1 = m1_post(), 
-                   m2 = m2_post(),
-                   mu_post = post_sample_values()$mu_xi)
-  } else if (input$postsample_use == 2){ # same as elicit
-    sample_rbr_new(gamma = input$virtual_uncertainty_post, 
-                   delta = input$comparison_graph_delta, 
-                   alpha01 = prior_elicitation_values()$alpha01, 
-                   alpha02 = prior_elicitation_values()$alpha02,
-                   m1 = m1_list(), 
-                   m2 = m2_list(),
-                   mu_post = post_sample_values()$mu_xi)
-  } else if (input$postsample_use == 3){ # same as prior
-    sample_rbr_new(gamma = input$virtual_uncertainty_prior, 
-                   delta = input$comparison_graph_delta, 
-                   alpha01 = alpha01_prior(),
-                   alpha02 = alpha02_prior(),
-                   m1 = m1_prior(), 
-                   m2 = m2_prior(),
-                   mu_post = post_sample_values()$mu_xi)
-  }
+rbr_computation_values = reactive({
+  # note: this requires mandatory inputs from the prior explicitly.
+  compute_rbr(gamma = input$virtual_uncertainty, 
+              delta = input$comparison_graph_delta, 
+              alpha01 = prior_elicitation_sigma_values()$alpha01,
+              alpha02 = prior_elicitation_sigma_values()$alpha02, 
+              m1 = prior_elicitation_mu_values()$m1, 
+              m2 = prior_elicitation_mu_values()$m2,
+              mu_post = post_sample_values()$mu_xi)
 })
 
 output$sample_priorpost_graph = renderPlot({
-  mu_graph_comparison(grid = rbr_sample_values()$grid, 
-                      mu_prior = rbr_sample_values()$prior_mu, 
-                      mu_post = rbr_sample_values()$post_mu, 
+  mu_graph_comparison(grid = rbr_computation_values()$grid, 
+                      mu_prior = rbr_computation_values()$prior_mu, 
+                      mu_post = rbr_computation_values()$post_mu, 
                       col_num = input$comparison_mu_col,
                       smooth_num = input$comparison_smoother,
                       colour_choice = c(input$comparison_prior_col, 
@@ -175,8 +104,8 @@ output$sample_priorpost_graph = renderPlot({
 })
 
 output$sample_rbr_graph = renderPlot({
-  rbr_mu_graph(grid = rbr_sample_values()$grid, 
-               mu = rbr_sample_values()$rbr_mu, 
+  rbr_mu_graph(grid = rbr_computation_values()$grid, 
+               mu = rbr_computation_values()$rbr_mu, 
                type = "relative belief ratio", 
                smooth_num = input$comparison_smoother,
                col_num = input$comparison_mu_col,
@@ -194,8 +123,7 @@ the_sample_post_graph = eventReactive(input$submit_sample_post, {
     col_num = input$post_graph_num,
     delta = input$post_graph_delta,
     smooth_num = input$post_graph_smoother,
-    colour_choice = c(input$post_line_col, 
-                      input$post_hist_col),
+    colour_choice = c(input$post_line_col, input$post_hist_col),
     lty_type = 2,
     transparency = input$post_transparency)
 })
@@ -289,15 +217,13 @@ output$plot_post_mu = downloadHandler(
   }
 )
 
-
-
 output$comparison_download_plot = downloadHandler(
   filename = "Comparison Plot.png",
   content = function(file){
     png(file)
-    mu_graph_comparison(grid = rbr_sample_values()$grid, 
-                        mu_prior = rbr_sample_values()$prior_mu, 
-                        mu_post = rbr_sample_values()$post_mu, 
+    mu_graph_comparison(grid = rbr_computation_values()$grid, 
+                        mu_prior = rbr_computation_values()$prior_mu, 
+                        mu_post = rbr_computation_values()$post_mu, 
                         col_num = input$comparison_mu_col,
                         smooth_num = input$comparison_smoother,
                         colour_choice = c(input$comparison_prior_col, 
@@ -313,8 +239,8 @@ output$rbr_download_plot = downloadHandler(
   filename = "RBR Plot.png",
   content = function(file){
     png(file)
-    rbr_mu_graph(grid = rbr_sample_values()$grid, 
-                 mu = rbr_sample_values()$rbr_mu, 
+    rbr_mu_graph(grid = rbr_computation_values()$grid, 
+                 mu = rbr_computation_values()$rbr_mu, 
                  type = "relative belief ratio", 
                  smooth_num = input$comparison_smoother,
                  col_num = input$comparison_mu_col,

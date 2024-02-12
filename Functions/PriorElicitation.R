@@ -65,8 +65,7 @@ elicit_prior_mu_function = function(p, gamma, m1, m2, s1, s2, alpha01, alpha02){
   
   lambda0 = (m2 - m1)/(2 * sqrt(alpha02/alpha01) * qt((1 + gamma)/2, df = 2 * alpha01))
   
-  newlist = list("mu0" = mu0, "lambda0" = lambda0)
-  
+  newlist = list("mu0" = mu0, "lambda0" = lambda0, "m1" = m1, "m2" = m2)
   return(newlist)
 }
 
