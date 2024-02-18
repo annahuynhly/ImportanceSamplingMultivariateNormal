@@ -23,7 +23,7 @@ page_elicitdescription = div(
     </script>')
   ),
   
-  p("See section 2 of the paper for descriptions of the parameters necessary for eliciting the priors on the $\\sigma_{i}$ and the $\\mu_{i}$, namely, ($s_{1i}, s_{2i}$) for $\\sigma_{i}$ and ($m_{1i}, m_{2i}$) for $\\mu_{i}$ for $i = 1, ..., p$."),
+  p("See sections 2 and 3 of the paper for descriptions of the parameters necessary for eliciting the priors on the $\\sigma_{i}$ and the $\\mu_{i}$, namely, ($s_{1i}, s_{2i}$) for $\\sigma_{i}$ and ($m_{1i}, m_{2i}$) for $\\mu_{i}$ for $i = 1, ..., p$."),
   p("Also specify the lower and upper bounds for the iterative process that determines the values of ($\\alpha_{01i}, \\alpha_{02i}$), $i= 1, ..., p.$"),
   hr(),
   h4("How to Submit .txt or .csv files"),

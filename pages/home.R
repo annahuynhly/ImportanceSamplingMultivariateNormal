@@ -3,7 +3,7 @@ page_home = div(
   
   p("The technical details underlying the algorithms implemented on this website can be found in the following paper:"),
   tags$div(
-    tags$a(href="https://www.utstat.toronto.edu/mikevans/multnormregrees/paper.pdf", 
+    tags$a(href="https://www.utstat.toronto.edu/mikevans/multnormregress/paper.pdf", 
            "Prior Elicitation and Posterior Calculations for Linear Models with Normal Error"),
   ),
   br(),
