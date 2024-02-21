@@ -71,7 +71,6 @@ prior_true_mu = function(gamma, alpha01, alpha02, m1, m2){
 
 ######################################################
 # this is the function being used - need to change some of it
-# this is the function being used - need to change some of it
 sample_post_computations = function(N, Y, p, mu0, lambda0){
   # replace the new name later; this is to distinguish between the earlier version.
   if((p != length(mu0)) & (p != length(lambda0))){
@@ -95,6 +94,9 @@ sample_post_computations = function(N, Y, p, mu0, lambda0){
     return("Error: no data given.")
   }
   
+  # NOTE: COPY AND PASTE THIS ELSEWHERE
+  lambda0 = rep(max(lambda0), p)
+  
   # instead of using solve, may need to move to an alt version (see helper functions)
   Sigma_Y = find_inverse_alt((S + n/(1 + n * lambda0^2) * (rowMeans(t(Y)) - mu0) %*% t(rowMeans(t(Y)) - mu0)))
   mu_Y = ((n + 1/lambda0^2)^-1) * (mu0/lambda0^2 + n * rowMeans(t(Y)))
@@ -108,7 +110,9 @@ sample_post_computations = function(N, Y, p, mu0, lambda0){
 
 ######################################################
 
-compute_rbr = function(gamma, delta, alpha01, alpha02, m1, m2, mu_post){
+compute_rbr = function(gamma, delta, alpha01, alpha02, m1, m2, mu_post, min_xlim, max_xlim){
+  # min_xlim: minimum values for the x-limit
+  # max_xlim: maximum values for the x-limit
   
   p = length(alpha01)
   mu_prior = sample_hyperparameters(gamma, alpha01, alpha02, m1, m2)
@@ -118,7 +122,8 @@ compute_rbr = function(gamma, delta, alpha01, alpha02, m1, m2, mu_post){
   grid_matrix = c()
   
   for(i in 1:p){
-    grid = seq_alt(mu_post[, i], delta)
+    grid = seq(min_xlim, max_xlim, by = delta)
+    #grid = seq_alt(mu_post[, i], delta)
     
     # mostly to obtain the midpoints used for the graph
     post_plot = hist(mu_post[, i], breaks = grid, plot = FALSE)
@@ -128,11 +133,10 @@ compute_rbr = function(gamma, delta, alpha01, alpha02, m1, m2, mu_post){
     
     # getting the values from the prior to compare to the posterior
     x1 = mu_prior$mu0[i]
-    x2 = sqrt(alpha01[i]/alpha02[i])
-    x3 = mu_prior$lambda0[i]
-    t_dist = dt(new_grid, df = 2 * alpha01[i])  
+    scale = sqrt(alpha02[i]/alpha01[i]) * mu_prior$lambda0[i]
+    t_dist = dt(new_grid, df = 2 * alpha01[i])  #instead of new_grid
     
-    mu_prior_matrix = cbind(mu_prior_matrix, x1 + x2 * x3 * t_dist)
+    mu_prior_matrix = cbind(mu_prior_matrix, t_dist/scale)
     
     # obtaining the relative belief ratio
     rbr_matrix = cbind(rbr_matrix, post_plot$density/mu_prior_matrix[,i])
@@ -187,10 +191,13 @@ mu_graph = function(mu, type = "prior", col_num,
 }
 
 mu_graph_comparison = function(grid, mu_prior, mu_post, col_num,
+                               min_xlim, max_xlim,
                                smooth_num = 1,
                                colour_choice = c("blue", "red"),
                                lty_type = c(2, 2),
                                transparency = 0.1){
+  # note: temporary name, but grid is referring to the grid of the posterior
+  # grid2 is referring to the grid of the prior
   # note: assumes that we have the mu_prior and mu_post from the other
   # function (sample_rbr_new)
   
@@ -203,9 +210,26 @@ mu_graph_comparison = function(grid, mu_prior, mu_post, col_num,
                       alpha = transparency)
   
   # makes a graph that compares the prior and the posterior.
+  #max_val = max(c(max(mu_prior), max(mu_post[,col_num])))
+  #min_val = min(c(min(mu_prior), min(mu_post[,col_num])))
   max_val = max(c(max(mu_prior[,col_num]), max(mu_post[,col_num])))
   min_val = min(c(min(mu_prior[,col_num]), min(mu_post[,col_num])))
   
+  # first: plot the posterior (have it be dependent on this)
+  #plot(grid[, col_num], 
+  #     mu_post[, col_num],
+  #     type = "l", 
+  #     lty = lty_type[2],
+  #     col = colour_choice[2],
+  #     ylim = c(min_val, max_val), 
+  #     xlim = c(-10, 10), # hard-coded, TESTING for now
+  #     main = TeX(paste("Graph of the Prior and Posterior of $\\mu_{", col_num, "}$")),
+  #     ylab = "Density",
+  #     xlab = TeX(paste("Value of $\\mu_{$", col_num, "}$")))
+  # second: plotting the prior
+  #lines(grid2, mu_prior, type = "l", col = colour_choice[1], lty = lty_type[1])
+  
+  # previous - commented out.
   # first plotting the prior
   plot(grid[, col_num], 
        mu_prior[, col_num],
@@ -213,6 +237,7 @@ mu_graph_comparison = function(grid, mu_prior, mu_post, col_num,
        lty = lty_type[1],
        col = colour_choice[1],
        ylim = c(min_val, max_val), 
+       xlim = c(min_xlim, max_xlim),
        main = TeX(paste("Graph of the Prior and Posterior of $\\mu_{", col_num, "}$")),
        ylab = "Density",
        xlab = TeX(paste("Value of $\\mu_{$", col_num, "}$")))

@@ -86,14 +86,19 @@ rbr_computation_values = reactive({
               alpha02 = prior_elicitation_sigma_values()$alpha02, 
               m1 = prior_elicitation_mu_values()$m1, 
               m2 = prior_elicitation_mu_values()$m2,
-              mu_post = post_sample_values()$mu_xi)
+              mu_post = post_sample_values()$mu_xi,
+              min_xlim = input$comparison_xlim_min, 
+              max_xlim = input$comparison_xlim_max)
 })
+
 
 output$sample_priorpost_graph = renderPlot({
   mu_graph_comparison(grid = rbr_computation_values()$grid, 
-                      mu_prior = rbr_computation_values()$prior_mu, 
+                      mu_prior = rbr_computation_values()$prior_mu,  
                       mu_post = rbr_computation_values()$post_mu, 
                       col_num = input$comparison_mu_col,
+                      min_xlim = input$comparison_xlim_min, 
+                      max_xlim = input$comparison_xlim_max,
                       smooth_num = input$comparison_smoother,
                       colour_choice = c(input$comparison_prior_col, 
                                         input$comparison_post_col),

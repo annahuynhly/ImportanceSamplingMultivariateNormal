@@ -20,8 +20,10 @@ page_post_comp_description = div(
   p("1.28504391922971,2.94688870456367,3.34204091589147"),
   br(),
   p("Esentially, each item must be separated by commas instead of spaces. Alternatively, the .csv file is formatted as follows:"),
-  DTOutput('post_comp_example_csv_table')
+  DTOutput('post_comp_example_csv_table'),
   
+  # the below is just for testing
+  #verbatimTextOutput(outputId = "testing123")
 )
 
 ################################################################
@@ -148,6 +150,15 @@ page_comparison_graphs = div(
       numericInput(inputId = "comparison_mu_col", 
                    label = 'The column of $\\mu$ for the graph.',
                    value = 1),
+      
+      fluidRow(box(width = 12,
+        splitLayout(
+          numericInput(inputId = "comparison_xlim_min", 
+                       label = "Lower x limit", value = -10),
+          numericInput(inputId = "comparison_xlim_max", 
+                       label = "Upper x limit", value = 10),
+        )
+      )),
       
       selectInput(inputId = "comparison_modify_which",
                   label = 'Select line to modify',
