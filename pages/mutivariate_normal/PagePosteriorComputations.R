@@ -51,9 +51,7 @@ page_posteriorcomputations = div(
       numericInput(inputId = "post_bigN",
                    label = 'Insert N, the Monte Carlo sample size',
                    value = 1000),
-      
-      # note: may make it so the user needs to go from start to finish;
-      # in other words, remove this feature.
+    
       selectInput(inputId = "post_comp_use", 
                   label = 'What values of the hyperparameters do you want to use?', 
                   choices = list("Same values as elicitation" = 1,
@@ -82,25 +80,44 @@ page_posteriorcomputations = div(
         
       ),
       
+      numericInput(inputId = "post_graph_num",
+                   label = "The column of $\\mu$ for the graph.",
+                   value = 1),
+      
+      colourInput(inputId = "post_line_col",
+                  label = 'Input colour of the line plot',
+                  value = "#4287f5"), 
       
     ),
     mainPanel(
       downloadButton(outputId = 'plot_post_mu', label = 'Plot'),
       downloadButton(outputId = "postsample_download_mu", label = "$\\mu$"),
       downloadButton(outputId = "postsample_download_xi", label = "$\\Xi$"),
+      
+      #withSpinner(verbatimTextOutput(outputId = "testing_post")),
       withSpinner(plotOutput("sample_post_graph")),
 
       fluidRow(
         column(4, 
-               numericInput(inputId = "post_graph_num",
-                            label = "The column of $\\mu$ for the graph.",
-                            value = 1),
+               fluidRow(box(width = 12,
+                 splitLayout(
+                    numericInput(inputId = "post_xlim_min", 
+                                 label = "Lower x limit", value = -10),
+                    numericInput(inputId = "post_xlim_max", 
+                                 label = "Upper x limit", value = 10),
+                  )
+               )),
+              #numericInput(inputId = "post_graph_delta",
+              #              label = "Length of the bins)",
+              #              value = 0.05),
         ),
+        
         column(4, 
-               numericInput(inputId = "post_graph_delta",
-                            label = "Length of the bins)",
-                            value = 0.05),
+               sliderInput(inputId = "post_transparency", 
+                           label = "Scale for colour transparency",
+                           min = 0, max = 1, value = 0.2), 
         ),
+        
         column(4, 
                sliderInput(inputId = "post_graph_smoother", 
                            label = "# of Average Points (Smoother)", 
@@ -108,23 +125,6 @@ page_posteriorcomputations = div(
         )
       ),
       
-      fluidRow(
-        column(4, 
-               colourInput(inputId = "post_line_col",
-                           label = 'Input colour of the line plot',
-                           value = "#4287f5"), 
-        ),
-        column(4, 
-               colourInput(inputId = "post_hist_col",
-                           label = 'Input colour of the histogram',
-                           value = "#4287f5"), 
-        ),
-        column(4, 
-               sliderInput(inputId = "post_transparency", 
-                           label = "Scale for colour transparency",
-                           min = 0, max = 1, value = 0.2), 
-        )
-      ),
       
     ),
   )
@@ -150,15 +150,6 @@ page_comparison_graphs = div(
       numericInput(inputId = "comparison_mu_col", 
                    label = 'The column of $\\mu$ for the graph.',
                    value = 1),
-      
-      fluidRow(box(width = 12,
-        splitLayout(
-          numericInput(inputId = "comparison_xlim_min", 
-                       label = "Lower x limit", value = -10),
-          numericInput(inputId = "comparison_xlim_max", 
-                       label = "Upper x limit", value = 10),
-        )
-      )),
       
       selectInput(inputId = "comparison_modify_which",
                   label = 'Select line to modify',
@@ -215,10 +206,18 @@ page_comparison_graphs = div(
       ),
       
       fluidRow(
-        column(4, 
-               sliderInput(inputId = "comparison_graph_delta",
-                           label = "Length of the bins",
-                           min = 0.01, max = 1, value = 0.1),
+        column(4,
+               fluidRow(box(width = 12,
+                  splitLayout(
+                    numericInput(inputId = "comparison_xlim_min", 
+                                 label = "Lower x limit", value = -10),
+                    numericInput(inputId = "comparison_xlim_max", 
+                                 label = "Upper x limit", value = 10),
+                  )
+               )),
+               #sliderInput(inputId = "comparison_graph_delta",
+               #             label = "Length of the bins",
+               #            min = 0.01, max = 1, value = 0.1),
         ),
         column(4, 
                sliderInput(inputId = "comparison_smoother", 

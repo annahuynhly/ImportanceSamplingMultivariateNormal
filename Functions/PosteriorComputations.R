@@ -1,47 +1,3 @@
-# note: might want to rename this as generating 
-
-################################################################
-# HELPER FUNCTIONS                                             #
-################################################################
-
-vnorm = function(x, t){
-  # Computes the norm of the matrix x of type t.
-  norm(matrix(x, ncol=1), t)
-}
-
-onion = function(dimension){
-  # Generating using the onion method from the paper: On Bayesian Hotelling's T^{2} test for the mean
-  d = dimension + 1
-  prev_corr = matrix(1, 1, 1)
-  
-  for(k in 2:(d-1)){
-    # sample y = r^2 from a beta distribution, with alpha_1 = (k-1)/2 and alpha_2 = (d-k)/2
-    y = rbeta(1, (k-1)/2, (d-k)/2)
-    r = as.matrix(sqrt(y))
-    
-    # sample a unit vector theta uniformly from the unit ball surface B^(k-1)
-    v = matrix(rnorm((k-1)), nrow=1)
-    theta = v/vnorm(v, '1')
-    
-    w = r %*% theta # set w = r theta
-    
-    # set q = prev_corr^(1/2) w, q to the power of 0.5
-    e = eigen(prev_corr)
-    VV = e$vectors
-    q_prep = VV %*% diag(sqrt(e$values)) %*% t(VV)
-    q = (w%*% q_prep)
-    
-    next_corr = matrix(0, nrow=k, ncol=k)
-    next_corr[1:(k-1), 1:(k-1)] = prev_corr # R_k-1
-    next_corr[k, 1:(k-1)] = q
-    next_corr[1:(k-1), k] = q
-    diag(next_corr) = 1
-    
-    prev_corr = next_corr
-  }
-  return(next_corr)
-}
-
 ################################################################
 # MAIN FUNCTIONS                                               #
 ################################################################
@@ -108,8 +64,130 @@ sample_post_computations = function(N, Y, p, mu0, lambda0){
   return(list("xi" = xi, "mu_xi" = mu_xi))
 }
 
-######################################################
+k = function(p, mu, xi, mu0, lambda0, sigma_ii){
+  
+  Lambda0 = diag(lambda0)
+  inv_Lambda0 = find_inverse_alt(Lambda0)
+  #x1 = inv_Lambda0 %*% xi %*% inv_Lambda0 
+  x1 = exp(-(1/2) * t(mu - mu0) %*% inv_Lambda0 %*% xi %*% inv_Lambda0 * (mu - mu0))
+  x3 = exp(-alpha02/sigma_ii)
+  x2 = 1
+  for(i in 1:p){
+    x2 = x2 * (1/sigma_ii[i])^(alpha01[i] + (p+1)/2)
+  }
+  return(x1 * x2 * x3)
+}
 
+weights = function(N, p, mu, xi, mu0, lambda0, sigma_ii){
+  k_vector = c()
+  for(i in 1:N){
+    k_val = k(p, mu[i,], xi[,,i], mu0, lambda0, sigma_ii[i,])
+    k_vector = rbind(k_vector, k_val)
+  }
+  weights_vector = c()
+  for(q in 1:p){
+    k_val2 = k_vector[,q] / sum(k_vector[,q])
+    weights_vector = cbind(weights_vector, k_val2)
+  }
+  #weights_vector = k_vector / colSums(k_vector)
+  return(weights_vector)
+}
+
+posterior_content = function(N, p, effective_range, mu, xi, weights){
+  # first part: denote psi(mu, xi)
+  # m: number of sub intervals 
+  # (note: assumption is that the num of time intervals are the same for each mu1 - may need to change
+  # this later if it poses an issue...
+  
+  psi_val = psi(mu, xi) # note: the user will need to manually change this
+  post_content_matrix = c()
+  post_density_matrix = c()
+  
+  for(k in 1:p){
+    grid = effective_range[,k]
+    delta = diff(effective_range[,k])[1]
+    #print(grid)
+    # computing post content
+    post_content_vec = c() # will be of length m
+    for(i in 1:(length(grid) - 1)){
+      post_content = 0
+      for(j in 1:N){
+        if(between(psi_val[,k][j], grid[i], grid[i+1])){
+          post_content = post_content + weights[,k][j]
+        }
+      }
+      post_content_vec = c(post_content_vec, post_content)
+    }
+    post_density = post_content_vec / delta
+    post_content_matrix = cbind(post_content_matrix, post_content_vec)
+    post_density_matrix = cbind(post_density_matrix, post_density)
+  }
+  newlist = list("post_content" = post_content_matrix,
+                 "post_density" = post_density_matrix)
+  return(newlist)
+}
+
+relative_belief_ratio = function(p, prior_content, post_content){
+  
+  rbr_vector = c()
+  for(k in 1:p){
+    rbr_vals = post_content[,k] / prior_content[,k] 
+    rbr_vector = cbind(rbr_vector, rbr_vals)
+  }
+  
+  # below is a vector where the NAs are zero - easier to plot.
+  rbr_vector_mod = rbr_vector
+  rbr_vector_mod[is.na(rbr_vector_mod)] = 0
+  
+  newlist = list("RBR" = rbr_vector, "RBR_modified" = rbr_vector_mod)
+  return(newlist)
+}
+
+################################################################
+# GRAPH FUNCTIONS                                              #
+################################################################
+
+comparison_content_density_plot = function(prior_density, post_density, col_num, grid,
+                                           min_xlim = -10, max_xlim = 10,
+                                           smooth_num = 1, colour_choice = c("red", "blue"),
+                                           lty_type = c(2, 2), transparency = 0.4){
+  prior_col_rgb = col2rgb(colour_choice[1])
+  post_col_rgb = col2rgb(colour_choice[2])
+  
+  prior_area_col = rgb(prior_col_rgb[1]/255, prior_col_rgb[2]/255, prior_col_rgb[3]/255, 
+                       alpha = transparency)
+  post_area_col = rgb(post_col_rgb[1]/255, post_col_rgb[2]/255, post_col_rgb[3]/255, 
+                      alpha = transparency)
+  
+  prior_density_vals = average_vector_values(prior_density[,col_num], smooth_num)
+  post_density_vals = average_vector_values(post_density[,col_num], smooth_num)
+  
+  max_ylim = max(c(max(prior_density_vals), max(post_density_vals)))
+  
+  plot(grid[,col_num], prior_density_vals,
+       xlim = c(min_xlim, max_xlim), ylim = c(0, max_ylim),
+       col = colour_choice[1],
+       main = TeX(paste("Prior & Posterior Density Histogram of $\\mu_{", col_num, "}$")),
+       xlab = TeX(paste("Value of $\\mu_{", col_num, "}$")),
+       ylab = "Density",
+       type = "l", lty = lty_type[1], lwd = 2)
+  
+  lines(grid[,col_num], post_density_vals, 
+        lty = lty_type[2], lwd = 2, col = colour_choice[2])
+  
+  polygon(grid[, col_num], prior_density_vals, col = prior_area_col, border = NA)
+  polygon(grid[, col_num], post_density_vals, col = post_area_col, border = NA)
+  
+  legend("topleft", legend=c("Prior", "Posterior"),
+         col= colour_choice, lty=lty_type, cex=0.8)
+}
+
+
+################################################################
+# OLD FUNCTIONS                                                #
+################################################################
+
+# note: below is the old function. It is being replaced.
 compute_rbr = function(gamma, delta, alpha01, alpha02, m1, m2, mu_post, min_xlim, max_xlim){
   # min_xlim: minimum values for the x-limit
   # max_xlim: maximum values for the x-limit
@@ -148,9 +226,7 @@ compute_rbr = function(gamma, delta, alpha01, alpha02, m1, m2, mu_post, min_xlim
   return(newlist)
 }
 
-################################################################
-# GRAPH FUNCTIONS                                              #
-################################################################
+# FUNCTIONS FOR GRAPHING!!
 
 # note: this might also work for the posterior as well...
 mu_graph = function(mu, type = "prior", col_num,
@@ -191,7 +267,7 @@ mu_graph = function(mu, type = "prior", col_num,
 }
 
 mu_graph_comparison = function(grid, mu_prior, mu_post, col_num,
-                               min_xlim, max_xlim,
+                               min_xlim = -10, max_xlim = 10,
                                smooth_num = 1,
                                colour_choice = c("blue", "red"),
                                lty_type = c(2, 2),
@@ -210,24 +286,8 @@ mu_graph_comparison = function(grid, mu_prior, mu_post, col_num,
                       alpha = transparency)
   
   # makes a graph that compares the prior and the posterior.
-  #max_val = max(c(max(mu_prior), max(mu_post[,col_num])))
-  #min_val = min(c(min(mu_prior), min(mu_post[,col_num])))
   max_val = max(c(max(mu_prior[,col_num]), max(mu_post[,col_num])))
   min_val = min(c(min(mu_prior[,col_num]), min(mu_post[,col_num])))
-  
-  # first: plot the posterior (have it be dependent on this)
-  #plot(grid[, col_num], 
-  #     mu_post[, col_num],
-  #     type = "l", 
-  #     lty = lty_type[2],
-  #     col = colour_choice[2],
-  #     ylim = c(min_val, max_val), 
-  #     xlim = c(-10, 10), # hard-coded, TESTING for now
-  #     main = TeX(paste("Graph of the Prior and Posterior of $\\mu_{", col_num, "}$")),
-  #     ylab = "Density",
-  #     xlab = TeX(paste("Value of $\\mu_{$", col_num, "}$")))
-  # second: plotting the prior
-  #lines(grid2, mu_prior, type = "l", col = colour_choice[1], lty = lty_type[1])
   
   # previous - commented out.
   # first plotting the prior
@@ -248,11 +308,9 @@ mu_graph_comparison = function(grid, mu_prior, mu_post, col_num,
         lty = lty_type[2])
   
   # adding the area under the graph plot
-  #polygon(grid[, col_num], 
-  #        force_bounds_0(mu_prior[, col_num]), 
-  #        col = prior_area_col, border = NA)
-  polygon(grid[, col_num], 
-          average_vector_values(mu_post[, col_num], smooth_num), 
+  polygon(grid[, col_num], force_bounds_0(mu_prior[, col_num]), 
+          col = prior_area_col, border = NA)
+  polygon(grid[, col_num], average_vector_values(mu_post[, col_num], smooth_num), 
           col = post_area_col, border = NA)
 }
 

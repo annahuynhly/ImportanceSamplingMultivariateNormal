@@ -38,6 +38,50 @@ post_sample_values = reactive({
   }
 })
 
+post_sample_weights = reactive({
+  if(input$post_comp_use == 1){ # use from the prior elicitation
+    weights(N = input$post_bigN, 
+            p = input$num_dimensions, 
+            mu = post_sample_values()$mu_xi, 
+            xi = post_sample_values()$xi, 
+            mu0 = prior_elicitation_mu_values()$mu0,
+            lambda0 = prior_elicitation_mu_values()$lambda0,
+            sigma_ii = sample_prior_values()$sigma_ii)
+  } else if (input$post_comp_use == 2){
+    weights(N = input$post_bigN, 
+            p = input$num_dimensions_post, 
+            mu = post_sample_values()$mu_xi, 
+            xi = post_sample_values()$xi, 
+            mu0 = create_necessary_vector(input$mu0_post),
+            lambda0 = create_necessary_vector(input$lambda0_post),
+            sigma_ii = sample_prior_values()$sigma_ii)
+  }
+})
+
+post_sample_p_val = reactive({
+  # not to be confused with p-values, the evidence against the null.
+  if(input$post_comp_use == 1){ # use from the prior elicitation
+    input$num_dimensions
+  } else if (input$post_comp_use == 2){
+    input$num_dimensions_post
+  }
+})
+
+sample_post_content_values = reactive({
+  posterior_content(N = input$post_bigN, 
+                    p = post_sample_p_val(), 
+                    effective_range = sample_prior_content_values()$effective_range, 
+                    mu = post_sample_values()$mu_xi, 
+                    xi = post_sample_values()$xi, 
+                    weights = post_sample_weights())
+}) 
+
+rbr_content = reactive({
+  relative_belief_ratio(p = post_sample_p_val(), 
+                        prior_content = sample_prior_content_values()$prior_density, 
+                        post_content = sample_post_content_values()$post_density)
+})
+
 # makes it so the output is delayed until the user submits the data
 sample_post_computations_outputs = eventReactive(input$submit_sample_post, {
   list(
@@ -77,6 +121,96 @@ output$postsample_download_xi = downloadHandler(
 
 # GRAPHING FUNCTIONS ###########################################
 
+#output$testing_post = renderPrint({
+#  sample_post_content_values()$post_density
+#})
+
+post_sample_posterior_content_graph_DOWNLOAD = function(){
+  content_density_plot(density = sample_post_content_values()$post_density, 
+                       col_num = input$post_graph_num, 
+                       grid = sample_prior_content_values()$plotting_grid, 
+                       type = "Posterior",
+                       min_xlim = input$post_xlim_min, 
+                       max_xlim = input$post_xlim_max,
+                       smooth_num = input$post_graph_smoother, 
+                       colour_choice = input$post_line_col,
+                       lty_type = 2, # need to let user modify this
+                       transparency = input$post_transparency)
+}
+
+post_sample_posterior_content_graph = eventReactive(input$submit_sample_post, {
+  post_sample_posterior_content_graph_DOWNLOAD()
+})
+
+### THE OUTPUT FOR THE PLOT
+output$sample_post_graph = renderPlot({
+  post_sample_posterior_content_graph()
+  #the_sample_post_graph() # previous before making changes
+})
+
+comparisons_content_graph_DOWNLOAD = function(){
+  comparison_content_density_plot(prior_density = sample_prior_content_values()$prior_density, 
+                                  post_density = sample_post_content_values()$post_density,
+                                  col_num = input$comparison_mu_col, 
+                                  grid = sample_prior_content_values()$plotting_grid, 
+                                  min_xlim = input$comparison_xlim_min, 
+                                  max_xlim = input$comparison_xlim_max,
+                                  smooth_num = input$comparison_smoother,
+                                  colour_choice = c(input$comparison_prior_col, 
+                                                    input$comparison_post_col),
+                                  lty_type = c(as.numeric(input$comparison_prior_lty), 
+                                               as.numeric(input$comparison_post_lty)), 
+                                  transparency = input$comparison_transparency)
+}
+
+output$sample_priorpost_graph = renderPlot({
+  comparisons_content_graph_DOWNLOAD()
+  #mu_graph_comparison(grid = rbr_computation_values()$grid, 
+  #                    mu_prior = rbr_computation_values()$prior_mu,  
+  #                    mu_post = rbr_computation_values()$post_mu, 
+  #                    col_num = input$comparison_mu_col,
+  #                    min_xlim = input$comparison_xlim_min, 
+  #                    max_xlim = input$comparison_xlim_max,
+  #                    smooth_num = input$comparison_smoother,
+  #                    colour_choice = c(input$comparison_prior_col, 
+  #                                      input$comparison_post_col),
+  #                    lty_type = c(as.numeric(input$comparison_prior_lty), 
+  #                                 as.numeric(input$comparison_post_lty)), 
+  #                    transparency = input$comparison_transparency
+  #)
+})
+
+rbr_content_graph_DOWNLOAD = function(){
+  content_density_plot(density = rbr_content()$RBR_modified, 
+                       col_num = input$comparison_mu_col, 
+                       grid = sample_prior_content_values()$plotting_grid, 
+                       type = "RBR",
+                       min_xlim = input$comparison_xlim_min, 
+                       max_xlim = input$comparison_xlim_max,
+                       smooth_num = input$comparison_smoother,
+                       colour_choice = input$comparison_rbr_col,
+                       lty_type = as.numeric(input$comparison_rbr_lty), 
+                       transparency = input$comparison_transparency)
+}
+
+output$sample_rbr_graph = renderPlot({
+  rbr_content_graph_DOWNLOAD()
+  #rbr_mu_graph(grid = rbr_computation_values()$grid, 
+  #             mu = rbr_computation_values()$rbr_mu, 
+  #             type = "relative belief ratio", 
+  #             smooth_num = input$comparison_smoother,
+  #             col_num = input$comparison_mu_col,
+  #             colour_choice = input$comparison_rbr_col,
+  #             lty_type = as.numeric(input$comparison_rbr_lty),
+  #             transparency = input$comparison_transparency)
+})
+
+
+################################################################
+# OLD PLOTS - KEPT IN CASE WE NEED IT LATER                    #
+################################################################
+
+
 # plotting for the relative belief ratio
 rbr_computation_values = reactive({
   # note: this requires mandatory inputs from the prior explicitly.
@@ -92,35 +226,9 @@ rbr_computation_values = reactive({
 })
 
 
-output$sample_priorpost_graph = renderPlot({
-  mu_graph_comparison(grid = rbr_computation_values()$grid, 
-                      mu_prior = rbr_computation_values()$prior_mu,  
-                      mu_post = rbr_computation_values()$post_mu, 
-                      col_num = input$comparison_mu_col,
-                      min_xlim = input$comparison_xlim_min, 
-                      max_xlim = input$comparison_xlim_max,
-                      smooth_num = input$comparison_smoother,
-                      colour_choice = c(input$comparison_prior_col, 
-                                        input$comparison_post_col),
-                      lty_type = c(as.numeric(input$comparison_prior_lty), 
-                                   as.numeric(input$comparison_post_lty)), 
-                      transparency = input$comparison_transparency
-  )
-})
-
-output$sample_rbr_graph = renderPlot({
-  rbr_mu_graph(grid = rbr_computation_values()$grid, 
-               mu = rbr_computation_values()$rbr_mu, 
-               type = "relative belief ratio", 
-               smooth_num = input$comparison_smoother,
-               col_num = input$comparison_mu_col,
-               colour_choice = input$comparison_rbr_col,
-               lty_type = as.numeric(input$comparison_rbr_lty),
-               transparency = input$comparison_transparency)
-})
 
 
-# rename this..
+# PLOT PREVIOUSLY USED TO SHOW THE POSTERIOR CONTENT. MAY NEED TO MOVE LATER.
 the_sample_post_graph = eventReactive(input$submit_sample_post, {
   mu_graph(
     mu = post_sample_values()$mu_xi, 
@@ -134,11 +242,11 @@ the_sample_post_graph = eventReactive(input$submit_sample_post, {
 })
 
 
-###
-# this was modified
-output$sample_post_graph = renderPlot({
-  the_sample_post_graph()
-})
+
+
+
+
+
 
 ## the new download is below
 
