@@ -18,17 +18,10 @@ page_sample_computation = div(
     sidebarPanel(
       width = 3,
       
-      downloadButton(outputId = 'download_prior_sample_mu', 
-                     label = 'Download $\\mu$'),
-      downloadButton(outputId = 'download_prior_sample_sigma', 
-                     label = 'Download $\\Sigma$'),
-      # not added below until we get confirmation
-      #downloadButton(outputId = 'download_prior_elicit_variance', label = 'Download variance'),
-      downloadButton(outputId = "download_prior_sample_correlation", 
-                     label = "Download Correlation Matrix"),
+      actionButton(inputId = "submit_sample_prior", label = "Submit Data"),
       
       numericInput(inputId = "prior_sample_bigN",
-                   label = 'Insert N, the Monte Carlo sample size',
+                   label = 'Insert the Monte Carlo sample size',
                    value = 1000),
       
       numericInput(inputId = "prior_sample_m",
@@ -51,6 +44,16 @@ page_sample_computation = div(
       
     ),
     mainPanel(
+      
+      downloadButton(outputId = 'download_prior_sample_mu', 
+                     label = 'Download $\\mu$'),
+      downloadButton(outputId = 'download_prior_sample_sigma', 
+                     label = 'Download $\\Sigma$'),
+      # not added below until we get confirmation
+      #downloadButton(outputId = 'download_prior_elicit_variance', label = 'Download variance'),
+      downloadButton(outputId = "download_prior_sample_correlation", 
+                     label = "Download Correlation Matrix"),
+      
       withSpinner(plotOutput("prior_sample_histogram")),
       
       fluidRow(

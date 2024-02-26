@@ -2,15 +2,11 @@
 # TODO LIST                                                    #
 ################################################################
 
-# 1. PROPERLY INPLEMENT THE POSTERIOR
-# 2. NEED TO FIX DOWNLOAD FILE FORMAT (see email from Mike)
-# 3. SET SEEDS FOR RANDOMIZATION (includes prior sampling)
-
+# 1. NEED TO FIX DOWNLOAD FILE FORMAT (see email from Mike)
+# 2. SET SEEDS FOR RANDOMIZATION (includes prior sampling)
 
 # THINGS TO ASK
 # need to check the variance matrix -> is this what I think it is (sampling from the prior)
-# need to ask about what to plot -> the third thing to plot from the unconditional prior matches the earlier graph
-
 
 ################################################################
 # LIBRARIES                                                    #

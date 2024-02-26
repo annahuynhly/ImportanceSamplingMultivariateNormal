@@ -11,7 +11,7 @@ sample_prior_values = eventReactive(input$submit_prior_elicit_mu, {
                lambda0 = prior_elicitation_mu_values()$lambda0)
 })
 
-sample_prior_content_values = reactive({
+sample_prior_content_values = eventReactive(input$submit_sample_prior, {
   # WARNING: the xi right now is not operational.
   prior_content(N = input$prior_sample_bigN, 
                 p = input$num_dimensions, 
