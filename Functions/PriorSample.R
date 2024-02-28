@@ -104,17 +104,16 @@ prior_content = function(N, p, m, mu, xi,
     plot_grid = grid[-length(grid)] + diff(grid)/2
     plotting_grid = cbind(plotting_grid, plot_grid)
     
-    # computing prior content
-    prior_content_vec = c() # will be of length m
-    for(i in 1:m){
-      prior_content = 0
-      for(j in 1:N){
+    prior_content_vec = rep(0, m)
+    for(j in 1:N){
+      for(i in 1:m){
         if(between(psi_val[,k][j], grid[i], grid[i+1])){ # CHANGES HERE
-          prior_content = prior_content + 1
+          prior_content_vec[i] =  prior_content_vec[i] + 1
+          break
         }
       }
-      prior_content_vec = c(prior_content_vec, prior_content)
     }
+    
     prior_content_vec = prior_content_vec/N
     prior_density = prior_content_vec / delta
     prior_content_matrix = cbind(prior_content_matrix, prior_content_vec)
@@ -124,7 +123,7 @@ prior_content = function(N, p, m, mu, xi,
                  "effective_range" = effective_range,
                  "prior_content" = prior_content_matrix,
                  "prior_density" = prior_density_matrix,
-                 "delta" = delta)
+                 "delta" = as.numeric(delta))
   return(newlist)
 }
 

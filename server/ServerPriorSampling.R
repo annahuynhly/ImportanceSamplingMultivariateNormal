@@ -42,8 +42,20 @@ output$prior_sample_histogram = renderPlot({
   prior_sample_histogram_DOWNLOAD()
 })
 
+sample_prior_delta_values = reactive({
+  effective_range = sample_prior_content_values()$effective_range[,input$prior_sample_col]
+  n = length(effective_range)
+  effect_range_lwr_bd = effective_range[1]
+  effect_range_upr_bd = effective_range[n]
+  
+  data.frame("delta" =  sample_prior_content_values()$delta,
+             "effective_range_lower_bound" = effect_range_lwr_bd,
+             "effective_range_upper_bound" = effect_range_upr_bd)
+})
+
 output$prior_sample_delta = renderPrint({
-  sample_prior_content_values()$delta
+  sample_prior_delta_values()
+  #list("delta" = sample_prior_content_values()$delta)
 })
 
 # old histogram - kept here in case it is needed later.
