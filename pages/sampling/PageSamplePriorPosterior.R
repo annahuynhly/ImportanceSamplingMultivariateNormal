@@ -35,6 +35,10 @@ page_posteriorcomputations = div(
         )
       )),
     
+      numericInput(inputId = "post_seed",
+                   label = "Insert the seed",
+                   value = 1),
+      
       numericInput(inputId = "post_bigN",
                    label = 'Insert N, the monte carlo sample size',
                    value = 1000),
@@ -240,7 +244,7 @@ page_sampling = div(
   titlePanel("Posterior Computations"),
   tabsetPanel(type = "tabs",
               tabPanel("Description", page_samplingdescription),
-              tabPanel("Sampling from the Posterior", page_posteriorcomputations),
+              tabPanel("Integrating with Respect to the Posterior", page_posteriorcomputations),
               tabPanel("Comparison Plots for Mu", page_comparison_graphs),
               #tabPanel("Graphs", page_priorgraph),
   )

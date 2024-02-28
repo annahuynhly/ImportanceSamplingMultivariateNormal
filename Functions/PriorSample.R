@@ -79,7 +79,8 @@ psi = function(mu, xi){
   return(mu)
 }
 
-prior_content = function(N, p, m, mu, xi){
+prior_content = function(N, p, m, mu, xi, 
+                         small_quantile = 0.005, large_quantile = 0.995){
   # first part: denote psi(mu, xi)
   # m: number of sub intervals 
   # (note: assumption is that the num of time intervals are the same for each mu1 - may need to change
@@ -94,7 +95,7 @@ prior_content = function(N, p, m, mu, xi){
   
   for(k in 1:p){
     # first: gathering the effective range
-    quant_range = quantile(psi_val[,k], prob = c(0.005, 0.995))
+    quant_range = quantile(psi_val[,k], prob = c(small_quantile, large_quantile))
     delta = (quant_range[2] - quant_range[1])/m # length of the sub intervals
     grid = seq(quant_range[1], quant_range[2], by = delta) # making a grid of the sub intervals
     # note: since we're looking at the effective range, the prior content doesn't sum to 1.
@@ -122,7 +123,8 @@ prior_content = function(N, p, m, mu, xi){
   newlist = list("plotting_grid" = plotting_grid,
                  "effective_range" = effective_range,
                  "prior_content" = prior_content_matrix,
-                 "prior_density" = prior_density_matrix)
+                 "prior_density" = prior_density_matrix,
+                 "delta" = delta)
   return(newlist)
 }
 

@@ -20,6 +20,10 @@ page_sample_computation = div(
       
       actionButton(inputId = "submit_sample_prior", label = "Submit Data"),
       
+      numericInput(inputId = "prior_seed",
+                   label = "Insert the seed",
+                   value = 1),
+      
       numericInput(inputId = "prior_sample_bigN",
                    label = 'Insert the Monte Carlo sample size',
                    value = 1000),
@@ -27,6 +31,17 @@ page_sample_computation = div(
       numericInput(inputId = "prior_sample_m",
                    label = 'Insert the number of desired subintervals for the effective range',
                    value = 400),
+      
+      p("Below is for denoting the smaller and larger quantiles for computing the effective range."),
+      
+      fluidRow(box(width = 12,
+        splitLayout(
+          numericInput(inputId = "prior_sample_small_quantile", 
+                    label = "Small Quantile", value = 0.005),
+          numericInput(inputId = "prior_sample_large_quantile", 
+                    label = "Large Quantile", value = 0.995),
+        )
+      )),
       
       numericInput(inputId = "prior_sample_col", 
                    label = 'The column of $\\mu$ for the graph.',
@@ -55,6 +70,8 @@ page_sample_computation = div(
                      label = "Download Correlation Matrix"),
       
       withSpinner(plotOutput("prior_sample_histogram")),
+      
+      withSpinner(verbatimTextOutput("prior_sample_delta")),
       
       fluidRow(
         column(4,

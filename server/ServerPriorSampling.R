@@ -2,7 +2,10 @@
 # BACKEND FOR PRIOR SAMPLING                                   #
 ################################################################
 
+prior_sampling_seed = reactive(input$prior_seed)
+
 sample_prior_values = eventReactive(input$submit_prior_elicit_mu, {
+  set.seed(prior_sampling_seed())
   sample_prior(N = input$prior_sample_bigN, 
                p = input$num_dimensions, 
                alpha01 = prior_elicitation_sigma_values()$alpha01,
@@ -12,12 +15,15 @@ sample_prior_values = eventReactive(input$submit_prior_elicit_mu, {
 })
 
 sample_prior_content_values = eventReactive(input$submit_sample_prior, {
+  set.seed(prior_sampling_seed())
   # WARNING: the xi right now is not operational.
   prior_content(N = input$prior_sample_bigN, 
                 p = input$num_dimensions, 
                 m = input$prior_sample_m, 
                 mu = sample_prior_values()$mu_matrix, 
-                xi = find_inverse_alt(prior_sample_values()$covariance_matrix))
+                xi = find_inverse_alt(prior_sample_values()$covariance_matrix),
+                small_quantile = input$prior_sample_small_quantile, 
+                large_quantile = input$prior_sample_large_quantile)
 })
 
 prior_sample_histogram_DOWNLOAD = function(){
@@ -34,6 +40,10 @@ prior_sample_histogram_DOWNLOAD = function(){
 
 output$prior_sample_histogram = renderPlot({
   prior_sample_histogram_DOWNLOAD()
+})
+
+output$prior_sample_delta = renderPrint({
+  sample_prior_content_values()$delta
 })
 
 # old histogram - kept here in case it is needed later.

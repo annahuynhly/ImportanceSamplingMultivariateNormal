@@ -52,10 +52,10 @@ source("./pages/mutivariate_normal/PagePosteriorComputations.R")
 
 source("./pages/algorithm_description.R")
 
-source("./Functions/HelperFunctions.R")
-source("./Functions/PriorElicitation.R")
-source("./Functions/PriorSample.R")
-source("./Functions/PosteriorComputations.R")
+source("./functions/HelperFunctions.R")
+source("./functions/PriorElicitation.R")
+source("./functions/PriorSample.R")
+source("./functions/PosteriorComputations.R")
 
 ################################################################
 # FRONTEND                                                     #
@@ -73,7 +73,7 @@ page_ph2 = div(
 )
   
 ui = navbarPage(
-  title = "Prior Elicitation and Posterior Calculations for Linear Models with Normal Error",
+  title = "Prior Elicitation and Posterior Calculations for Linear Models",
   tabPanel("Home", page_home),
   navbarMenu(
     "Multivariate Normal",

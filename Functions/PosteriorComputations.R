@@ -64,7 +64,7 @@ sample_post_computations = function(N, Y, p, mu0, lambda0){
   return(list("xi" = xi, "mu_xi" = mu_xi))
 }
 
-k = function(p, mu, xi, mu0, lambda0, sigma_ii){
+k = function(p, mu, xi, mu0, lambda0, sigma_ii, alpha01, alpha02){
   
   Lambda0 = diag(lambda0)
   inv_Lambda0 = find_inverse_alt(Lambda0)
@@ -78,10 +78,10 @@ k = function(p, mu, xi, mu0, lambda0, sigma_ii){
   return(x1 * x2 * x3)
 }
 
-weights = function(N, p, mu, xi, mu0, lambda0, sigma_ii){
+weights = function(N, p, mu, xi, mu0, lambda0, sigma_ii, alpha01, alpha02){
   k_vector = c()
   for(i in 1:N){
-    k_val = k(p, mu[i,], xi[,,i], mu0, lambda0, sigma_ii[i,])
+    k_val = k(p, mu[i,], xi[,,i], mu0, lambda0, sigma_ii[i,], alpha01, alpha02)
     k_vector = rbind(k_vector, k_val)
   }
   weights_vector = c()
