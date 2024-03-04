@@ -40,7 +40,7 @@ elicit_prior_sigma_function = function(p, gamma, s1, s2, upper_bd, lower_bd){
       }
       if(test < 1 - gam){
         alphaup = alpha
-      } else if (test > 1 - gam){ # later: see if the else if is causing an error to make the code efficient
+      } else if (test > 1 - gam){ 
         alphalow = alpha
       }
     }

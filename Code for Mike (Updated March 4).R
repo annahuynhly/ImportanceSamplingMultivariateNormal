@@ -10,27 +10,28 @@ library(MASS)
 
 # Mandatory manual inputs
 
-p = 3
+p = 6
 gamma = 0.99
 N = 1000 # monte carlo sample size
-m = 400 # number of sub-intervals (oddly consistent all around)
+m = 500 # number of sub-intervals (oddly consistent all around)
 
 # Manual input data version ############################
 
-s1 = c(2, 2, 2)
-s2 = c(10,10,10)
-lower_bd = c(0,0,0)
-upper_bd = c(50,50,50)
-m1 = c(-5,-5,-5)
-m2 = c(5,5,5)
+s1 = c(2,3,2,5,6,1)
+s2 = c(10,12,8,9,13,14)
+lower_bd = c(0,2,5,1,4,1)
+upper_bd = c(50,46,48,60,35,67)
+m1 = c(-5,-3,-5,-6,-1,-8)
+m2 = c(5,13,19,12,6,7)
 
 # manually making the Y-data
-mu = rep(2, p)
-sigma = diag(p) 
+p = 6
+mu = c(0, 5, 7, 3, 2.5, -0.5) + rnorm(p, 0, 1)
+sigma = diag(p)
 n = 100
 Y = mvrnorm(n = n, mu = mu, Sigma = sigma)
 Y_data = as.data.frame(Y)
-colnames(Y_data) = c("Y1", "Y2", "Y3")
+colnames(Y_data) = c("Y1", "Y2", "Y3", "Y4", "Y5", "Y6")
 
 Y_data = as.matrix(Y_data)
 
@@ -89,7 +90,7 @@ elicit_prior_sigma_function = function(p, gamma, s1, s2, upper_bd, lower_bd){
       }
       if(test < 1 - gam){
         alphaup = alpha
-      } else if (test > 1 - gam){ # later: see if the else if is causing an error to make the code efficient
+      } else if (test > 1 - gam){
         alphalow = alpha
       }
     }
@@ -230,7 +231,8 @@ sample_prior = function(N, p, alpha01, alpha02, mu0, lambda0){
               "covariance_matrix" = covariance_mat, "correlation_matrix" = R))
 }
 
-prior_content = function(N, p, m, mu, xi){
+prior_content = function(N, p, m, mu, xi, 
+                         small_quantile = 0.005, large_quantile = 0.995){
   # first part: denote psi(mu, xi)
   # m: number of sub intervals 
   # (note: assumption is that the num of time intervals are the same for each mu1 - may need to change
@@ -245,7 +247,7 @@ prior_content = function(N, p, m, mu, xi){
   
   for(k in 1:p){
     # first: gathering the effective range
-    quant_range = quantile(psi_val[,k], prob = c(0.005, 0.995))
+    quant_range = quantile(psi_val[,k], prob = c(small_quantile, large_quantile))
     delta = (quant_range[2] - quant_range[1])/m # length of the sub intervals
     grid = seq(quant_range[1], quant_range[2], by = delta) # making a grid of the sub intervals
     # note: since we're looking at the effective range, the prior content doesn't sum to 1.
@@ -254,17 +256,16 @@ prior_content = function(N, p, m, mu, xi){
     plot_grid = grid[-length(grid)] + diff(grid)/2
     plotting_grid = cbind(plotting_grid, plot_grid)
     
-    # computing prior content
-    prior_content_vec = c() # will be of length m
-    for(i in 1:m){
-      prior_content = 0
-      for(j in 1:N){
+    prior_content_vec = rep(0, m)
+    for(j in 1:N){
+      for(i in 1:m){
         if(between(psi_val[,k][j], grid[i], grid[i+1])){ # CHANGES HERE
-          prior_content = prior_content + 1
+          prior_content_vec[i] =  prior_content_vec[i] + 1
+          break
         }
       }
-      prior_content_vec = c(prior_content_vec, prior_content)
     }
+    
     prior_content_vec = prior_content_vec/N
     prior_density = prior_content_vec / delta
     prior_content_matrix = cbind(prior_content_matrix, prior_content_vec)
@@ -273,7 +274,8 @@ prior_content = function(N, p, m, mu, xi){
   newlist = list("plotting_grid" = plotting_grid,
                  "effective_range" = effective_range,
                  "prior_content" = prior_content_matrix,
-                 "prior_density" = prior_density_matrix)
+                 "prior_density" = prior_density_matrix,
+                 "delta" = as.numeric(delta))
   return(newlist)
 }
 
@@ -373,8 +375,6 @@ prior_content_vals = prior_content(N, p, m,
                                    mu = sample_prior_vals$mu_matrix, 
                                    xi = find_inverse_alt(test$covariance_matrix[,,1]))
 
-#prior_content_vals$effective_range
-
 content_density_plot(density = prior_content_vals$prior_density, 
                      col_num = 1, 
                      grid = prior_content_vals$plotting_grid, 
@@ -424,18 +424,15 @@ sample_post_computations = function(N, Y, p, mu0, lambda0){
     In = matrix(t(rep(1, n))) # identity column
     Ybar_t = matrix(Ybar, nrow=1, ncol = p) # transpose
     
-    #S = (1/(n-1)) * t(Y - In%*%Ybar_t) %*% (Y - In%*%Ybar_t)
     S = (1/(n-1)) * t(Y - In%*%rowMeans(t(Y))) %*% (Y - In%*%rowMeans(t(Y))) 
   } else {
     return("Error: no data given.")
   }
   
-  # NOTE: COPY AND PASTE THIS ELSEWHERE
   lambda0 = rep(max(lambda0), p)
   
   # instead of using solve, may need to move to an alt version (see helper functions)
   Sigma_Y = find_inverse_alt((S + n/(1 + n * lambda0^2) * (rowMeans(t(Y)) - mu0) %*% t(rowMeans(t(Y)) - mu0)))
-  # seems like in the formula, there's a summation here but unsure what it represents
   mu_Y = ((n + 1/lambda0^2)^-1) * (mu0/lambda0^2 + n * rowMeans(t(Y)))
   mu_Sigma = ((n + 1/lambda0^2)^-1) * find_inverse_alt(Sigma_Y)
   
@@ -445,7 +442,7 @@ sample_post_computations = function(N, Y, p, mu0, lambda0){
   return(list("xi" = xi, "mu_xi" = mu_xi))
 }
 
-k = function(p, mu, xi, mu0, lambda0, sigma_ii){
+k = function(p, mu, xi, mu0, lambda0, sigma_ii, alpha01, alpha02){
 
   Lambda0 = diag(lambda0)
   inv_Lambda0 = find_inverse_alt(Lambda0)
@@ -459,10 +456,10 @@ k = function(p, mu, xi, mu0, lambda0, sigma_ii){
   return(x1 * x2 * x3)
 }
 
-weights = function(N, p, mu, xi, mu0, lambda0, sigma_ii){
+weights = function(N, p, mu, xi, mu0, lambda0, sigma_ii, alpha01, alpha02){
   k_vector = c()
   for(i in 1:N){
-    k_val = k(p, mu[i,], xi[,,i], mu0, lambda0, sigma_ii[i,])
+    k_val = k(p, mu[i,], xi[,,i], mu0, lambda0, sigma_ii[i,], alpha01, alpha02)
     k_vector = rbind(k_vector, k_val)
   }
   weights_vector = c()
@@ -508,43 +505,24 @@ posterior_content = function(N, p, effective_range, mu, xi, weights){
   return(newlist)
 }
 
-comparison_content_density_plot = function(prior_density, post_density, col_num, grid,
-                                           min_xlim = -10, max_xlim = 10,
-                                           smooth_num = 1, colour_choice = c("red", "blue"),
-                                           lty_type = c(2, 2), transparency = 0.4){
-  prior_col_rgb = col2rgb(colour_choice[1])
-  post_col_rgb = col2rgb(colour_choice[2])
-  
-  prior_area_col = rgb(prior_col_rgb[1]/255, prior_col_rgb[2]/255, prior_col_rgb[3]/255, 
-                       alpha = transparency)
-  post_area_col = rgb(post_col_rgb[1]/255, post_col_rgb[2]/255, post_col_rgb[3]/255, 
-                      alpha = transparency)
-  
-  prior_density_vals = average_vector_values(prior_density[,col_num], smooth_num)
-  post_density_vals = average_vector_values(post_density[,col_num], smooth_num)
-  
-  max_ylim = max(c(max(prior_density_vals), max(post_density_vals)))
-  
-  plot(grid[,col_num], prior_density_vals,
-       xlim = c(min_xlim, max_xlim), ylim = c(0, max_ylim),
-       col = colour_choice[1],
-       main = TeX(paste("Prior & Posterior Density Histogram of $\\mu_{", col_num, "}$")),
-       xlab = TeX(paste("Value of $\\mu_{", col_num, "}$")),
-       ylab = "Density",
-       type = "l", lty = lty_type[1], lwd = 2)
-  
-  lines(grid[,col_num], post_density_vals, 
-        lty = lty_type[2], lwd = 2, col = colour_choice[2])
-  
-  polygon(grid[, col_num], prior_density_vals, col = prior_area_col, border = NA)
-  polygon(grid[, col_num], post_density_vals, col = post_area_col, border = NA)
-  
-  legend("topleft", legend=c("Prior", "Posterior"),
-         col= colour_choice, lty=lty_type, cex=0.8)
+# changed below.
+true_prior_comparison = function(p, alpha01, alpha02, mu0, lambda0, grid){
+  # generates the true prior. 
+  prior_matrix = c()
+  for(i in 1:p){
+    scale1 = sqrt(alpha02[i]/alpha01[i]) 
+    scale3 = dt(grid[,i], 2*alpha01[i])
+    scale = scale1 * lambda0[i] * scale3
+    prior = scale #mu0[i] + scale
+    
+    prior_matrix = cbind(prior_matrix, prior)
+  }
+  newlist = list("prior_matrix" = prior_matrix)
+  return(newlist)
 }
 
 relative_belief_ratio = function(p, prior_content, post_content){
-  
+  # computes the relative belief
   rbr_vector = c()
   for(k in 1:p){
     rbr_vals = post_content[,k] / prior_content[,k] 
@@ -559,6 +537,45 @@ relative_belief_ratio = function(p, prior_content, post_content){
   return(newlist)
 }
 
+# changed below.
+comparison_content_density_plot = function(prior_density, post_density, col_num, 
+                                           prior_grid, post_grid,
+                                           min_xlim = -10, max_xlim = 10,
+                                           smooth_num = c(1, 1), 
+                                           colour_choice = c("red", "blue"),
+                                           lty_type = c(2, 2), transparency = 0.4){
+  # note: this version compares with the sampled prior, not the true prior.
+  prior_col_rgb = col2rgb(colour_choice[1])
+  post_col_rgb = col2rgb(colour_choice[2])
+  
+  prior_area_col = rgb(prior_col_rgb[1]/255, prior_col_rgb[2]/255, prior_col_rgb[3]/255, 
+                       alpha = transparency)
+  post_area_col = rgb(post_col_rgb[1]/255, post_col_rgb[2]/255, post_col_rgb[3]/255, 
+                      alpha = transparency)
+  
+  prior_density_vals = average_vector_values(prior_density[,col_num], smooth_num[1])
+  post_density_vals = average_vector_values(post_density[,col_num], smooth_num[2])
+  
+  max_ylim = max(c(max(prior_density_vals), max(post_density_vals)))
+  
+  plot(prior_grid[,col_num], prior_density_vals,
+       xlim = c(min_xlim, max_xlim), ylim = c(0, max_ylim),
+       col = colour_choice[1],
+       main = TeX(paste("Prior & Posterior Density Histogram of $\\mu_{", col_num, "}$")),
+       xlab = TeX(paste("Value of $\\mu_{", col_num, "}$")),
+       ylab = "Density",
+       type = "l", lty = lty_type[1], lwd = 2)
+  
+  lines(post_grid[,col_num], post_density_vals, 
+        lty = lty_type[2], lwd = 2, col = colour_choice[2])
+  
+  polygon(prior_grid[, col_num], prior_density_vals, col = prior_area_col, border = NA)
+  polygon(post_grid[, col_num], post_density_vals, col = post_area_col, border = NA)
+  
+  legend("topleft", legend=c("Prior", "Posterior"),
+         col= colour_choice, lty=lty_type, cex=0.8)
+}
+
 ##################################################
 # ELICITATION FOR THE POSTERIOR (VALUES)         #
 ##################################################
@@ -568,9 +585,10 @@ post_vals = sample_post_computations(N, Y = Y_data, p, mu0, lambda0)
 post_xi = post_vals$xi
 post_mu = post_vals$mu
 
-#k(p, post_mu[1,], post_xi[,,1], mu0, lambda0, sigma_ii[1,])
-
-test_weights = weights(N, p, post_mu, post_xi, mu0, lambda0, sigma_ii)
+test_weights = weights(N = N, p = p, 
+                       mu = post_mu, xi = post_xi, 
+                       mu0 = mu0, lambda0 = lambda0, 
+                       sigma_ii = sigma_ii, alpha01 = alpha01, alpha02 = alpha02)
 
 post_content_vals = posterior_content(N, p, prior_content_vals$effective_range,
                                       post_mu, post_xi, test_weights)
@@ -578,47 +596,28 @@ post_content_vals = posterior_content(N, p, prior_content_vals$effective_range,
 test_tru_prior = true_prior_comparison(p, alpha01, alpha02, mu0, lambda0, 
                       grid = prior_content_vals$plotting_grid)
 
+par(mfrow = c(1, 2))
 
-
-comparison_content_density_plot(prior_density = test_tru_prior, 
+comparison_content_density_plot(prior_density = test_tru_prior$prior_matrix, 
                                 post_density = post_content_vals$post_density, 
-                                col_num = 1, grid = prior_content_vals$plotting_grid,
-                                min_xlim = -10, max_xlim = 10,
-                                smooth_num = 1, colour_choice = c("red", "blue"),
+                                col_num = 2, 
+                                prior_grid = prior_content_vals$plotting_grid,
+                                post_grid = prior_content_vals$plotting_grid,
+                                min_xlim = -5, max_xlim = 10,
+                                smooth_num = c(1,1), colour_choice = c("red", "blue"),
                                 lty_type = c(2, 2), transparency = 0.3)
 
-
-
-sum(post_content_vals$post_content[,1])
-
-length(post_content_vals$effective_range[,1])
-
-# Plot of the posterior density
-content_density_plot(density = post_content_vals$post_density, 
-                     col_num = 1, 
-                     grid = prior_content_vals$plotting_grid, 
-                     type = "Posterior",
-                     min_xlim = -10, max_xlim = 10,
-                     smooth_num = 1, colour_choice = "blue",
-                     lty_type = 2, transparency = 0.4)
-
-# Comparing the prior and the posterior
-comparison_content_density_plot(prior_density = prior_content_vals$prior_density, 
-                                post_density = post_content_vals$post_density, 
-                                col_num = 1, grid = prior_content_vals$plotting_grid,
-                                min_xlim = -10, max_xlim = 10,
-                                smooth_num = 1, colour_choice = c("red", "blue"),
-                                lty_type = c(2, 2), transparency = 0.3)
 
 rbr_vals = relative_belief_ratio(p = 3, 
-                                 prior_content = prior_content_vals$prior_content, 
+                                 prior_content = test_tru_prior$prior_matrix, 
                                  post_content = post_content_vals$post_content)
 
 # the relative belief ratio
 content_density_plot(density = rbr_vals$RBR_modified, 
-                     col_num = 1, 
+                     col_num = 2, 
                      grid = prior_content_vals$plotting_grid, 
                      type = "RBR",
-                     min_xlim = -10, max_xlim = 10,
-                     smooth_num = 1, colour_choice = "blue",
+                     min_xlim = -5, max_xlim = 10,
+                     smooth_num = 1, colour_choice = "green",
                      lty_type = 2, transparency = 0.4)
+

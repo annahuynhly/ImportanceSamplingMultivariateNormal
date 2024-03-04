@@ -97,14 +97,13 @@ output$prior_sigma_txt_example_table = renderDT(
 
 # creating test sample data (changes every time for fun!)
 test_sample_data = reactive({
-  p = 3#5
-  mu = rep(2, p)
-  #mu = rep(0, p) 
-  sigma = diag(p) 
+  p = 6
+  mu = c(0, 5, 7, 3, 2.5, -0.5) + rnorm(p, 0, 1)
+  sigma = diag(p)
   n = 100
   Y = mvrnorm(n = n, mu = mu, Sigma = sigma)
   data = as.data.frame(Y)
-  colnames(data) = c("Y1", "Y2", "Y3") #c("Y1", "Y2", "Y3", "Y4", "Y5")
+  colnames(data) = c("Y1", "Y2", "Y3", "Y4", "Y5", "Y6")
   data
 })
 

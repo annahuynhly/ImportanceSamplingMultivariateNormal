@@ -82,7 +82,6 @@ psi = function(mu, xi){
   return(mu)
 }
 
-# made the code more efficient - may need to change for the version for mike
 prior_content = function(N, p, m, mu, xi, 
                          small_quantile = 0.005, large_quantile = 0.995){
   # first part: denote psi(mu, xi)

@@ -60,7 +60,7 @@ page_elicitsigma = div(
       
       numericInput(inputId = "num_dimensions",
                    label = 'Insert the number of dimensions, $p$.',
-                   min = 1, max = 10000000, step = 1, value = 3),
+                   min = 1, max = 10000000, step = 1, value = p),
       
       numericInput(inputId = "virtual_uncertainty",
                    label = 'Insert the virtual uncertainty, $\\gamma$.',
@@ -79,8 +79,10 @@ page_elicitsigma = div(
         condition = "input.prior_sigma_input_type == 'manual'",
         fluidRow(box(width = 12,
           splitLayout(
-            textInput(inputId = "elicit_s1", label = "Insert $s_{1i}, ..., s_{1p}$", value = "2,2,2"),
-            textInput(inputId = "elicit_s2", label = "Insert $s_{2i}, ..., s_{2p}$", value = "10,10,10"),
+            textInput(inputId = "elicit_s1", label = "Insert $s_{1i}, ..., s_{1p}$", 
+                      value = "2,3,2,5,6,1"),
+            textInput(inputId = "elicit_s2", label = "Insert $s_{2i}, ..., s_{2p}$", 
+                      value = "10,12,8,9,13,14"),
           )
         )),
         
@@ -89,9 +91,9 @@ page_elicitsigma = div(
         fluidRow(box(width = 12,
           splitLayout(
             textInput(inputId = "alphalow", label = "Lower bound",
-                      value = "0,0,0"),
+                      value = "0,2,5,1,4,1"),
             textInput(inputId = "alphaup", label = "Upper bound",
-                      value = "50,50,50"),
+                      value = "50,46,48,60,35,67"),
           )
         )),
       ), # end of conditional panel
@@ -173,11 +175,11 @@ page_elicitmu = div(
             textInput(
               inputId = "m1",
               label = "$m_{11}, m_{12}, ..., m_{1p}$",
-              value = "-5,-5,-5"),
+              value = "-5,-3,-5,-6,-1,-8"),
             textInput(
               inputId = "m2",
               label = "$m_{21}, m_{22}, ..., m_{2p}$",
-              value = "5,5,5"),
+              value = "5,13,19,12,6,7"),
           )
         )),
       ), # end of conditional panel

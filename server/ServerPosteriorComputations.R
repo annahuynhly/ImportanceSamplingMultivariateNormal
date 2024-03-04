@@ -98,7 +98,7 @@ output$debugging_prior = renderPrint({
 
 rbr_content = reactive({
   relative_belief_ratio(p = post_sample_p_val(), 
-                        prior_content = sample_prior_content_values()$prior_density, 
+                        prior_content = true_prior_values()$prior_matrix, #sample_prior_content_values()$prior_density, 
                         post_content = sample_post_content_values()$post_density)
 })
 
@@ -169,10 +169,11 @@ output$sample_post_graph = renderPlot({
 })
 
 comparisons_content_graph_DOWNLOAD = function(){
-  comparison_content_density_plot(prior_density = true_prior_values(), #sample_prior_content_values()$prior_density, 
+  comparison_content_density_plot(prior_density = true_prior_values()$prior_matrix, 
                                   post_density = sample_post_content_values()$post_density,
                                   col_num = input$comparison_mu_col, 
-                                  grid = sample_prior_content_values()$plotting_grid, 
+                                  prior_grid = sample_prior_content_values()$plotting_grid,
+                                  post_grid = sample_prior_content_values()$plotting_grid, 
                                   min_xlim = input$comparison_xlim_min, 
                                   max_xlim = input$comparison_xlim_max,
                                   smooth_num = c(1, input$comparison_smoother),

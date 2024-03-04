@@ -28,7 +28,6 @@ prior_true_mu = function(gamma, alpha01, alpha02, m1, m2){
 ######################################################
 # this is the function being used - need to change some of it
 sample_post_computations = function(N, Y, p, mu0, lambda0){
-  # replace the new name later; this is to distinguish between the earlier version.
   if((p != length(mu0)) & (p != length(lambda0))){
     # may want to turn into a helper function for readability later on?
     return("Error: the vector for mu0 and lambda0 are of a different size.")
@@ -44,13 +43,11 @@ sample_post_computations = function(N, Y, p, mu0, lambda0){
     In = matrix(t(rep(1, n))) # identity column
     Ybar_t = matrix(Ybar, nrow=1, ncol = p) # transpose
     
-    #S = (1/(n-1)) * t(Y - In%*%Ybar_t) %*% (Y - In%*%Ybar_t)
     S = (1/(n-1)) * t(Y - In%*%rowMeans(t(Y))) %*% (Y - In%*%rowMeans(t(Y))) 
   } else {
     return("Error: no data given.")
   }
   
-  # NOTE: COPY AND PASTE THIS ELSEWHERE
   lambda0 = rep(max(lambda0), p)
   
   # instead of using solve, may need to move to an alt version (see helper functions)
@@ -148,23 +145,24 @@ relative_belief_ratio = function(p, prior_content, post_content){
 ################################################################
 
 true_prior_comparison = function(p, alpha01, alpha02, mu0, lambda0, grid){
-  # generates the true prior
-  #scale1 = sqrt(alpha02[col_num]/alpha01[col_num]) 
-  #scale3 = dt(grid[,col_num], 2*alpha01[col_num])
-  #scale = scale1 * lambda0[col_num] * scale3
-  #prior = mu0[col_num] + scale
+  # generates the true prior. 
   prior_matrix = c()
+  prior_plot_matrix = c()
   for(i in 1:p){
-    scale1 = sqrt(alpha02[i]/alpha01[i]) 
-    scale3 = dt(grid[,i], 2*alpha01[i])
-    scale = scale1 * lambda0[i] * scale3
-    prior = mu0[i] + scale
+    y = dt(grid[,i],2*alpha01[i])
+    scale = sqrt(alpha02[i]/alpha01[i])*lambda0[i]
+    prior_plot = mu0[i] + scale*grid[,i]
+    prior = y/scale
     prior_matrix = cbind(prior_matrix, prior)
+    prior_plot_matrix = cbind(prior_plot_matrix, prior_plot)
   }
-  return(prior_matrix)
+  newlist = list("prior_matrix" = prior_matrix,
+                 "prior_plotting_grid" = prior_plot_matrix)
+  return(newlist)
 }
 
-comparison_content_density_plot = function(prior_density, post_density, col_num, grid,
+comparison_content_density_plot = function(prior_density, post_density, col_num, 
+                                           prior_grid, post_grid,
                                            min_xlim = -10, max_xlim = 10,
                                            smooth_num = c(1, 1), 
                                            colour_choice = c("red", "blue"),
@@ -183,7 +181,7 @@ comparison_content_density_plot = function(prior_density, post_density, col_num,
   
   max_ylim = max(c(max(prior_density_vals), max(post_density_vals)))
   
-  plot(grid[,col_num], prior_density_vals,
+  plot(prior_grid[,col_num], prior_density_vals,
        xlim = c(min_xlim, max_xlim), ylim = c(0, max_ylim),
        col = colour_choice[1],
        main = TeX(paste("Prior & Posterior Density Histogram of $\\mu_{", col_num, "}$")),
@@ -191,11 +189,11 @@ comparison_content_density_plot = function(prior_density, post_density, col_num,
        ylab = "Density",
        type = "l", lty = lty_type[1], lwd = 2)
   
-  lines(grid[,col_num], post_density_vals, 
+  lines(post_grid[,col_num], post_density_vals, 
         lty = lty_type[2], lwd = 2, col = colour_choice[2])
   
-  polygon(grid[, col_num], prior_density_vals, col = prior_area_col, border = NA)
-  polygon(grid[, col_num], post_density_vals, col = post_area_col, border = NA)
+  polygon(prior_grid[, col_num], prior_density_vals, col = prior_area_col, border = NA)
+  polygon(post_grid[, col_num], post_density_vals, col = post_area_col, border = NA)
   
   legend("topleft", legend=c("Prior", "Posterior"),
          col= colour_choice, lty=lty_type, cex=0.8)
