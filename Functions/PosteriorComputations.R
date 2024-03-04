@@ -147,17 +147,15 @@ relative_belief_ratio = function(p, prior_content, post_content){
 true_prior_comparison = function(p, alpha01, alpha02, mu0, lambda0, grid){
   # generates the true prior. 
   prior_matrix = c()
-  prior_plot_matrix = c()
   for(i in 1:p){
-    y = dt(grid[,i],2*alpha01[i])
-    scale = sqrt(alpha02[i]/alpha01[i])*lambda0[i]
-    prior_plot = mu0[i] + scale*grid[,i]
-    prior = y/scale
+    scale1 = sqrt(alpha02[i]/alpha01[i]) 
+    scale3 = dt(grid[,i], 2*alpha01[i])
+    scale = scale1 * lambda0[i] * scale3
+    prior = scale #mu0[i] + scale
+    
     prior_matrix = cbind(prior_matrix, prior)
-    prior_plot_matrix = cbind(prior_plot_matrix, prior_plot)
   }
-  newlist = list("prior_matrix" = prior_matrix,
-                 "prior_plotting_grid" = prior_plot_matrix)
+  newlist = list("prior_matrix" = prior_matrix)
   return(newlist)
 }
 
