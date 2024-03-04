@@ -147,10 +147,29 @@ relative_belief_ratio = function(p, prior_content, post_content){
 # GRAPH FUNCTIONS                                              #
 ################################################################
 
+true_prior_comparison = function(p, alpha01, alpha02, mu0, lambda0, grid){
+  # generates the true prior
+  #scale1 = sqrt(alpha02[col_num]/alpha01[col_num]) 
+  #scale3 = dt(grid[,col_num], 2*alpha01[col_num])
+  #scale = scale1 * lambda0[col_num] * scale3
+  #prior = mu0[col_num] + scale
+  prior_matrix = c()
+  for(i in 1:p){
+    scale1 = sqrt(alpha02[i]/alpha01[i]) 
+    scale3 = dt(grid[,i], 2*alpha01[i])
+    scale = scale1 * lambda0[i] * scale3
+    prior = mu0[i] + scale
+    prior_matrix = cbind(prior_matrix, prior)
+  }
+  return(prior_matrix)
+}
+
 comparison_content_density_plot = function(prior_density, post_density, col_num, grid,
                                            min_xlim = -10, max_xlim = 10,
-                                           smooth_num = 1, colour_choice = c("red", "blue"),
+                                           smooth_num = c(1, 1), 
+                                           colour_choice = c("red", "blue"),
                                            lty_type = c(2, 2), transparency = 0.4){
+  # note: this version compares with the sampled prior, not the true prior.
   prior_col_rgb = col2rgb(colour_choice[1])
   post_col_rgb = col2rgb(colour_choice[2])
   
@@ -159,8 +178,8 @@ comparison_content_density_plot = function(prior_density, post_density, col_num,
   post_area_col = rgb(post_col_rgb[1]/255, post_col_rgb[2]/255, post_col_rgb[3]/255, 
                       alpha = transparency)
   
-  prior_density_vals = average_vector_values(prior_density[,col_num], smooth_num)
-  post_density_vals = average_vector_values(post_density[,col_num], smooth_num)
+  prior_density_vals = average_vector_values(prior_density[,col_num], smooth_num[1])
+  post_density_vals = average_vector_values(post_density[,col_num], smooth_num[2])
   
   max_ylim = max(c(max(prior_density_vals), max(post_density_vals)))
   
@@ -181,7 +200,6 @@ comparison_content_density_plot = function(prior_density, post_density, col_num,
   legend("topleft", legend=c("Prior", "Posterior"),
          col= colour_choice, lty=lty_type, cex=0.8)
 }
-
 
 ################################################################
 # OLD FUNCTIONS                                                #

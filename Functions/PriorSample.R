@@ -44,20 +44,21 @@ onion = function(dimension){
 # MAIN FUNCTIONS                                               #
 ################################################################
 
+# NOTE: CHANGED THIS FUNCTION -> make sure 
 sample_prior = function(N, p, alpha01, alpha02, mu0, lambda0){
   # p: number of columns of alpha01, alpha02, mu0, lambda0,
   # N: monte carlo sample size
   mu_mat = c()
   sigma_mat = list()
   covariance_mat = list() 
+  correlation_mat = list()
   sigma_ii_mat = c()
-  
-  R = onion(p) # the correlation matrix
-  Lambda = diag(lambda0)
   
   for(i in 1:N){
     sigma_ii = 1/rgamma(p, alpha01, alpha02)
     D = diag(sigma_ii^2)
+    R = onion(p) # the correlation matrix
+    Lambda = diag(lambda0)
     SIGMA = D %*% R %*% D
 
     var_mat = Lambda %*% SIGMA %*% Lambda
@@ -68,10 +69,12 @@ sample_prior = function(N, p, alpha01, alpha02, mu0, lambda0){
     sigma_ii_mat = rbind(sigma_ii_mat, sigma_ii)
     sigma_mat[[i]] = SIGMA
     covariance_mat[[i]] = var_mat
+    correlation_mat[[i]] = R
   }
   return(list("mu_matrix" = mu_mat, "sigma_ii" = sigma_ii_mat,
               "sigma_matrix" = sigma_mat,
-              "covariance_matrix" = covariance_mat, "correlation_matrix" = R))
+              "covariance_matrix" = covariance_mat, 
+              "correlation_matrix" = correlation_mat))
 }
 
 psi = function(mu, xi){
@@ -79,6 +82,7 @@ psi = function(mu, xi){
   return(mu)
 }
 
+# made the code more efficient - may need to change for the version for mike
 prior_content = function(N, p, m, mu, xi, 
                          small_quantile = 0.005, large_quantile = 0.995){
   # first part: denote psi(mu, xi)
@@ -125,6 +129,56 @@ prior_content = function(N, p, m, mu, xi,
                  "prior_density" = prior_density_matrix,
                  "delta" = as.numeric(delta))
   return(newlist)
+}
+
+sample_prior_data_cleaning = function(N, p, mu_matrix, 
+                                      sigma_ii_matrix,
+                                      correlation_matrix){
+  # cleans the data to the desired file format as specified by Mike.
+  sigma_names = c()
+  mu_names = c()
+  for(i in 1:p){
+    mu_names = c(mu_names, paste("mu_", i, sep = ""))
+    sigma_names = c(sigma_names, paste("1/sigma_", i, "^2", sep = ""))
+  }
+  
+  # FIRST: cleaning 1/sigma^2
+  sigma_ii_data = as.data.frame(1/sigma_ii_matrix)
+  names(sigma_ii_data) = sigma_names
+  row.names(sigma_ii_data) = 1:N
+  
+  # SECOND: cleaning rhos from the correlation matrix
+  rho_matrix = c()
+  for(k in 1:N){
+    rho_values = c()
+    # first: checking the rows
+    for(i in 1:(p-1)){
+      next_index = i + 1
+      for(j in next_index:p){
+        rho_values = c(rho_values, correlation_matrix[[k]][,i][j])
+      }
+    }
+    rho_matrix = rbind(rho_matrix, rho_values)
+  }
+  
+  rho_data = as.data.frame(rho_matrix)
+  rho_names = c() # changing the names
+  for(i in 1:(p-1)){
+    next_index = i + 1
+    for(j in next_index:p){
+      new_rho = paste("rho_", i, j, sep = "")
+      rho_names = c(rho_names, new_rho)
+    }
+  }
+  names(rho_data) = rho_names
+  row.names(rho_data) = 1:N
+  
+  # THIRD: cleaning mus from the mu matrix
+  mu_data = as.data.frame(mu_matrix)
+  names(mu_data) = mu_names
+  row.names(mu_data) = 1:N
+  
+  return(cbind(sigma_ii_data, rho_data, mu_data))
 }
 
 content_density_plot = function(density, col_num, grid, type = "Prior",
@@ -188,6 +242,13 @@ sample_prior_hist = function(mu_prior, col_num, delta = 0.1,
 #test = sample_prior(N, p, alpha01, alpha02, mu0, lambda0)
 
 #vals = prior_content(N, p, m = 50, mu = test$mu_matrix, xi = find_inverse_alt(test$covariance_matrix[,,1]))
+
+#bleh = sample_prior_data_cleaning(p = 3, 
+#                                  N = 1000, 
+#                                  mu_matrix = test$mu_matrix,
+#                                  sigma_ii_matrix = test$sigma_ii,
+#                                  correlation_matrix = test$correlation_matrix)
+
 
 #plot(vals$plotting_grid[,1],
 #     vals$prior_content_matrix[,1], type = "l")

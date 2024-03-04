@@ -18,7 +18,8 @@ page_sample_computation = div(
     sidebarPanel(
       width = 3,
       
-      actionButton(inputId = "submit_sample_prior", label = "Submit Data"),
+      actionButton(inputId = "submit_sample_prior", 
+                   label = "Submit Data (for the effective range)"),
       
       numericInput(inputId = "prior_seed",
                    label = "Insert the seed",
@@ -60,16 +61,17 @@ page_sample_computation = div(
     ),
     mainPanel(
       
-      downloadButton(outputId = 'download_prior_sample_mu', 
-                     label = 'Download $\\mu$'),
-      downloadButton(outputId = 'download_prior_sample_sigma', 
-                     label = 'Download $\\Sigma$'),
+      downloadButton(outputId = 'download_prior_sample', 
+                     label = 'Download Values'),
+      #downloadButton(outputId = 'download_prior_sample_sigma', 
+      #               label = 'Download $\\Sigma$'),
       # not added below until we get confirmation
       #downloadButton(outputId = 'download_prior_elicit_variance', label = 'Download variance'),
-      downloadButton(outputId = "download_prior_sample_correlation", 
-                     label = "Download Correlation Matrix"),
+      #downloadButton(outputId = "download_prior_sample_correlation", 
+      #               label = "Download Correlation Matrix"),
+      #withSpinner(plotOutput("prior_sample_histogram")),
       
-      withSpinner(plotOutput("prior_sample_histogram")),
+      withSpinner(verbatimTextOutput("prior_sample_sample")),
       
       withSpinner(verbatimTextOutput("prior_sample_delta")),
       

@@ -203,6 +203,7 @@ page_comparison_graphs = div(
         fluidRow(
           splitLayout(
             cellWidths = c("50%", "50%"), 
+            #withSpinner(verbatimTextOutput("debugging_prior")),
             withSpinner(plotOutput("sample_priorpost_graph")), 
             withSpinner(plotOutput("sample_rbr_graph"))
           )

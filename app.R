@@ -3,7 +3,7 @@
 ################################################################
 
 # 1. NEED TO FIX DOWNLOAD FILE FORMAT (see email from Mike)
-# 2. SET SEEDS FOR RANDOMIZATION (includes prior sampling)
+# write "submit data for the effective range (for the sampling prior)"
 
 # THINGS TO ASK
 # need to check the variance matrix -> is this what I think it is (sampling from the prior)

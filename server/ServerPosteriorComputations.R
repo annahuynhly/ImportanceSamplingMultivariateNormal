@@ -83,6 +83,19 @@ sample_post_content_values = reactive({
                     weights = post_sample_weights())
 }) 
 
+true_prior_values = reactive({
+  true_prior_comparison(p = post_sample_p_val(),
+                        alpha01 = prior_elicitation_sigma_values()$alpha01,
+                        alpha02 = prior_elicitation_sigma_values()$alpha02,
+                        mu0 = prior_elicitation_mu_values()$mu0,
+                        lambda0 = prior_elicitation_mu_values()$lambda0,
+                        grid = sample_prior_content_values()$plotting_grid)
+})
+
+output$debugging_prior = renderPrint({
+  true_prior_values()
+})
+
 rbr_content = reactive({
   relative_belief_ratio(p = post_sample_p_val(), 
                         prior_content = sample_prior_content_values()$prior_density, 
@@ -156,13 +169,13 @@ output$sample_post_graph = renderPlot({
 })
 
 comparisons_content_graph_DOWNLOAD = function(){
-  comparison_content_density_plot(prior_density = sample_prior_content_values()$prior_density, 
+  comparison_content_density_plot(prior_density = true_prior_values(), #sample_prior_content_values()$prior_density, 
                                   post_density = sample_post_content_values()$post_density,
                                   col_num = input$comparison_mu_col, 
                                   grid = sample_prior_content_values()$plotting_grid, 
                                   min_xlim = input$comparison_xlim_min, 
                                   max_xlim = input$comparison_xlim_max,
-                                  smooth_num = input$comparison_smoother,
+                                  smooth_num = c(1, input$comparison_smoother),
                                   colour_choice = c(input$comparison_prior_col, 
                                                     input$comparison_post_col),
                                   lty_type = c(as.numeric(input$comparison_prior_lty), 

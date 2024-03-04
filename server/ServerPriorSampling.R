@@ -14,6 +14,14 @@ sample_prior_values = eventReactive(input$submit_prior_elicit_mu, {
                lambda0 = prior_elicitation_mu_values()$lambda0)
 })
 
+sample_prior_values_cleaned = reactive({
+  sample_prior_data_cleaning(N = input$prior_sample_bigN, 
+                             p = input$num_dimensions, 
+                             mu_matrix = sample_prior_values()$mu_matrix, 
+                             sigma_ii_matrix = sample_prior_values()$sigma_ii,
+                             correlation_matrix = sample_prior_values()$correlation_matrix)
+})
+
 sample_prior_content_values = eventReactive(input$submit_sample_prior, {
   set.seed(prior_sampling_seed())
   # WARNING: the xi right now is not operational.
@@ -58,6 +66,10 @@ output$prior_sample_delta = renderPrint({
   #list("delta" = sample_prior_content_values()$delta)
 })
 
+output$prior_sample_sample = renderPrint({
+  head(sample_prior_values_cleaned(), 10)
+})
+
 # old histogram - kept here in case it is needed later.
 # below is the histogram - newest version is a line plot.
 #sample_prior_hist(mu_prior = sample_prior_values()$mu_matrix, 
@@ -73,6 +85,16 @@ output$prior_sample_delta = renderPrint({
 ################################################################
 # DOWNLOADING THE DATA                                         #
 ################################################################
+
+output$download_prior_sample = downloadHandler(
+  filename = "prior_sample.csv",
+  content = function(file) {
+    write.csv(sample_prior_values_cleaned(), file, row.names = FALSE)
+  }
+)
+
+# BELOW HAS CHANGED/BEEN REMOVED -> NEEDED TO REFORMAT ACCORDING TO
+# MIKE'S DESIRES.
 
 # Mu ###########################################################
 
