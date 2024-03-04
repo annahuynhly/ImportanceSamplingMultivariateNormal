@@ -2,34 +2,14 @@
 # MAIN FUNCTIONS                                               #
 ################################################################
 
-sample_hyperparameters = function(gamma, alpha01, alpha02, m1, m2){
-  lambda0 = (m2 - m1)/(2 * sqrt(alpha02/alpha01) * qt((1 + gamma)/2, df = 2 * alpha01))
-  mu0 = (m2 + m1)/2
-  newlist = list("mu0" = mu0, "lambda0" = lambda0)
-  return(newlist)
-}
-
-prior_true_mu = function(gamma, alpha01, alpha02, m1, m2){
-  # idea: no need to sample since the distribution is actually known.
-  # n represents length here
-  data = sample_hyperparameters(gamma, alpha01, alpha02, m1, m2)
-  mu0 = data$mu0
-  lambda0 = data$lambda0
-  # assuming alphas have the same length
-  n = length(alpha01)
-  mu = rep(0, n)
-  for(i in 1:n){
-    t_val = qt(gamma, df = alpha01[i] * 2)
-    mu[i] = mu0[i] + sqrt(alpha02[i]/alpha01[i]) * lambda0[i] * t_val
-  }
-  return(mu)
-}
-
-######################################################
-# this is the function being used - need to change some of it
 sample_post_computations = function(N, Y, p, mu0, lambda0){
+  #' This represents section 3.2 of the paper.
+  #' @param N represents the Monte Carlo sample size.
+  #' @param Y represents the observed sample.
+  #' @param p represents the number of dimensions.
+  #' The other parameters match the descriptions in section 3.2.
+
   if((p != length(mu0)) & (p != length(lambda0))){
-    # may want to turn into a helper function for readability later on?
     return("Error: the vector for mu0 and lambda0 are of a different size.")
   }
   
@@ -62,10 +42,11 @@ sample_post_computations = function(N, Y, p, mu0, lambda0){
 }
 
 k = function(p, mu, xi, mu0, lambda0, sigma_ii, alpha01, alpha02){
-  
+  #' This represents the k function explained in theorem 2.
+  #' @param p represents the number of dimensions.
+  #' The other parameters match the descriptions in the paper.
   Lambda0 = diag(lambda0)
   inv_Lambda0 = find_inverse_alt(Lambda0)
-  #x1 = inv_Lambda0 %*% xi %*% inv_Lambda0 
   x1 = exp(-(1/2) * t(mu - mu0) %*% inv_Lambda0 %*% xi %*% inv_Lambda0 * (mu - mu0))
   x3 = exp(-alpha02/sigma_ii)
   x2 = 1
@@ -76,6 +57,10 @@ k = function(p, mu, xi, mu0, lambda0, sigma_ii, alpha01, alpha02){
 }
 
 weights = function(N, p, mu, xi, mu0, lambda0, sigma_ii, alpha01, alpha02){
+  #' Computes the weights given for the posterior content.
+  #' @param N represents the Monte Carlo sample size.
+  #' @param p represents the number of dimensions.
+  #' The other parameters match the descriptions in the paper.
   k_vector = c()
   for(i in 1:N){
     k_val = k(p, mu[i,], xi[,,i], mu0, lambda0, sigma_ii[i,], alpha01, alpha02)
@@ -200,6 +185,30 @@ comparison_content_density_plot = function(prior_density, post_density, col_num,
 ################################################################
 # OLD FUNCTIONS                                                #
 ################################################################
+
+
+sample_hyperparameters = function(gamma, alpha01, alpha02, m1, m2){
+  lambda0 = (m2 - m1)/(2 * sqrt(alpha02/alpha01) * qt((1 + gamma)/2, df = 2 * alpha01))
+  mu0 = (m2 + m1)/2
+  newlist = list("mu0" = mu0, "lambda0" = lambda0)
+  return(newlist)
+}
+
+prior_true_mu = function(gamma, alpha01, alpha02, m1, m2){
+  # idea: no need to sample since the distribution is actually known.
+  # n represents length here
+  data = sample_hyperparameters(gamma, alpha01, alpha02, m1, m2)
+  mu0 = data$mu0
+  lambda0 = data$lambda0
+  # assuming alphas have the same length
+  n = length(alpha01)
+  mu = rep(0, n)
+  for(i in 1:n){
+    t_val = qt(gamma, df = alpha01[i] * 2)
+    mu[i] = mu0[i] + sqrt(alpha02[i]/alpha01[i]) * lambda0[i] * t_val
+  }
+  return(mu)
+}
 
 # note: below is the old function. It is being replaced.
 compute_rbr = function(gamma, delta, alpha01, alpha02, m1, m2, mu_post, min_xlim, max_xlim){

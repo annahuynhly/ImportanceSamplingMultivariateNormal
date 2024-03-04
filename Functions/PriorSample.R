@@ -8,7 +8,9 @@ vnorm = function(x, t){
 }
 
 onion = function(dimension){
-  # Generating using the onion method from the paper: On Bayesian Hotelling's T^{2} test for the mean
+  #' Generating using the onion method from the paper: 
+  #' On Bayesian Hotelling's T^{2} test for the mean
+  #' @param dimension denotes the number of dimensions of the matrix.
   d = dimension + 1
   prev_corr = matrix(1, 1, 1)
   
@@ -44,10 +46,11 @@ onion = function(dimension){
 # MAIN FUNCTIONS                                               #
 ################################################################
 
-# NOTE: CHANGED THIS FUNCTION -> make sure 
 sample_prior = function(N, p, alpha01, alpha02, mu0, lambda0){
-  # p: number of columns of alpha01, alpha02, mu0, lambda0,
-  # N: monte carlo sample size
+  #' This represents section 3.1 of the paper.
+  #' @param N represents the Monte Carlo sample size.
+  #' @param p represents the number of dimensions.
+  #' The other parameters match the descriptions in section 2.1.
   mu_mat = c()
   sigma_mat = list()
   covariance_mat = list() 
@@ -78,19 +81,22 @@ sample_prior = function(N, p, alpha01, alpha02, mu0, lambda0){
 }
 
 psi = function(mu, xi){
-  # user should modify this. for now, we have a degenerate function
+  #' A function the user is supposed to specify, but for now it 
+  #' just gives you mu.
   return(mu)
 }
 
 prior_content = function(N, p, m, mu, xi, 
                          small_quantile = 0.005, large_quantile = 0.995){
-  # first part: denote psi(mu, xi)
-  # m: number of sub intervals 
-  # (note: assumption is that the num of time intervals are the same for each mu1 - may need to change
-  # this later if it poses an issue...
-  
-  # CHANGE HERE
-  psi_val = psi(mu, xi) # note: the user will need to manually change this
+  #' Provides the prior content of the sample.
+  #' @param N represents the Monte Carlo sample size.
+  #' @param p represents the number of dimensions.
+  #' @param m represents the number of desired sub-intervals for the effective range.
+  #' @param small_quantile represents the smaller quantile of interest for the effective range.
+  #' @param large_quantile represents the larger quantile of interest for the effective range.
+  #' @details 
+  #' This function assumes that m is consistent throughout each mu. 
+  psi_val = psi(mu, xi) 
   plotting_grid = c()
   effective_range = c()
   prior_content_matrix = c()
@@ -101,8 +107,7 @@ prior_content = function(N, p, m, mu, xi,
     quant_range = quantile(psi_val[,k], prob = c(small_quantile, large_quantile))
     delta = (quant_range[2] - quant_range[1])/m # length of the sub intervals
     grid = seq(quant_range[1], quant_range[2], by = delta) # making a grid of the sub intervals
-    # note: since we're looking at the effective range, the prior content doesn't sum to 1.
-    
+    # Note: since we're looking at the effective range, the prior content doesn't always sum to 1.
     effective_range = cbind(effective_range, grid)
     plot_grid = grid[-length(grid)] + diff(grid)/2
     plotting_grid = cbind(plotting_grid, plot_grid)
@@ -133,7 +138,7 @@ prior_content = function(N, p, m, mu, xi,
 sample_prior_data_cleaning = function(N, p, mu_matrix, 
                                       sigma_ii_matrix,
                                       correlation_matrix){
-  # cleans the data to the desired file format as specified by Mike.
+  #' Mike requested a specific file format, and this cleans it accordingly.
   sigma_names = c()
   mu_names = c()
   for(i in 1:p){
@@ -184,7 +189,18 @@ content_density_plot = function(density, col_num, grid, type = "Prior",
                                 min_xlim = -10, max_xlim = 10,
                                 smooth_num = 1, colour_choice = "blue",
                                 lty_type = 2, transparency = 0.4){
-  
+  #' Creates a density plot for the prior/posterior content.
+  #' @param density vector containing density values.
+  #' @param col_num column number of interest.
+  #' @param grid plotted x-values.
+  #' @param type indicates whether it is the prior or the posterior (for the graph title).
+  #' @param min_xlim smaller cutoff of the plot.
+  #' @param max_xlim larger cutoff of the plot.
+  #' @param smooth_num number of points to average out the density plot.
+  #' @param colour_choice colour for the density plot line.
+  #' @param lty_type line type (same values as base R plotting).
+  #' @param transparency transparency percentage for the area of the density plot. 
+  #'                     Set to 0 if you don't want the area highlighted.
   rgb_col = col2rgb(colour_choice)
   area_col = rgb(rgb_col[1]/255, rgb_col[2]/255, rgb_col[3]/255, 
                  alpha = transparency)

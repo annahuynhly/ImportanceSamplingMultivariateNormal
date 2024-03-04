@@ -1,19 +1,26 @@
 
 closed_bracket_grid = function(delta){
-  # Creates a grid of values from 0 to 1 based on the distance between two points (delta).
-  # Previous names: finite_val_grid & binormal_val_grid_1
+  #' Creates a sequence of values from 0 to 1 (inclusive) based on 
+  #' the distance between two points.
+  #' @param delta represents the distance between two points.
   grid = seq(0, 1, length= (1/delta)+1)
   return(grid)
 }
 
 open_bracket_grid = function(delta){
-  # Creates a grid of values from 0 to 1 based on the distance between two points (delta).
-  # Previous names: RB_distance_that_matters & binormal_val_grid_2
+  #' Creates a grid of values from 0 to 1 (not inclusive) based on 
+  #' the distance between two points.
+  #' @param delta represents the distance between two points.
   grid = seq(delta/2, 1 - delta/2, length=(1/delta))
   return(grid)
 }
 
 convert_to_hex = function(hex_colour){
+  #' Given a hex colour code, converts it into an interpretable format.
+  #' @param hex_colour represents the hex colour code.
+  #' @examples
+  #' convert_to_hex(" FFFFFF  ")
+  #' # Returns: [1] "#FFFFFF"
   hex_colour = gsub(" ", "", hex_colour)
   first_char = substr(hex_colour, 1, 1)
   if(first_char != "#"){
@@ -24,11 +31,14 @@ convert_to_hex = function(hex_colour){
 }
 
 convert_char_to_vector = function(x){
+  #' Given a character that contains a list of objects, converts 
+  #' it into a vector.
+  #' @examples
+  #' convert_char_to_vector("1, 2, 3")
+  #' # Returns: [1] 1 2 3
   if (is.character(x) == FALSE){
     return("Invalid input: the input is not a character.")
   }
-  # This function turns characters, such as "1, 2, 3", 
-  # into a vector: c(1, 2, 3)
   x = str_replace_all(x, fixed(" "), "") # removes all spaces
   x = (strsplit(x, ",")[[1]])
   
@@ -40,7 +50,6 @@ convert_char_to_vector = function(x){
   }
   if (check_numeric_count == length(x)){
     x = as.numeric(x) # converts to vector
-    #x = as.integer(strsplit(x, ",")[[1]]) # converts to vector
     x = x[!is.na(x)]
     return(as.double(x))
   } else {
@@ -48,14 +57,18 @@ convert_char_to_vector = function(x){
   }
 }
 
-# NOTE: CHANGED FUNCTION NAME
 valid_numeric_vector = function(x){
-  # This function double checks to insure that the vector
-  # is valid to use for any weird edge-cases that the player
-  # might try to initiate.
+  #' Given a vector, determines whether is a vector that only contains numerical
+  #' values. 
+  #' @param x represents the vector that is to be examined.
+  #' @examples
+  #' valid_numeric_vector(c(1, 2, 3))
+  #' # Returns: [1] TRUE
+  #'
+  #' valid_numeric_vector(c(1, 2, "2"))
+  #' # Returns: [1] FALSE
   for (i in 1:length(x)) {
-    if (is.numeric(x[[i]]) == FALSE){
-      # This input contains invalid characters
+    if (is.numeric(x[[i]]) == FALSE){ 
       return(FALSE)
     } else {
       return(TRUE)
@@ -64,8 +77,17 @@ valid_numeric_vector = function(x){
 }
 
 create_necessary_vector = function(x){
-  # Given a string of values, such as "1, 1, 1, 1, 1", converts it to a vector if
-  # it isn't already numeric.
+  #' Accepts input that may be either a character (capable of being converted into a vector) 
+  #' or an existing vector. 
+  #' If the input is a character, this function transforms the value into a vector. 
+  #' If the input is already a vector, the function returns the vector as is.
+  #' @param x represents the input which may be a character or a vector.
+  #' @examples
+  #' create_necessary_vector("1, 1, 1, 1")
+  #' # Returns: [1] 1 1 1 1
+  #'
+  #' create_necessary_vector(c(1, 1, 1, 1))
+  #' # Returns: [1] 1 1 1 1
   if(is.character(x) == TRUE){
     return(convert_char_to_vector(x))
   } else if (typeof(x) == "double" | valid_numeric_vector(x) == TRUE){
@@ -76,12 +98,12 @@ create_necessary_vector = function(x){
 }
 
 average_vector_values = function(vector, num_average_pts = 3){
-  # num_average_pts: the number of density bins closely added to each other to get
-  # a smoother density plot. (Reduce peaks.)
+  #' Generates a new vector by averaging the values of a given vector based on the proximity 
+  #' of each element to its neighbors.
+  #' @param vector The input vector to be smoothed.
+  #' @param num_average_pts The number of neighboring points to consider when calculating 
+  #' the average for each element. Only the odd case is implemented.
   if(num_average_pts %% 2 == 0){
-    # Note: the even case is harder to code. For this instance, since the number of average points
-    # will be pre-determined for the user (in terms of the plots), I have decided to not add
-    # even functionality for now.
     return("Error: num_average_pts must be an odd number.")
   }
   
@@ -115,8 +137,10 @@ average_vector_values = function(vector, num_average_pts = 3){
 }
 
 seq_alt = function(values, delta){
-  # creates a sequence and includes the last value, even if it isn't captured
-  # by the original sequence.
+  #' Generate an alternative sequence of values based on the input vector and the distance between
+  #' two points. If the maximum value is not already present in the sequence, it is added to the end.
+  #' @param values represents the numerical vector for which an alternative sequence is generated.
+  #' @param delta represents the distance between two points.
   min = floor(min(values))
   max = ceiling(max(values))
   grid = seq(min, max, by = delta)
@@ -127,8 +151,9 @@ seq_alt = function(values, delta){
 }
 
 find_inverse_alt = function(matrix){
-  # issue with solve(...): doesn't ensure the function is positive definite.
-  # this ensures that it is.
+  #' Computes the inverse of a matrix using an alternative method that 
+  #' preserves positive-definiteness.
+  #' @param matrix represents the matrix that is being inputted. 
   x = eigen(matrix, symmetric = TRUE, only.values=FALSE)
   Q = x$vectors
   V_inv = diag(1/x$values)
@@ -138,7 +163,12 @@ find_inverse_alt = function(matrix){
 }
 
 divison_alt = function(num, denom){
-  # assumption: length(num) == length(denom)
+  #' An alternative method for division. When a denominator is zero, the 
+  #' corresponding result is set to NaN instead of raising an error.
+  #' @param num the numerator.
+  #' @param denom the denominator.
+  #' @details
+  #' The function assumes that the length of 'num' is equal to the length of 'denom'.
   x = c()
   for(i in 1:length(num)){
     if(denom[i] == 0){
@@ -151,8 +181,10 @@ divison_alt = function(num, denom){
 }
 
 force_bounds_0 = function(v){
-  # idea: force the first and last values of a vector to be zero
-  # needs to be moved
+  #' Regardless of the first and last value of a vector, replaces it with zero.
+  #' This is mostly for creating polygons in graphs.
+  #' @param represents the vector.
   v = v[2:(length(v)-1)]
   v = c(0, v, 0)
+  return(v)
 }

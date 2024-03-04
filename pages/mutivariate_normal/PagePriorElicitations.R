@@ -60,7 +60,7 @@ page_elicitsigma = div(
       
       numericInput(inputId = "num_dimensions",
                    label = 'Insert the number of dimensions, $p$.',
-                   min = 1, max = 10000000, step = 1, value = p),
+                   min = 1, max = 10000000, step = 1, value = 6),
       
       numericInput(inputId = "virtual_uncertainty",
                    label = 'Insert the virtual uncertainty, $\\gamma$.',
@@ -135,6 +135,7 @@ page_elicitsigma = div(
         fluidRow(
           splitLayout(
             cellWidths = c("60%", "50%"), 
+              #withSpinner(verbatimTextOutput("elicit_prior_debugging")),
               withSpinner(plotOutput(outputId = "elicit_prior_graph")), 
               withSpinner(tableOutput(outputId = "prior_elicit_sigma_table"))
               #withSpinner(verbatimTextOutput("elicit_prior_calculation"))

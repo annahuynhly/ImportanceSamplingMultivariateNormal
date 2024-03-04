@@ -3,18 +3,13 @@
 ################################################################
 
 elicit_prior_sigma_function = function(p, gamma, s1, s2, upper_bd, lower_bd){
-  # p: the number of dimensions (user needs to manually insert)
-  # gamma: probability corresponding to virtual certainty
-  # s1: defined in the paper lol
-  # s2: defined in the paper lol
-  # upper_bd: lower bound of the iteration for alpha0i
-  # lower_bd: upper bound of the iteration for alpha0i
-  
+  #' This represents section 2.1 of the paper.
+  #' @param p represents the number of dimensions.
+  #' @param gamma represents the virtual uncertainty.
+  #' The other parameters match the descriptions in section 2.1.
   vectors_of_interest = list(s1, s2, upper_bd, lower_bd)
   for(i in vectors_of_interest){
-    if(length(i) != p){
-      return("Error: there is a vector that doesn't have length p.")
-    }
+    if(length(i) != p){return("Error: there is a vector that doesn't have length p.")}
   }
   
   gam = (1+gamma)/2
@@ -35,34 +30,29 @@ elicit_prior_sigma_function = function(p, gamma, s1, s2, upper_bd, lower_bd){
       alpha = (alphalow + alphaup)/2
       beta = qgamma(gam, alpha, 1)/c1[j]
       test = pgamma(beta*c2[j], alpha, 1)
-      if (abs(test-(1-gam)) <= eps) {
-        break
-      }
-      if(test < 1 - gam){
-        alphaup = alpha
-      } else if (test > 1 - gam){ 
-        alphalow = alpha
-      }
+      if (abs(test-(1-gam)) <= eps) { break }
+      if (test < 1 - gam) { alphaup = alpha} 
+      else if (test > 1 - gam) { alphalow = alpha }
     }
     alpha01[j] = alpha
     alpha02[j] = beta
   }
   
-  newlist = list("c1" = c1, "c2" = c2, "alpha01" = alpha01, "alpha02" = alpha02, "z0" = z0,
-                 "s1" = s1, "s2" = s2)
+  newlist = list("c1" = c1, "c2" = c2, "alpha01" = alpha01, "alpha02" = alpha02, 
+                 "z0" = z0, "s1" = s1, "s2" = s2)
   return(newlist)
 }
 
 elicit_prior_mu_function = function(p, gamma, m1, m2, s1, s2, alpha01, alpha02){
- 
+  #' This represents section 2.2 of the paper.
+  #' @param p represents the number of dimensions.
+  #' @param gamma represents the virtual uncertainty.
+  #' The other parameters match the descriptions in section 2.1.
   vectors_of_interest = list(m1, m2, s1, s2, alpha01, alpha02)
   for(i in vectors_of_interest){
-    if(length(i) != p){
-      return("Error: there is a vector that doesn't have length p.")
-    }
+    if(length(i) != p){ return("Error: there is a vector that doesn't have length p.") }
   }
-  mu0 = (m1 + m2)/2 # multivariate mu_0
-  
+  mu0 = (m1 + m2)/2 
   lambda0 = (m2 - m1)/(2 * sqrt(alpha02/alpha01) * qt((1 + gamma)/2, df = 2 * alpha01))
   
   newlist = list("mu0" = mu0, "lambda0" = lambda0, "m1" = m1, "m2" = m2)
@@ -132,7 +122,6 @@ elicit_prior = function(p, gamma, m1, m2, s1, s2, upper_bd, lower_bd){
                  "mu0" = mu0, "sigma0" = sigma0, "lambda0" = lambda0, "z0" = z0)
   return(newlist)
 }
-
 
 elicit_mu = function(alpha, beta, gamma, s1, s2){
   # This function finds the two values of gamma which we are subtracting.
