@@ -2,6 +2,26 @@
 # MAIN FUNCTIONS                                               #
 ################################################################
 
+true_prior_comparison = function(p, alpha01, alpha02, mu0, lambda0, grid){
+  #' Given a grid of values (typically where the posterior density is allegedly 
+  #' concentrated), computes the true prior density.
+  #' This is used for graph building and computing the relative belief ratio.
+  #' @param p represents the number of dimensions.
+  #' @param grid represents the grid of values where the posterior is based off of.
+  #' The other parameters match the descriptions from the paper.
+  prior_matrix = c()
+  for(i in 1:p){
+    scale1 = sqrt(alpha02[i]/alpha01[i]) 
+    scale3 = dt(grid[,i], 2*alpha01[i])
+    scale = scale1 * lambda0[i] * scale3
+    prior = scale #mu0[i] + scale
+    
+    prior_matrix = cbind(prior_matrix, prior)
+  }
+  newlist = list("prior_matrix" = prior_matrix)
+  return(newlist)
+}
+
 sample_post_computations = function(N, Y, p, mu0, lambda0){
   #' This represents section 3.2 of the paper.
   #' @param N represents the Monte Carlo sample size.
@@ -76,11 +96,13 @@ weights = function(N, p, mu, xi, mu0, lambda0, sigma_ii, alpha01, alpha02){
 }
 
 posterior_content = function(N, p, effective_range, mu, xi, weights){
-  # first part: denote psi(mu, xi)
-  # m: number of sub intervals 
-  # (note: assumption is that the num of time intervals are the same for each mu1 - may need to change
-  # this later if it poses an issue...
-  
+  #' Computes the posterior content.
+  #' @param N represents the Monte Carlo sample size.
+  #' @param p represents the number of dimensions.
+  #' @param effective_range denotes the vector of grid points where the density
+  #'        is highly concentrated (this is computed from the sampling of the  prior).'
+  #' @param weights denote the weights given to each value of psi.
+  #'        The other parameters match the descriptions in the paper.
   psi_val = psi(mu, xi) # note: the user will need to manually change this
   post_content_matrix = c()
   post_density_matrix = c()
@@ -88,9 +110,7 @@ posterior_content = function(N, p, effective_range, mu, xi, weights){
   for(k in 1:p){
     grid = effective_range[,k]
     delta = diff(effective_range[,k])[1]
-    #print(grid)
-    # computing post content
-    post_content_vec = c() # will be of length m
+    post_content_vec = c() 
     for(i in 1:(length(grid) - 1)){
       post_content = 0
       for(j in 1:N){
@@ -110,16 +130,18 @@ posterior_content = function(N, p, effective_range, mu, xi, weights){
 }
 
 relative_belief_ratio = function(p, prior_content, post_content){
-  
+  #' Computes the relative belief ratio.
+  #' @param p represents the number of dimensions.
+  #' @param prior_content denotes the vector containing the prior.
+  #' @param post_content denotes the vector containing the posterior.
   rbr_vector = c()
   for(k in 1:p){
     rbr_vals = post_content[,k] / prior_content[,k] 
     rbr_vector = cbind(rbr_vector, rbr_vals)
   }
   
-  # below is a vector where the NAs are zero - easier to plot.
   rbr_vector_mod = rbr_vector
-  rbr_vector_mod[is.na(rbr_vector_mod)] = 0
+  rbr_vector_mod[is.na(rbr_vector_mod)] = 0 # force NA to 0
   
   newlist = list("RBR" = rbr_vector, "RBR_modified" = rbr_vector_mod)
   return(newlist)
@@ -129,28 +151,28 @@ relative_belief_ratio = function(p, prior_content, post_content){
 # GRAPH FUNCTIONS                                              #
 ################################################################
 
-true_prior_comparison = function(p, alpha01, alpha02, mu0, lambda0, grid){
-  # generates the true prior. 
-  prior_matrix = c()
-  for(i in 1:p){
-    scale1 = sqrt(alpha02[i]/alpha01[i]) 
-    scale3 = dt(grid[,i], 2*alpha01[i])
-    scale = scale1 * lambda0[i] * scale3
-    prior = scale #mu0[i] + scale
-    
-    prior_matrix = cbind(prior_matrix, prior)
-  }
-  newlist = list("prior_matrix" = prior_matrix)
-  return(newlist)
-}
-
 comparison_content_density_plot = function(prior_density, post_density, col_num, 
                                            prior_grid, post_grid,
                                            min_xlim = -10, max_xlim = 10,
                                            smooth_num = c(1, 1), 
                                            colour_choice = c("red", "blue"),
                                            lty_type = c(2, 2), transparency = 0.4){
-  # note: this version compares with the sampled prior, not the true prior.
+  #' Creates a density plot for the prior/posterior content.
+  #' @param prior_density vector containing prior density values.
+  #' @param post_density vector containing the posterior density values.
+  #' @param col_num column number of interest.
+  #' @param prior_grid plotted x-values for the prior.
+  #' @param post_grid plotted x-values for the posterior.
+  #' @param min_xlim smaller cutoff of the plot.
+  #' @param max_xlim larger cutoff of the plot.
+  #' @param smooth_num vector containing the number of points to average out the density plot.
+  #'        The first value is for the prior, and the second is for the posterior.
+  #' @param colour_choice vector containing colour for the density plot line.
+  #'        The first value is for the prior, and the second is for the posterior.
+  #' @param lty_type vector containing line type (same values as base R plotting).
+  #'        The first value is for the prior, and the second is for the posterior.
+  #' @param transparency transparency percentage for the area of the density plot. 
+  #'                     Set to 0 if you don't want the area highlighted.
   prior_col_rgb = col2rgb(colour_choice[1])
   post_col_rgb = col2rgb(colour_choice[2])
   
@@ -185,7 +207,6 @@ comparison_content_density_plot = function(prior_density, post_density, col_num,
 ################################################################
 # OLD FUNCTIONS                                                #
 ################################################################
-
 
 sample_hyperparameters = function(gamma, alpha01, alpha02, m1, m2){
   lambda0 = (m2 - m1)/(2 * sqrt(alpha02/alpha01) * qt((1 + gamma)/2, df = 2 * alpha01))

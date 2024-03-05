@@ -217,13 +217,16 @@ content_density_plot = function(density, col_num, grid, type = "Prior",
   polygon(grid[, col_num], density_vals, col = area_col, border = NA)
 }
 
-# NOTE: currently not using this one!
+################################################################
+# OLD FUNCTIONS                                                #
+################################################################
+
 sample_prior_hist = function(mu_prior, col_num, delta = 0.1, 
                              min_xlim = -10, max_xlim = 10,
                              smooth_num = 1, colour_choice = "blue",
                              lty_type = 2, transparency = 0.4){
   # WARNING: this one is outdated and doesn't deal with the prior content
-  # as explained through mike.
+  # as explained through mike. But it plots the sampled prior!
   rgb_col = col2rgb(colour_choice)
   area_col = rgb(rgb_col[1]/255, rgb_col[2]/255, rgb_col[3]/255, 
                  alpha = transparency)
