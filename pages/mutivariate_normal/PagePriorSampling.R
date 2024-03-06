@@ -13,7 +13,70 @@ page_sample_description = div(
 ################################################################
 
 page_sample_computation = div(
-  titlePanel("Sampling from the Priors on the $\\mu_{i}$"),
+  titlePanel("Sampling from the Prior"),
+  sidebarLayout(
+    sidebarPanel(
+      width = 3,
+      
+      actionButton(inputId = "submit_sample_prior", 
+                   label = "Submit Data (for the effective range)"),
+      
+      numericInput(inputId = "prior_seed",
+                   label = "Insert the seed",
+                   value = 1),
+      
+      numericInput(inputId = "prior_sample_bigN",
+                   label = 'Insert the Monte Carlo sample size',
+                   value = 1000),
+      
+      numericInput(inputId = "prior_sample_m",
+                   label = 'Insert the number of desired subintervals for the effective range',
+                   value = 400),
+      
+      p("Below is for denoting the smaller and larger quantiles for 
+        computing the effective range."),
+      
+      fluidRow(box(width = 12,
+        splitLayout(
+          numericInput(inputId = "prior_sample_small_quantile", 
+                    label = "Small Quantile", value = 0.005),
+          numericInput(inputId = "prior_sample_large_quantile", 
+                    label = "Large Quantile", value = 0.995),
+        )
+      )),
+      
+      
+    ),
+    mainPanel(
+      
+      downloadButton(outputId = 'download_prior_sample', 
+                     label = 'Download Values'),
+      withSpinner(verbatimTextOutput("prior_sample_sample"))
+      #withSpinner(verbatimTextOutput("prior_sample_delta")),
+    )
+  )
+)
+
+################################################################
+# TAB ORGANIZATION                                             #
+################################################################
+
+page_prior_sample = div(
+  titlePanel("Sampling from the Prior"),
+  tabsetPanel(type = "tabs",
+              tabPanel("Description", page_sample_description),
+              tabPanel("Sample", page_sample_computation),
+  )
+)
+
+################################################################
+# OLD!!                                                        #
+################################################################
+
+page_sample_hist = div(
+  # NOTE: this is the old example that isnt being used anymore. It is kept here
+  # just in case.
+  titlePanel("Sampling from the Prior"),
   sidebarLayout(
     sidebarPanel(
       width = 3,
@@ -36,12 +99,12 @@ page_sample_computation = div(
       p("Below is for denoting the smaller and larger quantiles for computing the effective range."),
       
       fluidRow(box(width = 12,
-        splitLayout(
-          numericInput(inputId = "prior_sample_small_quantile", 
-                    label = "Small Quantile", value = 0.005),
-          numericInput(inputId = "prior_sample_large_quantile", 
-                    label = "Large Quantile", value = 0.995),
-        )
+                   splitLayout(
+                     numericInput(inputId = "prior_sample_small_quantile", 
+                                  label = "Small Quantile", value = 0.005),
+                     numericInput(inputId = "prior_sample_large_quantile", 
+                                  label = "Large Quantile", value = 0.995),
+                   )
       )),
       
       numericInput(inputId = "prior_sample_col", 
@@ -78,12 +141,12 @@ page_sample_computation = div(
       fluidRow(
         column(4,
                fluidRow(box(width = 12,
-                  splitLayout(
-                    numericInput(inputId = "prior_sample_xlim_min", 
-                                 label = "Lower x limit", value = -10),
-                    numericInput(inputId = "prior_sample_xlim_max", 
-                                 label = "Upper x limit", value = 10),
-                  )
+                            splitLayout(
+                              numericInput(inputId = "prior_sample_xlim_min", 
+                                           label = "Lower x limit", value = -10),
+                              numericInput(inputId = "prior_sample_xlim_max", 
+                                           label = "Upper x limit", value = 10),
+                            )
                )),
                #sliderInput(inputId = "prior_sample_delta",
                #            label = "Length of the bins",
@@ -101,19 +164,6 @@ page_sample_computation = div(
         )
       ),
     )
-  )
-)
-
-
-################################################################
-# TAB ORGANIZATION                                             #
-################################################################
-
-page_prior_sample = div(
-  titlePanel("Sampling from the Prior"),
-  tabsetPanel(type = "tabs",
-              tabPanel("Description", page_sample_description),
-              tabPanel("Sample", page_sample_computation),
   )
 )
 

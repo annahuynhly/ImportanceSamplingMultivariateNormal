@@ -2,11 +2,16 @@
 # TODO LIST                                                    #
 ################################################################
 
-# 1. NEED TO FIX DOWNLOAD FILE FORMAT (see email from Mike)
-# write "submit data for the effective range (for the sampling prior)"
+# HIGH PRIORITY
+# 1. Need to fix the description for the posterior (how the default example is generated)
+# 2. Need to add a description for the sampling for the prior (how the data file is set up 
+# before the user downloads it)
+# 3. 
 
-# THINGS TO ASK
-# need to check the variance matrix -> is this what I think it is (sampling from the prior)
+# LOW PRIORITY
+# 1. See if it is possible to download/upload a proper .txt file format
+# may need to ask on StackOverFlow.
+# 2. 
 
 ################################################################
 # LIBRARIES                                                    #
@@ -32,6 +37,7 @@ library(varhandle)
 library(MASS)
 library(matrixcalc)
 library(stats)
+library(pracma)
 
 # Globally setting the spinner colour and type
 options(spinner.type = 8, spinner.color = "#6990EE")
