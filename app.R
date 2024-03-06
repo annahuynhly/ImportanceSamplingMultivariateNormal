@@ -6,7 +6,7 @@
 # 1. Need to fix the description for the posterior (how the default example is generated)
 # 2. Need to add a description for the sampling for the prior (how the data file is set up 
 # before the user downloads it)
-# 3. 
+# 3. Replace the default .csv example for the elicitation of the prior (for people uploading .csv)
 
 # LOW PRIORITY
 # 1. See if it is possible to download/upload a proper .txt file format

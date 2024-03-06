@@ -4,6 +4,7 @@
 library(latex2exp) # for latex within graphs
 library(MASS)
 library(pracma)
+library(dplyr)
 
 ##################################################
 # Inputs                                         #
@@ -32,8 +33,6 @@ R = 1/2 * diag(5) + 1/2 * c(1, 1, 1, 1, 1) %*%  t(c(1, 1, 1, 1, 1))
 sigma_mat = sigma %*% R %*% sigma
 n = 50 # num samples
 Y = mvrnorm(n = n, mu = mu, Sigma = sigma_mat)
-
-round(Y, 3)
 
 Y_data = as.data.frame(Y)
 colnames(Y_data) = c("Y1", "Y2", "Y3", "Y4", "Y5")
@@ -348,31 +347,6 @@ prior_mu_vals
 # GRAPHS FOR THE PRIOR                           #
 ##################################################
 
-# Plot for the prior elictation of sigma #########
-
-graph_num = 1 # the index used for the graph
-
-alpha = alpha01[graph_num]
-beta = alpha02[graph_num]
-low = c1[graph_num]
-up = c2[graph_num]
-x = low+(up-low)*c(0:1000)/1000
-prob_z = round(pnorm(z0), 4)
-
-# prior density of sigma only
-x3 = sqrt(1/x)
-dens3 = 2*(x^(3/2))*dgamma(x,alpha,beta)
-plot(x3,dens3, main = TeX(paste("Prior Density of $\\sigma_{", graph_num, "}$")),
-     xlab = TeX(paste("$\\sigma_{", graph_num, "}$")), ylab = "Prior Density", type = "l")
-
-# prior density of sigma * z0 
-x3 = z0*sqrt(1/x)
-dens3 = (2/z0)*(x^(3/2))*dgamma(x, alpha, beta)
-plot(x3, dens3,
-     main = TeX(paste("Prior Density of $\\sigma_{", graph_num, '}\\cdot z_{0}$')),
-     xlab = TeX(paste('$\\sigma_{', graph_num, '} \\cdot z_{0}$')),
-     ylab = "Prior Density", type = "l")
-
 # Plot for the prior elictation of mu ############
 
 graph_num = 1 # the index used for the graph
@@ -394,17 +368,26 @@ plot(xnew, ynew, lwd = 1, type="l", xlab = TeX(paste("Value of $\\mu_{", graph_n
 # SAMPLING THE PRIOR                       #
 ############################################
 
+set.seed(1) # note: seed does seem to influence the results quite a bit!
+
 sample_prior_vals = sample_prior(N, p, alpha01, alpha02, mu0, lambda0)
 
 sigma_ii = sample_prior_vals$sigma_ii
 
-test_tru_prior_vals = true_prior_density(p, alpha01, alpha02, lambda0, mu0)
+#sample_prior_data_cleaning(N = N, p =p, 
+#                           mu_matrix= sample_prior_vals$mu_matrix, 
+#                           sigma_ii_matrix = sample_prior_vals$sigma_ii,
+#                           correlation_matrix = sample_prior_vals$correlation_matrix)
 
-length(test_tru_prior_vals$y_vector[,1])
+test_tru_prior_vals = true_prior_density(p, alpha01, alpha02, lambda0, mu0)
 
 eff_ran = find_effective_range(p = p, m = m, 
                                x_vector_matrix = test_tru_prior_vals$x_vector, 
-                               y_vector = test_tru_prior_vals$y_vector)
+                               y_vector_matrix = test_tru_prior_vals$y_vector)
+
+test_tru_prior_vals$x_vector
+
+eff_ran$x_range
 
 ############################################
 # FUNCTIONS FOR THE POSTERIOR              #
@@ -659,13 +642,12 @@ post_content_vals = posterior_content(N, p,
                                       post_xi, 
                                       test_weights)
 
-
 test_tru_prior = true_prior_comparison(p, alpha01, alpha02, mu0, lambda0, 
                                        grid = eff_ran$grid)
 
 par(mfrow = c(1, 2))
 
-column_number = 3
+column_number = 1
 
 eff_range_min = eff_ran$x_range[,column_number][1]
 eff_range_max = eff_ran$x_range[,column_number][2]
@@ -687,8 +669,6 @@ rbr_vals = relative_belief_ratio(p,
                                  prior_content = test_tru_prior$prior_matrix, 
                                  post_content = post_content_vals$post_content)
 
-length(test_tru_prior$prior_matrix[,1])
-length(post_content_vals$post_content[,1])
 
 # the relative belief ratio
 content_density_plot(density = rbr_vals$RBR_modified, 

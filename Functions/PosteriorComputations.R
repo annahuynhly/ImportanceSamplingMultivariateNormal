@@ -10,15 +10,19 @@ true_prior_comparison = function(p, alpha01, alpha02, mu0, lambda0, grid){
   #' @param grid represents the grid of values where the posterior is based off of.
   #' The other parameters match the descriptions from the paper.
   prior_matrix = c()
+  midpt_grid_matrix = c()
   for(i in 1:p){
-    scale1 = sqrt(alpha02[i]/alpha01[i]) 
-    scale3 = dt(grid[,i], 2*alpha01[i])
-    scale = scale1 * lambda0[i] * scale3
-    prior = scale #mu0[i] + scale
+    midpt_grid = grid[,i][-length(grid[,i])] + diff(grid[,i])/2
     
-    prior_matrix = cbind(prior_matrix, prior)
+    scale = sqrt(alpha02[i]/alpha01[i])*lambda0[i]
+    reg_x = (midpt_grid - mu0[i])/scale
+    y = dt(reg_x,2*alpha01[i])/scale
+    
+    prior_matrix = cbind(prior_matrix, y)
+    midpt_grid_matrix = cbind(midpt_grid_matrix, midpt_grid)
   }
-  newlist = list("prior_matrix" = prior_matrix)
+  newlist = list("prior_matrix" = prior_matrix,
+                 "midpoint_grid_matrix" = midpt_grid_matrix)
   return(newlist)
 }
 

@@ -1,6 +1,9 @@
-dummy_data = data.frame(s1 = c(2, 2, 2), s2 = c(10,10,10),
-                        lower_bd = c(0,0,0), upper_bd = c(50,50,50),
-                        m1 = c(-5,-5,-5), m2 = c(5,5,5))
+dummy_data = data.frame(s1 = c(1, 0.5, 0.2, 0.5, 1),
+                        s2 = c(7, 4, 3, 4, 7),
+                        lower_bd = c(0,0,0,0,0),
+                        upper_bd = c(50,50,50,50,50),
+                        m1 = c(-5, -3, -2, -1, 0),
+                        m2 = c(0,1,2,3,5))
 
 # Prior sigma - text
 
@@ -97,13 +100,15 @@ output$prior_sigma_txt_example_table = renderDT(
 
 # creating test sample data (changes every time for fun!)
 test_sample_data = reactive({
-  p = 6
-  mu = c(0, 5, 7, 3, 2.5, -0.5) + rnorm(p, 0, 1)
-  sigma = diag(p)
-  n = 100
-  Y = mvrnorm(n = n, mu = mu, Sigma = sigma)
+  mu = c(-2, -1, 0, 1, 2) 
+  sigma = diag(c(2, 1, 0.5, 1, 2))
+  R = 1/2 * diag(5) + 1/2 * c(1, 1, 1, 1, 1) %*%  t(c(1, 1, 1, 1, 1))
+  sigma_mat = sigma %*% R %*% sigma
+  n = 50 # num samples
+  Y = mvrnorm(n = n, mu = mu, Sigma = sigma_mat)
+  Y = round(Y, 3) # rounding to make it nicer
   data = as.data.frame(Y)
-  colnames(data) = c("Y1", "Y2", "Y3", "Y4", "Y5", "Y6")
+  colnames(data) = c("Y1", "Y2", "Y3", "Y4", "Y5")
   data
 })
 

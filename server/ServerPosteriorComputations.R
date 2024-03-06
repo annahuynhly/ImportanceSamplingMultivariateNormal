@@ -77,7 +77,7 @@ post_sample_p_val = reactive({
 sample_post_content_values = reactive({
   posterior_content(N = input$post_bigN, 
                     p = post_sample_p_val(), 
-                    effective_range = sample_prior_content_values()$effective_range, 
+                    effective_range = sample_prior_effective_range()$grid, 
                     mu = post_sample_values()$mu_xi, 
                     xi = post_sample_values()$xi, 
                     weights = post_sample_weights())
@@ -89,9 +89,10 @@ true_prior_values = reactive({
                         alpha02 = prior_elicitation_sigma_values()$alpha02,
                         mu0 = prior_elicitation_mu_values()$mu0,
                         lambda0 = prior_elicitation_mu_values()$lambda0,
-                        grid = sample_prior_content_values()$plotting_grid)
+                        grid = sample_prior_effective_range()$grid)
 })
 
+# remove below later...
 output$debugging_prior = renderPrint({
   true_prior_values()
 })
@@ -148,7 +149,7 @@ output$postsample_download_xi = downloadHandler(
 post_sample_posterior_content_graph_DOWNLOAD = function(){
   content_density_plot(density = sample_post_content_values()$post_density, 
                        col_num = input$post_graph_num, 
-                       grid = sample_prior_content_values()$plotting_grid, 
+                       grid = true_prior_values()$midpoint_grid_matrix, 
                        type = "Posterior",
                        min_xlim = input$post_xlim_min, 
                        max_xlim = input$post_xlim_max,
@@ -172,8 +173,8 @@ comparisons_content_graph_DOWNLOAD = function(){
   comparison_content_density_plot(prior_density = true_prior_values()$prior_matrix, 
                                   post_density = sample_post_content_values()$post_density,
                                   col_num = input$comparison_mu_col, 
-                                  prior_grid = sample_prior_content_values()$plotting_grid,
-                                  post_grid = sample_prior_content_values()$plotting_grid, 
+                                  prior_grid = true_prior_values()$midpoint_grid_matrix,
+                                  post_grid = true_prior_values()$midpoint_grid_matrix, 
                                   min_xlim = input$comparison_xlim_min, 
                                   max_xlim = input$comparison_xlim_max,
                                   smooth_num = c(1, input$comparison_smoother),
@@ -204,7 +205,7 @@ output$sample_priorpost_graph = renderPlot({
 rbr_content_graph_DOWNLOAD = function(){
   content_density_plot(density = rbr_content()$RBR_modified, 
                        col_num = input$comparison_mu_col, 
-                       grid = sample_prior_content_values()$plotting_grid, 
+                       grid = true_prior_values()$midpoint_grid_matrix, 
                        type = "RBR",
                        min_xlim = input$comparison_xlim_min, 
                        max_xlim = input$comparison_xlim_max,

@@ -27,18 +27,13 @@ page_elicitdescription = div(
   p("Also specify the lower and upper bounds for the iterative process that determines the values of ($\\alpha_{01i}, \\alpha_{02i}$), $i= 1, ..., p.$"),
   hr(),
   h4("How to Submit .txt or .csv files"),
+  p("NOTE: right now there is not proper text file support, please use .csv!"),
   p("Although you can manually enter values such as $(s_{1i}, s_{2i}), (m_{1i}, m_{2i})$, for large p it may be more convenient for the user to input .txt or .csv files."),
   p("You may download the samples below for the acceptable format of .txt or .csv files to get an idea of how to upload."),
   downloadButton(outputId = "prior_sigma_csv_example", label = "Download .csv Sample"),
   downloadButton(outputId = "prior_sigma_txt_example", label = "Download .txt Sample"),
   p("The headers must exist and must be exactly formatted as is, or the computations will not work properly."),
   hr(),
-  p("If you cannot download the following samples above, note that the .txt file appears as is:"),
-  p("\"\",\"s1\",\"s2\",\"lower_bd\",\"upper_bd\",\"m1\",\"m2\""),
-  p("\"1\",2,10,0,50,-5,5"),
-  p("\"2\",2,10,0,50,-5,5"),
-  p("\"3\",2,10,0,50,-5,5"),
-  br(),
   p("Esentially, each item must be separated by commas instead of spaces. Alternatively, the .csv file is formatted as follows:"),
   DTOutput('prior_sigma_txt_example_table')
   
@@ -54,13 +49,15 @@ page_elicitsigma = div(
     sidebarPanel(
       width = 3,
       
+      p("You must press \"submit\" for the information to load properly."),
+      
       actionButton(inputId = "submit_prior_elicit_sigma", label = "Submit Data"),
       
       downloadButton(outputId = 'download_prior_elicit_sigma', label = 'Download Plot'),
       
       numericInput(inputId = "num_dimensions",
                    label = 'Insert the number of dimensions, $p$.',
-                   min = 1, max = 10000000, step = 1, value = 6),
+                   min = 1, max = 10000000, step = 1, value = 5),
       
       numericInput(inputId = "virtual_uncertainty",
                    label = 'Insert the virtual uncertainty, $\\gamma$.',
@@ -80,9 +77,9 @@ page_elicitsigma = div(
         fluidRow(box(width = 12,
           splitLayout(
             textInput(inputId = "elicit_s1", label = "Insert $s_{1i}, ..., s_{1p}$", 
-                      value = "2,3,2,5,6,1"),
+                      value = "1,0.5,0.2,0.5,1"),
             textInput(inputId = "elicit_s2", label = "Insert $s_{2i}, ..., s_{2p}$", 
-                      value = "10,12,8,9,13,14"),
+                      value = "7,4,3,4,7"),
           )
         )),
         
@@ -91,9 +88,9 @@ page_elicitsigma = div(
         fluidRow(box(width = 12,
           splitLayout(
             textInput(inputId = "alphalow", label = "Lower bound",
-                      value = "0,2,5,1,4,1"),
+                      value = "0,0,0,0,0"),
             textInput(inputId = "alphaup", label = "Upper bound",
-                      value = "50,46,48,60,35,67"),
+                      value = "50,50,50,50,50"),
           )
         )),
       ), # end of conditional panel
@@ -157,6 +154,8 @@ page_elicitmu = div(
     sidebarPanel(
       width = 3,
       
+      p("You must press \"submit\" for the information to load properly."),
+      
       actionButton(inputId = "submit_prior_elicit_mu", label = "Submit Data"),
       
       downloadButton(outputId = 'download_prior_elicit_mu_plot', label = 'Download Plot'),
@@ -176,11 +175,11 @@ page_elicitmu = div(
             textInput(
               inputId = "m1",
               label = "$m_{11}, m_{12}, ..., m_{1p}$",
-              value = "-5,-3,-5,-6,-1,-8"),
+              value = "-5,-3,-2,-1,0"),
             textInput(
               inputId = "m2",
               label = "$m_{21}, m_{22}, ..., m_{2p}$",
-              value = "5,13,19,12,6,7"),
+              value = "0,1,2,3,5"),
           )
         )),
       ), # end of conditional panel

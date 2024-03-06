@@ -86,52 +86,74 @@ psi = function(mu, xi){
   return(mu)
 }
 
-prior_content = function(N, p, m, mu, xi, 
-                         small_quantile = 0.005, large_quantile = 0.995){
-  #' Provides the prior content of the sample.
-  #' @param N represents the Monte Carlo sample size.
+true_prior_density = function(p, alpha01, alpha02, lambda0, mu0){
+  #' Plots the true prior.
+  #' @param p represents the number of dimensions.
+  x = -10+20*c(0:1000)/1000
+  x_vector = c()
+  y_vector = c()
+  for(i in 1:p){
+    y = dt(x,2*alpha01[i])
+    scale = sqrt(alpha02[i]/alpha01[i])*lambda0[i]
+    xnew = mu0[i] + scale*x
+    ynew = y/scale
+    
+    x_vector = cbind(x_vector, xnew)
+    y_vector = cbind(y_vector, ynew)
+  }
+  newlist = list("x_vector" = x_vector, "y_vector" = y_vector)
+  return(newlist)
+}
+
+find_effective_range = function(p, m, x_vector_matrix, y_vector_matrix,
+                                quantile_val = c(0.005,0.995)){
+  #' Calculates the effective range.
   #' @param p represents the number of dimensions.
   #' @param m represents the number of desired sub-intervals for the effective range.
-  #' @param small_quantile represents the smaller quantile of interest for the effective range.
-  #' @param large_quantile represents the larger quantile of interest for the effective range.
+  #' @param quantile_val represents the smaller quantile of interest for the effective range.
   #' @details 
   #' This function assumes that m is consistent throughout each mu. 
-  psi_val = psi(mu, xi) 
-  plotting_grid = c()
-  effective_range = c()
-  prior_content_matrix = c()
-  prior_density_matrix = c()
+  desired_range = quantile_val[2] - quantile_val[1]
+  
+  x_range_matrix = c()
+  y_range_matrix = c()
+  delta_vector = c()
+  grid_matrix = c()
   
   for(k in 1:p){
-    # first: gathering the effective range
-    quant_range = quantile(psi_val[,k], prob = c(small_quantile, large_quantile))
-    delta = (quant_range[2] - quant_range[1])/m # length of the sub intervals
-    grid = seq(quant_range[1], quant_range[2], by = delta) # making a grid of the sub intervals
-    # Note: since we're looking at the effective range, the prior content doesn't always sum to 1.
-    effective_range = cbind(effective_range, grid)
-    plot_grid = grid[-length(grid)] + diff(grid)/2
-    plotting_grid = cbind(plotting_grid, plot_grid)
-    
-    prior_content_vec = rep(0, m)
-    for(j in 1:N){
-      for(i in 1:m){
-        if(between(psi_val[,k][j], grid[i], grid[i+1])){ # CHANGES HERE
-          prior_content_vec[i] =  prior_content_vec[i] + 1
-          break
-        }
+    x_vector = x_vector_matrix[,k]
+    y_vector = y_vector_matrix[,k]
+    found_range = FALSE
+    if(length(x_vector) == length(y_vector)){
+      n = length(x_vector)
+    } else {
+      return("Error: x_vector and y_vector contain different lengths.")
+    }
+    i = 0
+    while(found_range == FALSE){
+      x_new = x_vector[(i+1):(n-i)]
+      y_new = y_vector[(i+1):(n-i)]
+      area = trapz(x_new, y_new)
+      if(area <= desired_range){
+        found_range = TRUE
+      } else {
+        i = i + 1
       }
     }
+    x_range = c(x_new[1], x_new[length(x_new)])
+    y_range = c(x_new[1], x_new[length(x_new)])
+    # creating new grid points based off of the effective range
+    delta = (x_range[2] - x_range[1])/m # length of the sub intervals
+    x_grid = seq(x_range[1], x_range[2], by = delta) # constructing the new grid
     
-    prior_content_vec = prior_content_vec/N
-    prior_density = prior_content_vec / delta
-    prior_content_matrix = cbind(prior_content_matrix, prior_content_vec)
-    prior_density_matrix = cbind(prior_density_matrix, prior_density)
+    x_range_matrix = cbind(x_range_matrix, x_range)
+    y_range_matrix = cbind(y_range_matrix, y_range)
+    delta_vector = c(delta_vector, delta)
+    grid_matrix = cbind(grid_matrix, x_grid)
   }
-  newlist = list("plotting_grid" = plotting_grid,
-                 "effective_range" = effective_range,
-                 "prior_content" = prior_content_matrix,
-                 "prior_density" = prior_density_matrix,
-                 "delta" = as.numeric(delta))
+  
+  newlist = list("x_range" = x_range_matrix, "y_range" = y_range_matrix,
+                 "delta" = delta_vector, "grid" = grid_matrix)
   return(newlist)
 }
 
@@ -220,6 +242,55 @@ content_density_plot = function(density, col_num, grid, type = "Prior",
 ################################################################
 # OLD FUNCTIONS                                                #
 ################################################################
+
+prior_content = function(N, p, m, mu, xi, 
+                         small_quantile = 0.005, large_quantile = 0.995){
+  #' Provides the prior content of the sample.
+  #' @param N represents the Monte Carlo sample size.
+  #' @param p represents the number of dimensions.
+  #' @param m represents the number of desired sub-intervals for the effective range.
+  #' @param small_quantile represents the smaller quantile of interest for the effective range.
+  #' @param large_quantile represents the larger quantile of interest for the effective range.
+  #' @details 
+  #' This function assumes that m is consistent throughout each mu. 
+  psi_val = psi(mu, xi) 
+  plotting_grid = c()
+  effective_range = c()
+  prior_content_matrix = c()
+  prior_density_matrix = c()
+  
+  for(k in 1:p){
+    # first: gathering the effective range
+    quant_range = quantile(psi_val[,k], prob = c(small_quantile, large_quantile))
+    delta = (quant_range[2] - quant_range[1])/m # length of the sub intervals
+    grid = seq(quant_range[1], quant_range[2], by = delta) # making a grid of the sub intervals
+    # Note: since we're looking at the effective range, the prior content doesn't always sum to 1.
+    effective_range = cbind(effective_range, grid)
+    plot_grid = grid[-length(grid)] + diff(grid)/2
+    plotting_grid = cbind(plotting_grid, plot_grid)
+    
+    prior_content_vec = rep(0, m)
+    for(j in 1:N){
+      for(i in 1:m){
+        if(between(psi_val[,k][j], grid[i], grid[i+1])){ # CHANGES HERE
+          prior_content_vec[i] =  prior_content_vec[i] + 1
+          break
+        }
+      }
+    }
+    
+    prior_content_vec = prior_content_vec/N
+    prior_density = prior_content_vec / delta
+    prior_content_matrix = cbind(prior_content_matrix, prior_content_vec)
+    prior_density_matrix = cbind(prior_density_matrix, prior_density)
+  }
+  newlist = list("plotting_grid" = plotting_grid,
+                 "effective_range" = effective_range,
+                 "prior_content" = prior_content_matrix,
+                 "prior_density" = prior_density_matrix,
+                 "delta" = as.numeric(delta))
+  return(newlist)
+}
 
 sample_prior_hist = function(mu_prior, col_num, delta = 0.1, 
                              min_xlim = -10, max_xlim = 10,

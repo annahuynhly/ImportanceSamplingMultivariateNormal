@@ -4,26 +4,42 @@
 
 page_post_comp_description = div(
   titlePanel("Description"),
+  p("Please refer to section 3.2 of the paper for this section."),
   p("currently a placeholder; will add more details later."),
   hr(),
   h4("How to Submit .txt or .csv files"),
-  p("At the moment, this website exclusively accepts .csv or .txt files with a specific structure. Ensure that your file includes a header, where each column corresponds to a distinct variable:"),
+  p("At the moment, this website exclusively accepts .csv or .txt files with a specific structure. 
+    Ensure that your file includes a header, where each column corresponds to a distinct variable:"),
   p("$Y = (Y_{1}, Y_{2}, Y_{3}, ..., Y_{P})$"),
-  p("You may download the samples below for the acceptable format of .txt or .csv files to get an idea of how to upload."),
+  hr(),
+  p("There is a default example specified to illustrate the implementation of the analysis. 
+    We generated a sample of $n = 50$ from a $\\mathcal{N}_{5}(\\mu, \\Sigma)$ distribution
+    where:"),
+  p("$\\mu = (-2, -1, 0, 1, 2)^{'}, \\sigma_{1} = 2, \\sigma_{2} = 1, \\sigma_{3} = 0.5, \\sigma_{4} = 1, \\sigma_{5} = 2, R = \\frac{1}{2} I_{5} + \\frac{1}{2} \\underset{\\sim}{I_{5}} \\underset{\\sim}{I_{5}^{'}}$ 
+    where $\\underset{\\sim}{I_{5}} = (1, 1, 1, 1, 1)^{'}$ and"),
+  p("$\\Sigma = \\begin{pmatrix}
+                  \\sigma_{1} & 0 & 0 & 0 & 0 \\\\
+                  0 & \\sigma_{2} & 0 & 0 & 0 \\\\
+                  0 & 0 & \\sigma_{3} & 0 & 0 \\\\
+                  0 & 0 & 0 & \\sigma_{4} & 0 \\\\
+                  0 & 0 & 0 & 0 & \\sigma_{5} \\\\
+                \\end{pmatrix}
+                R
+                \\begin{pmatrix}
+                  \\sigma_{1} & 0 & 0 & 0 & 0 \\\\
+                  0 & \\sigma_{2} & 0 & 0 & 0 \\\\
+                  0 & 0 & \\sigma_{3} & 0 & 0 \\\\
+                  0 & 0 & 0 & \\sigma_{4} & 0 \\\\
+                  0 & 0 & 0 & 0 & \\sigma_{5} \\\\
+                \\end{pmatrix}$"),
+  p("The generated sample can be downloaded below. Note that the format of the file consists of $n$ rows
+     where each row is of the form $y_{1}, y_{2}, ..., y_{p}$."),
   downloadButton(outputId = "post_computation_input_example_csv", label = "Download .csv"),
   downloadButton(outputId = "post_computation_input_example_txt", label = "Download .txt"),
   hr(),
-  p("If you cannot download the following samples above, note that the .txt file appears as is:"),
-  p("TODO: NEED TO FIX THE DESCRIPTION ACCORDING TO MIKE TO MAKE IT MATCH THE NEW DATA!!"),
-  p("TODO: ROUND THE DATA TO 3 DECIMAL PLACES AND THEN EXPLAIN HOW THE DEFAULT DATA IS GENERATED."),
-  p("\"Y1\",\"Y2\",\"Y3\""),
-  p("1.76312851911246,2.45276003285563,0.661806566932632"),
-  p("2.89995319903158,2.63143675558349,0.0285393909422083"),
-  p("1.28504391922971,2.94688870456367,3.34204091589147"),
-  br(),
-  p("Esentially, each item must be separated by commas instead of spaces. Alternatively, the .csv file is formatted as follows:"),
+  p("Esentially, each item must be separated by commas instead of spaces. 
+    Alternatively, the .csv file is formatted as follows:"),
   DTOutput('post_comp_example_csv_table'),
-  
   # the below is just for testing
   #verbatimTextOutput(outputId = "testing123")
 )
@@ -39,6 +55,9 @@ page_posteriorcomputations = div(
   sidebarLayout(
     sidebarPanel(
       width = 3,
+      
+      p("Note: you must press \"submit\" to specify the prior for this page to \
+        load properly."),
       
       fileInput(inputId = "sample_post_Y", 
                 label = "Upload File for Y",
@@ -56,7 +75,7 @@ page_posteriorcomputations = div(
       
       numericInput(inputId = "post_bigN",
                    label = 'Insert the Monte Carlo sample size',
-                   value = 1000),
+                   value = 3000),
     
       selectInput(inputId = "post_comp_use", 
                   label = 'What values of the hyperparameters do you want to use?', 
@@ -108,9 +127,9 @@ page_posteriorcomputations = div(
                fluidRow(box(width = 12,
                  splitLayout(
                     numericInput(inputId = "post_xlim_min", 
-                                 label = "Lower x limit", value = -10),
+                                 label = "Lower x limit", value = -5),
                     numericInput(inputId = "post_xlim_max", 
-                                 label = "Upper x limit", value = 10),
+                                 label = "Upper x limit", value = 5),
                   )
                )),
               #numericInput(inputId = "post_graph_delta",
@@ -217,9 +236,9 @@ page_comparison_graphs = div(
                fluidRow(box(width = 12,
                   splitLayout(
                     numericInput(inputId = "comparison_xlim_min", 
-                                 label = "Lower x limit", value = -10),
+                                 label = "Lower x limit", value = -5),
                     numericInput(inputId = "comparison_xlim_max", 
-                                 label = "Upper x limit", value = 10),
+                                 label = "Upper x limit", value = 5),
                   )
                )),
                #sliderInput(inputId = "comparison_graph_delta",
