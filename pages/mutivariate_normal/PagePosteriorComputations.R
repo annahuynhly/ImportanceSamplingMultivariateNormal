@@ -34,6 +34,9 @@ page_post_comp_description = div(
                 \\end{pmatrix}$"),
   p("The generated sample can be downloaded below. Note that the format of the file consists of $n$ rows
      where each row is of the form $y_{1}, y_{2}, ..., y_{p}$."),
+  numericInput(inputId = "post_default_example_seed",
+               label = "Insert the seed for generating the default example.",
+               value = 1),
   downloadButton(outputId = "post_computation_input_example_csv", label = "Download .csv"),
   downloadButton(outputId = "post_computation_input_example_txt", label = "Download .txt"),
   hr(),

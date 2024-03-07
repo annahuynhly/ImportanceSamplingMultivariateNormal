@@ -27,6 +27,7 @@ m1 = c(-5, -3, -2, -1, 0)
 m2 = c(0,1,2,3,5)
 
 # manually making the Y-data
+set.seed(1) # setting seed for the default example.
 mu = c(-2, -1, 0, 1, 2) 
 sigma = diag(c(2, 1, 0.5, 1, 2))
 R = 1/2 * diag(5) + 1/2 * c(1, 1, 1, 1, 1) %*%  t(c(1, 1, 1, 1, 1))
@@ -342,27 +343,6 @@ lambda0 = prior_mu_vals$lambda0
 mu0 = prior_mu_vals$mu0
 
 prior_mu_vals
-
-##################################################
-# GRAPHS FOR THE PRIOR                           #
-##################################################
-
-# Plot for the prior elictation of mu ############
-
-graph_num = 1 # the index used for the graph
-
-x = -10+20*c(0:1000)/1000
-y = dt(x,2*alpha01[graph_num])
-scale = sqrt(alpha02[graph_num]/alpha01[graph_num])*lambda0[graph_num]
-xnew = mu0[graph_num] + scale*x
-ynew = y/scale
-
-# new grid: 
-grid_new = test_tru_prior$midpoint_grid_matrix[,1]
-
-plot(xnew, ynew, lwd = 1, type="l", xlab = TeX(paste("Value of $\\mu_{", graph_num, "}$")),
-     ylab = "Density", main = TeX(paste("Prior Density of $\\mu_{", graph_num, "}$")),
-     xlim = c(-5, 0))
 
 ############################################
 # SAMPLING THE PRIOR                       #

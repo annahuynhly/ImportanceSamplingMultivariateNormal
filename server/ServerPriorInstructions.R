@@ -98,8 +98,11 @@ output$prior_sigma_txt_example_table = renderDT(
 # POSTERIOR COMPUTATIONS EXAMPLE                               #
 ################################################################
 
+post_example_seed = reactive(input$post_default_example_seed)
+
 # creating test sample data (changes every time for fun!)
 test_sample_data = reactive({
+  set.seed(post_example_seed())
   mu = c(-2, -1, 0, 1, 2) 
   sigma = diag(c(2, 1, 0.5, 1, 2))
   R = 1/2 * diag(5) + 1/2 * c(1, 1, 1, 1, 1) %*%  t(c(1, 1, 1, 1, 1))
