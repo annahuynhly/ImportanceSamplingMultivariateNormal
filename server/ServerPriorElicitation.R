@@ -12,7 +12,9 @@ m2_list = reactive({create_necessary_vector(input$m2)})
 prior_sigma_uploaded_text = reactive({
   tryCatch(
     {
-      df = read.csv(input$prior_sigma_file_txt$datapath, header = TRUE)
+      df = read.csv(input$prior_sigma_file_txt$datapath, 
+                    header = TRUE,
+                    sep = "\t")
     },
     error = function(e) {
       # return a safeError if a parsing error occurs
@@ -144,7 +146,9 @@ output$download_prior_elicit_sigma = downloadHandler(
 prior_mu_uploaded_text = reactive({
   tryCatch(
     {
-      df = read.csv(input$prior_mu_file_txt$datapath, header = TRUE)
+      df = read.csv(input$prior_mu_file_txt$datapath, 
+                    header = TRUE,
+                    sep = "\t")
     },
     error = function(e) {
       # return a safeError if a parsing error occurs

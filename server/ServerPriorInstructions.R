@@ -5,89 +5,23 @@ dummy_data = data.frame(s1 = c(1, 0.5, 0.2, 0.5, 1),
                         m1 = c(-5, -3, -2, -1, 0),
                         m2 = c(0,1,2,3,5))
 
-# Prior sigma - text
-
-# sample file - for users to understand the format
+# Prior Sigma Sample TXT (OPERATIONAL)
 output$prior_sigma_txt_example = downloadHandler(
   filename = "prior_sigma_example.txt",
   content = function(file) {
-    write.csv(dummy_data, file)
+    write.table(dummy_data, file, sep = "\t", row.names = FALSE, 
+                col.names = TRUE)
+    #write.csv(dummy_data, file)
   }
 )
 
-# For telling the user how to input .txt files
-observeEvent(input$prior_sigma_submit_info_txt, {
-  # Show a modal when the button is pressed
-  shinyalert(html = TRUE, text = tagList(
-    prior_sigma_upload_instructions,
-    br(),
-    downloadButton(outputId = "prior_sigma_txt_example", 
-                   label = "Download Sample"),
-  ))
-})
-
-# Prior sigma - csv
-
-# sample file - for users to understand the format
+# Prior Sigma Sample CSV (OPERATIONAL)
 output$prior_sigma_csv_example = downloadHandler(
   filename = "prior_sigma_example.csv",
   content = function(file) {
     write.csv(dummy_data, file)
   }
 )
-
-# For telling the user how to input .csv files
-observeEvent(input$prior_sigma_submit_info_csv, {
-  # Show a modal when the button is pressed
-  shinyalert(html = TRUE, text = tagList(
-    prior_sigma_upload_instructions,
-    br(),
-    downloadButton(outputId = "prior_sigma_csv_example", 
-                   label = "Download Sample"),
-  ))
-})
-
-# Prior mu - txt
-
-# sample file - for users to understand the format
-output$prior_mu_txt_example = downloadHandler(
-  filename = "prior_mu_example.txt",
-  content = function(file) {
-    write.csv(dummy_data, file)
-  }
-)
-
-# For telling the user how to input .txt files
-observeEvent(input$prior_mu_submit_info_txt, {
-  # Show a modal when the button is pressed
-  shinyalert(html = TRUE, text = tagList(
-    prior_mu_upload_instructions,
-    br(),
-    downloadButton(outputId = "prior_mu_txt_example", 
-                   label = "Download Sample"),
-  ))
-})
-
-# Prior mu - csv
-
-# sample file - for users to understand the format
-output$prior_mu_csv_example = downloadHandler(
-  filename = "prior_mu_example.csv",
-  content = function(file) {
-    write.csv(dummy_data, file)
-  }
-)
-
-# For telling the user how to input .txt files
-observeEvent(input$prior_mu_submit_info_csv, {
-  # Show a modal when the button is pressed
-  shinyalert(html = TRUE, text = tagList(
-    prior_mu_upload_instructions,
-    br(),
-    downloadButton(outputId = "prior_mu_csv_example", 
-                   label = "Download Sample"),
-  ))
-})
 
 # Table
 output$prior_sigma_txt_example_table = renderDT(
@@ -115,7 +49,7 @@ test_sample_data = reactive({
   data
 })
 
-# test data for uploading Y_{1i}s - csv
+# Sample data for uploading Y_{1i}s - csv
 output$post_computation_input_example_csv = downloadHandler(
   filename = "Y_example.csv",
   content = function(file) {
@@ -123,23 +57,15 @@ output$post_computation_input_example_csv = downloadHandler(
   }
 )
 
-# test data for uploading Y_{1i}s - txt
+# Sample data for uploading Y_{1i}s - txt
 output$post_computation_input_example_txt = downloadHandler(
   filename = "Y_example.txt",
   content = function(file) {
-    write.csv(test_sample_data(), file, row.names = FALSE)
+    write.table(test_sample_data(), file, sep = "\t", 
+                row.names = FALSE, col.names = TRUE)
   }
 )
 
-
-observeEvent(input$post_download_info, {
-  # Show a modal when the button is pressed
-  shinyalert(html = TRUE, text = tagList(
-    file_upload_example,
-    br(),
-    downloadButton(outputId = "post_computation_input_example_csv", label = "Download Sample"),
-  ))
-})
 
 output$post_comp_example_csv_table = renderDT(
   test_sample_data()

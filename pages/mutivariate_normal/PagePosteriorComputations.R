@@ -15,23 +15,12 @@ page_post_comp_description = div(
   p("There is a default example specified to illustrate the implementation of the analysis. 
     We generated a sample of $n = 50$ from a $\\mathcal{N}_{5}(\\mu, \\Sigma)$ distribution
     where:"),
-  p("$\\mu = (-2, -1, 0, 1, 2)^{'}, \\sigma_{1} = 2, \\sigma_{2} = 1, \\sigma_{3} = 0.5, \\sigma_{4} = 1, \\sigma_{5} = 2, R = \\frac{1}{2} I_{5} + \\frac{1}{2} \\underset{\\sim}{I_{5}} \\underset{\\sim}{I_{5}^{'}}$ 
-    where $\\underset{\\sim}{I_{5}} = (1, 1, 1, 1, 1)^{'}$ and"),
-  p("$\\Sigma = \\begin{pmatrix}
-                  \\sigma_{1} & 0 & 0 & 0 & 0 \\\\
-                  0 & \\sigma_{2} & 0 & 0 & 0 \\\\
-                  0 & 0 & \\sigma_{3} & 0 & 0 \\\\
-                  0 & 0 & 0 & \\sigma_{4} & 0 \\\\
-                  0 & 0 & 0 & 0 & \\sigma_{5} \\\\
-                \\end{pmatrix}
-                R
-                \\begin{pmatrix}
-                  \\sigma_{1} & 0 & 0 & 0 & 0 \\\\
-                  0 & \\sigma_{2} & 0 & 0 & 0 \\\\
-                  0 & 0 & \\sigma_{3} & 0 & 0 \\\\
-                  0 & 0 & 0 & \\sigma_{4} & 0 \\\\
-                  0 & 0 & 0 & 0 & \\sigma_{5} \\\\
-                \\end{pmatrix}$"),
+  p("$\\mu = (-2, -1, 0, 1, 2)^{'}, \\sigma_{1} = 2, \\sigma_{2} = 1, \\sigma_{3} = 0.5, 
+     \\sigma_{4} = 1, \\sigma_{5} = 2, R = \\frac{1}{2} 1_{5} + \\frac{1}{2} 
+     \\underset{\\sim}{1_{5}} \\underset{\\sim}{1_{5}^{'}}$ 
+    where $\\underset{\\sim}{1_{5}} = (1, 1, 1, 1, 1)^{'}$ and"),
+  p("$\\Sigma = $ diag($\\sigma_{1}, ..., \\sigma_{p}$)$ \\enspace R \\enspace 
+     $diag($\\sigma_{1}, ..., \\sigma_{p}$)"),
   p("The generated sample can be downloaded below. Note that the format of the file consists of $n$ rows
      where each row is of the form $y_{1}, y_{2}, ..., y_{p}$."),
   numericInput(inputId = "post_default_example_seed",
@@ -62,15 +51,33 @@ page_posteriorcomputations = div(
       p("Note: you must press \"submit\" to specify the prior for this page to \
         load properly."),
       
-      fileInput(inputId = "sample_post_Y", 
-                label = "Upload File for Y",
-                multiple = FALSE,
-                accept = c("text/csv", "text/comma-separated-values,text/plain", ".csv")),
+      selectInput(inputId = "post_input_type",
+                  label = 'How do you want to upload the data?',
+                  choices = list("Text file" = "txt",
+                                 "CSV file" = "csv"),
+                  selected = "csv"),
+      
+      conditionalPanel(
+        condition = "input.post_input_type == 'csv'",
+        fileInput(inputId = "sample_post_Y", 
+                  label = "Upload File for Y",
+                  multiple = FALSE,
+                  accept = c("text/csv", "text/comma-separated-values,text/plain", 
+                             ".csv")),
+      ),
+      
+      conditionalPanel(
+        condition = "input.post_input_type == 'txt'",
+        fileInput(inputId = "sample_post_Y_txt", 
+                  label = "Upload File for Y",
+                  multiple = FALSE,
+                  accept = c("text/csv", "text/comma-separated-values,text/plain", 
+                             ".txt")),
+      ),
       
       p("Note: you will need to resubmit if you make any changes with the inputs below."),
       
       actionButton(inputId = "submit_sample_post", label = "Submit Data"),
-      #actionButton(inputId = "post_download_info", label = "How to Submit"),
     
       numericInput(inputId = "post_seed",
                    label = "Insert the seed",
@@ -105,7 +112,6 @@ page_posteriorcomputations = div(
         textInput(inputId = "lambda0_post",
                   label = "$\\lambda_{021}, ..., \\lambda_{02p}$",
                   value = "1, 1, 1"),
-        
       ),
       
       numericInput(inputId = "post_graph_num",

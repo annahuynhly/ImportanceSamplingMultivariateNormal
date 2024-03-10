@@ -4,11 +4,22 @@
 
 post_integ_seed = reactive(input$post_seed)
 
+choose_file_Y_type = reactive({
+  if(input$post_input_type == "csv"){
+    read.csv(input$sample_post_Y$datapath, header = TRUE)
+  } else if (input$post_input_type == "txt"){
+    read.csv(input$sample_post_Y_txt$datapath, sep = "\t")
+    #write.table(input$sample_post_Y_txt$datapath, file, sep = "\t", 
+    #            row.names = FALSE, col.names = TRUE)
+  }
+})
+
 input_Y_values = reactive({
   #as.matrix(test_sample_data())
   tryCatch(
     {
-      df = read.csv(input$sample_post_Y$datapath, header = TRUE)
+      df = choose_file_Y_type()
+      #df = read.csv(input$sample_post_Y$datapath, header = TRUE)
     },
     error = function(e) {
       # return a safeError if a parsing error occurs
