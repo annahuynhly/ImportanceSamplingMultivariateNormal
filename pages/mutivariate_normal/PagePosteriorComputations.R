@@ -165,6 +165,45 @@ page_posteriorcomputations = div(
 )
 
 ################################################################
+# PORTION FOR EFFECTIVE RANGE                                  #
+################################################################
+
+page_prior_effective_range = div(
+  titlePanel("Effective Range from the Prior"),
+  sidebarLayout(
+    sidebarPanel(
+      width = 3,
+      
+      actionButton(inputId = "submit_prior_eff_range", #"submit_sample_prior", 
+                   label = "Submit Data (for the effective range)"),
+    
+      numericInput(inputId = "prior_eff_range_m", #"prior_sample_m",
+                   label = 'Insert the number of desired subintervals for the effective range',
+                   value = 50),
+      
+      p("Below is for denoting the smaller and larger quantiles for 
+        computing the effective range."),
+      
+      fluidRow(box(width = 12,
+                   splitLayout(
+                     numericInput(inputId = "prior_eff_range_small_quantile", 
+                                  #"prior_sample_small_quantile", 
+                                  label = "Small Quantile", value = 0.005),
+                     numericInput(inputId = "prior_eff_range_large_quantile", 
+                                  #"prior_sample_large_quantile", 
+                                  label = "Large Quantile", value = 0.995),
+                   )
+      )),
+      
+    ),
+    mainPanel(
+      withSpinner(verbatimTextOutput("prior_eff_range_delta")),
+      #withSpinner(verbatimTextOutput("prior_sample_delta")),
+    )
+  )
+)
+
+################################################################
 # PORTION FOR GRAPH BUILDING                                   #
 ################################################################
 
@@ -181,9 +220,9 @@ page_comparison_graphs = div(
       downloadButton(outputId = 'rbr_download_plot', 
                      label = 'RBR Plot'),
       
-      numericInput(inputId = "comparison_mu_col", 
-                   label = 'The column of $\\mu$ for the graph.',
-                   value = 1),
+      #numericInput(inputId = "comparison_mu_col", 
+      #             label = 'The column of $\\mu$ for the graph.',
+      #             value = 1),
       
       selectInput(inputId = "comparison_modify_which",
                   label = 'Select line to modify',
@@ -242,14 +281,19 @@ page_comparison_graphs = div(
       
       fluidRow(
         column(4,
-               fluidRow(box(width = 12,
-                  splitLayout(
-                    numericInput(inputId = "comparison_xlim_min", 
-                                 label = "Lower x limit", value = -5),
-                    numericInput(inputId = "comparison_xlim_max", 
-                                 label = "Upper x limit", value = 5),
-                  )
-               )),
+               numericInput(inputId = "comparison_mu_col", 
+                            label = 'The column of $\\mu$ for the graph.',
+                            value = 1),
+               
+               #fluidRow(box(width = 12,
+               #    splitLayout(
+                #    numericInput(inputId = "comparison_xlim_min", 
+                #                 label = "Lower x limit", value = -5),
+                #    numericInput(inputId = "comparison_xlim_max", 
+                #                 label = "Upper x limit", value = 5),
+                #  )
+               #)),
+               
                #sliderInput(inputId = "comparison_graph_delta",
                #             label = "Length of the bins",
                #            min = 0.01, max = 1, value = 0.1),
@@ -278,6 +322,7 @@ page_sampling = div(
   titlePanel("Posterior Computations"),
   tabsetPanel(type = "tabs",
               tabPanel("Description", page_post_comp_description),
+              tabPanel("Calculating the Effective Range", page_prior_effective_range),
               tabPanel("Integrating with Respect to the Posterior", page_posteriorcomputations),
               tabPanel("Comparison Plots for Mu", page_comparison_graphs),
               #tabPanel("Graphs", page_priorgraph),

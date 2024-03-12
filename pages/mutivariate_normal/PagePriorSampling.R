@@ -57,24 +57,24 @@ page_sample_effective_range = div(
     sidebarPanel(
       width = 3,
       
-      actionButton(inputId = "submit_sample_prior", 
-                   label = "Submit Data (for the effective range)"),
+      #actionButton(inputId = "submit_sample_prior", 
+      #             label = "Submit Data (for the effective range)"),
       
-      numericInput(inputId = "prior_sample_m",
-                   label = 'Insert the number of desired subintervals for the effective range',
-                   value = 25),
+      #numericInput(inputId = "prior_sample_m",
+      #             label = 'Insert the number of desired subintervals for the effective range',
+      #             value = 25),
       
       p("Below is for denoting the smaller and larger quantiles for 
         computing the effective range."),
       
-      fluidRow(box(width = 12,
-                   splitLayout(
-                     numericInput(inputId = "prior_sample_small_quantile", 
-                                  label = "Small Quantile", value = 0.005),
-                     numericInput(inputId = "prior_sample_large_quantile", 
-                                  label = "Large Quantile", value = 0.995),
-                   )
-      )),
+      #fluidRow(box(width = 12,
+      #             splitLayout(
+      #               numericInput(inputId = "prior_sample_small_quantile", 
+      #                            label = "Small Quantile", value = 0.005),
+      #               numericInput(inputId = "prior_sample_large_quantile", 
+      #                            label = "Large Quantile", value = 0.995),
+      #             )
+      #)),
       
     ),
     mainPanel(
@@ -93,8 +93,8 @@ page_prior_sample = div(
   titlePanel("Sampling from the Prior"),
   tabsetPanel(type = "tabs",
               tabPanel("Description", page_sample_description),
-              tabPanel("Sample", page_sample_computation),
-              tabPanel("Effective Range", page_sample_effective_range)
+              tabPanel("Sample", page_sample_computation)#,
+              #tabPanel("Effective Range", page_sample_effective_range)
   )
 )
 

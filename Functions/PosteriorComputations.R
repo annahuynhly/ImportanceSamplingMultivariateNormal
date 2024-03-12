@@ -7,12 +7,12 @@ true_prior_comparison = function(p, alpha01, alpha02, mu0, lambda0, grid){
   #' concentrated), computes the true prior density.
   #' This is used for graph building and computing the relative belief ratio.
   #' @param p represents the number of dimensions.
-  #' @param grid represents the grid of values where the posterior is based off of.
+  #' @param grid represents a list of the grid of values where the posterior is based off of.
   #' The other parameters match the descriptions from the paper.
   prior_matrix = c()
   midpt_grid_matrix = c()
   for(i in 1:p){
-    midpt_grid = grid[,i][-length(grid[,i])] + diff(grid[,i])/2
+    midpt_grid = grid[[i]][-length(grid[[i]])] + diff(grid[[i]])/2
     
     scale = sqrt(alpha02[i]/alpha01[i])*lambda0[i]
     reg_x = (midpt_grid - mu0[i])/scale
@@ -103,7 +103,7 @@ posterior_content = function(N, p, effective_range, mu, xi, weights){
   #' Computes the posterior content.
   #' @param N represents the Monte Carlo sample size.
   #' @param p represents the number of dimensions.
-  #' @param effective_range denotes the vector of grid points where the density
+  #' @param effective_range denotes a list of grid points where the density
   #'        is highly concentrated (this is computed from the sampling of the  prior).'
   #' @param weights denote the weights given to each value of psi.
   #'        The other parameters match the descriptions in the paper.
@@ -112,8 +112,9 @@ posterior_content = function(N, p, effective_range, mu, xi, weights){
   post_density_matrix = c()
   
   for(k in 1:p){
-    grid = effective_range[,k]
-    delta = diff(effective_range[,k])[1]
+    grid = effective_range[[k]]
+    #grid = effective_range[,k]
+    delta = diff(effective_range[[k]])[1]
     post_content_vec = c() 
     for(i in 1:(length(grid) - 1)){
       post_content = 0
@@ -191,7 +192,8 @@ comparison_content_density_plot = function(prior_density, post_density, col_num,
   max_ylim = max(c(max(prior_density_vals), max(post_density_vals)))
   
   plot(prior_grid[,col_num], prior_density_vals,
-       xlim = c(min_xlim, max_xlim), ylim = c(0, max_ylim),
+       xlim = c(min_xlim, max_xlim), 
+       ylim = c(0, max_ylim),
        col = colour_choice[1],
        main = TeX(paste("Prior & Posterior Density Histogram of $\\mu_{", col_num, "}$")),
        xlab = TeX(paste("Value of $\\mu_{", col_num, "}$")),
@@ -315,7 +317,7 @@ mu_graph = function(mu, type = "prior", col_num,
 }
 
 mu_graph_comparison = function(grid, mu_prior, mu_post, col_num,
-                               min_xlim = -10, max_xlim = 10,
+                               #min_xlim = -10, max_xlim = 10,
                                smooth_num = 1,
                                colour_choice = c("blue", "red"),
                                lty_type = c(2, 2),
@@ -345,7 +347,7 @@ mu_graph_comparison = function(grid, mu_prior, mu_post, col_num,
        lty = lty_type[1],
        col = colour_choice[1],
        ylim = c(min_val, max_val), 
-       xlim = c(min_xlim, max_xlim),
+       #xlim = c(min_xlim, max_xlim),
        main = TeX(paste("Graph of the Prior and Posterior of $\\mu_{", col_num, "}$")),
        ylab = "Density",
        xlab = TeX(paste("Value of $\\mu_{$", col_num, "}$")))

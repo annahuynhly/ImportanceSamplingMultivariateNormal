@@ -344,6 +344,64 @@ mu0 = prior_mu_vals$mu0
 
 prior_mu_vals
 
+
+# making a function that gets the effective range from the true prior
+
+elicit_prior_effective_range = function(p, m = 200, alpha01, alpha02, mu0, x_low,
+                                        quantile_val = c(0.005, 0.995)){
+  desired_range = quantile_val[2] - quantile_val[1]
+  
+  x_range_list = list()
+  y_range_list = list()
+  delta_vector = c()
+  grid_list = list()
+  
+  for(k in 1:p){
+    if (x_low < 0) {x = seq(x_low, -x_low, by = 0.02)}
+    else {x_low = seq(x_low, x_low*2, by = 0.02)}
+    y = dt(x,2*alpha01[k])
+    scale = sqrt(alpha02[k]/alpha01[k])*lambda0[k]
+    xnew = mu0[k] + scale*x
+    ynew = y/scale
+    # now computing the actual effective range
+    x_center = which.min(abs(xnew-(mu0[k])))
+    # computing the area underneath
+    i = 1
+    found_range = FALSE
+    while(found_range == FALSE){
+      x_low_range = x_center - i
+      x_high_range = x_center + i
+      x_area = xnew[x_low_range:x_high_range]
+      y_area = ynew[x_low_range:x_high_range]
+      area = trapz(x_area, y_area)
+      #print(area)
+      #print(c(x_low_range,x_high_range))
+      if(area >= desired_range){
+        found_range = TRUE
+        x_range = x_area
+        y_range = y_area
+      } else {
+        i = i + 1
+      }
+    }
+    
+    # creating new grid points based off of the effective range
+    delta = (x_range[length(x_range)] - x_range[1])/m # length of the sub intervals
+    x_grid = seq(x_range[1], x_range[length(x_range)], by = delta) # constructing the new grid
+    
+    x_range_list[[k]] = x_range
+    y_range_list[[k]] = y_range
+    delta_vector = c(delta_vector, delta)
+    grid_list[[k]] = x_grid
+  }
+  newlist = list("x_range" = x_range_list, "y_range" = y_range_list,
+                 "delta" = delta_vector, "grid" = grid_list)
+  return(newlist)
+}
+
+TRU_eff_ran = elicit_prior_effective_range(p, m = 25, alpha01, alpha02, mu0, x_low = -10,
+                             quantile_val = c(0.005, 0.995))
+
 ############################################
 # SAMPLING THE PRIOR                       #
 ############################################
@@ -361,13 +419,11 @@ sigma_ii = sample_prior_vals$sigma_ii
 
 test_tru_prior_vals = true_prior_density(p, alpha01, alpha02, lambda0, mu0)
 
-eff_ran = find_effective_range(p = p, m = m, 
-                               x_vector_matrix = test_tru_prior_vals$x_vector, 
-                               y_vector_matrix = test_tru_prior_vals$y_vector)
-
-test_tru_prior_vals$x_vector
-
-eff_ran$x_range
+#eff_ran = find_effective_range(p = p, m = m, 
+#                               x_vector_matrix = test_tru_prior_vals$x_vector, 
+#                               y_vector_matrix = test_tru_prior_vals$y_vector)
+#test_tru_prior_vals$x_vector
+#eff_ran$x_range
 
 ############################################
 # FUNCTIONS FOR THE POSTERIOR              #
@@ -476,7 +532,7 @@ posterior_content = function(N, p, effective_range, mu, xi, weights){
   #' Computes the posterior content.
   #' @param N represents the Monte Carlo sample size.
   #' @param p represents the number of dimensions.
-  #' @param effective_range denotes the vector of grid points where the density
+  #' @param effective_range denotes a list of grid points where the density
   #'        is highly concentrated (this is computed from the sampling of the  prior).'
   #' @param weights denote the weights given to each value of psi.
   #'        The other parameters match the descriptions in the paper.
@@ -485,8 +541,9 @@ posterior_content = function(N, p, effective_range, mu, xi, weights){
   post_density_matrix = c()
   
   for(k in 1:p){
-    grid = effective_range[,k]
-    delta = diff(effective_range[,k])[1]
+    grid = effective_range[[k]]
+    #grid = effective_range[,k]
+    delta = diff(effective_range[[k]])[1]
     post_content_vec = c() 
     for(i in 1:(length(grid) - 1)){
       post_content = 0
@@ -511,12 +568,12 @@ true_prior_comparison = function(p, alpha01, alpha02, mu0, lambda0, grid){
   #' concentrated), computes the true prior density.
   #' This is used for graph building and computing the relative belief ratio.
   #' @param p represents the number of dimensions.
-  #' @param grid represents the grid of values where the posterior is based off of.
+  #' @param grid represents a list of the grid of values where the posterior is based off of.
   #' The other parameters match the descriptions from the paper.
   prior_matrix = c()
   midpt_grid_matrix = c()
   for(i in 1:p){
-    midpt_grid = grid[,i][-length(grid[,i])] + diff(grid[,i])/2
+    midpt_grid = grid[[i]][-length(grid[[i]])] + diff(grid[[i]])/2
     
     scale = sqrt(alpha02[i]/alpha01[i])*lambda0[i]
     reg_x = (midpt_grid - mu0[i])/scale
@@ -611,29 +668,32 @@ post_vals = sample_post_computations(N, Y = Y_data, p, mu0, lambda0)
 post_xi = post_vals$xi
 post_mu = post_vals$mu
 
+TRU_eff_ran$grid[[1]]
+
 test_weights = weights(N = N, p = p, 
                        mu = post_mu, xi = post_xi, 
                        mu0 = mu0, lambda0 = lambda0, 
                        sigma_ii = sigma_ii, alpha01 = alpha01, alpha02 = alpha02)
 
 post_content_vals = posterior_content(N, p, 
-                                      effective_range = eff_ran$grid,
+                                      effective_range = TRU_eff_ran$grid, #eff_ran$grid,
                                       post_mu, 
                                       post_xi, 
                                       test_weights)
 
 test_tru_prior = true_prior_comparison(p, alpha01, alpha02, mu0, lambda0, 
-                                       grid = eff_ran$grid)
+                                       grid = TRU_eff_ran$grid)
+                                       #grid = eff_ran$grid)
 
 par(mfrow = c(1, 2))
 
-column_number = 1
+column_number = 5
 
-eff_range_min = eff_ran$x_range[,column_number][1]
-eff_range_max = eff_ran$x_range[,column_number][2]
+eff_range_min = TRU_eff_ran$grid[[column_number]][1] #eff_ran$x_range[,column_number][1]
+eff_range_max = TRU_eff_ran$grid[[column_number]][length(TRU_eff_ran$grid[[column_number]])]#eff_ran$x_range[,column_number][2]
 
-eff_range_min
-eff_range_max
+#eff_range_min
+#eff_range_max
 
 comparison_content_density_plot(prior_density = test_tru_prior$prior_matrix, 
                                 post_density = post_content_vals$post_density, 

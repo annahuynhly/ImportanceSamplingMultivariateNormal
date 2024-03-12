@@ -88,7 +88,7 @@ post_sample_p_val = reactive({
 sample_post_content_values = reactive({
   posterior_content(N = input$post_bigN, 
                     p = post_sample_p_val(), 
-                    effective_range = sample_prior_effective_range()$grid, 
+                    effective_range = true_prior_effective_range()$grid, #sample_prior_effective_range()$grid, 
                     mu = post_sample_values()$mu_xi, 
                     xi = post_sample_values()$xi, 
                     weights = post_sample_weights())
@@ -100,7 +100,7 @@ true_prior_values = reactive({
                         alpha02 = prior_elicitation_sigma_values()$alpha02,
                         mu0 = prior_elicitation_mu_values()$mu0,
                         lambda0 = prior_elicitation_mu_values()$lambda0,
-                        grid = sample_prior_effective_range()$grid)
+                        grid = true_prior_effective_range()$grid) #,sample_prior_effective_range()$grid)
 })
 
 # remove below later...
@@ -186,8 +186,8 @@ comparisons_content_graph_DOWNLOAD = function(){
                                   col_num = input$comparison_mu_col, 
                                   prior_grid = true_prior_values()$midpoint_grid_matrix,
                                   post_grid = true_prior_values()$midpoint_grid_matrix, 
-                                  min_xlim = input$comparison_xlim_min, 
-                                  max_xlim = input$comparison_xlim_max,
+                                  min_xlim = xlim_comparison_vals()[[input$comparison_mu_col]][1],#input$comparison_xlim_min, 
+                                  max_xlim = xlim_comparison_vals()[[input$comparison_mu_col]][2],#input$comparison_xlim_max,
                                   smooth_num = c(1, input$comparison_smoother),
                                   colour_choice = c(input$comparison_prior_col, 
                                                     input$comparison_post_col),
@@ -218,8 +218,8 @@ rbr_content_graph_DOWNLOAD = function(){
                        col_num = input$comparison_mu_col, 
                        grid = true_prior_values()$midpoint_grid_matrix, 
                        type = "RBR",
-                       min_xlim = input$comparison_xlim_min, 
-                       max_xlim = input$comparison_xlim_max,
+                       min_xlim = xlim_comparison_vals()[[input$comparison_mu_col]][1],#input$comparison_xlim_min, 
+                       max_xlim = xlim_comparison_vals()[[input$comparison_mu_col]][2],#input$comparison_xlim_max,
                        smooth_num = input$comparison_smoother,
                        colour_choice = input$comparison_rbr_col,
                        lty_type = as.numeric(input$comparison_rbr_lty), 

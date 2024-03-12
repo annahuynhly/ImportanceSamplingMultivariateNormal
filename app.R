@@ -107,6 +107,7 @@ server = function(input, output, session) {
   source(file.path("server", "ServerPriorInstructions.R"),  local = TRUE)$value
   source(file.path("server", "ServerPriorElicitation.R"),  local = TRUE)$value
   source(file.path("server", "ServerPriorSampling.R"),  local = TRUE)$value
+  source(file.path("server", "ServerEffectiveRange.R"),  local = TRUE)$value
   source(file.path("server", "ServerPosteriorComputations.R"),  local = TRUE)$value
   
   observe(addHoverAnim(session, 'AnnaImg', 'rubberBand'))

@@ -59,6 +59,58 @@ elicit_prior_mu_function = function(p, gamma, m1, m2, s1, s2, alpha01, alpha02){
   return(newlist)
 }
 
+elicit_prior_effective_range = function(p, m = 200, alpha01, alpha02, mu0, lambda0, 
+                                        x_low, quantile_val = c(0.005, 0.995)){
+  desired_range = quantile_val[2] - quantile_val[1]
+  
+  x_range_list = list()
+  y_range_list = list()
+  delta_vector = c()
+  grid_list = list()
+  
+  for(k in 1:p){
+    if (x_low < 0) {x = seq(x_low, -x_low, by = 0.02)}
+    else {x_low = seq(x_low, x_low*2, by = 0.02)}
+    y = dt(x,2*alpha01[k])
+    scale = sqrt(alpha02[k]/alpha01[k])*lambda0[k]
+    xnew = mu0[k] + scale*x
+    ynew = y/scale
+    # now computing the actual effective range
+    x_center = which.min(abs(xnew-(mu0[k])))
+    # computing the area underneath
+    i = 1
+    found_range = FALSE
+    while(found_range == FALSE){
+      x_low_range = x_center - i
+      x_high_range = x_center + i
+      x_area = xnew[x_low_range:x_high_range]
+      y_area = ynew[x_low_range:x_high_range]
+      area = trapz(x_area, y_area)
+      #print(area)
+      #print(c(x_low_range,x_high_range))
+      if(area >= desired_range){
+        found_range = TRUE
+        x_range = x_area
+        y_range = y_area
+      } else {
+        i = i + 1
+      }
+    }
+    
+    # creating new grid points based off of the effective range
+    delta = (x_range[length(x_range)] - x_range[1])/m # length of the sub intervals
+    x_grid = seq(x_range[1], x_range[length(x_range)], by = delta) # constructing the new grid
+    
+    x_range_list[[k]] = x_range
+    y_range_list[[k]] = y_range
+    delta_vector = c(delta_vector, delta)
+    grid_list[[k]] = x_grid
+  }
+  newlist = list("x_range" = x_range_list, "y_range" = y_range_list,
+                 "delta" = delta_vector, "grid" = grid_list)
+  return(newlist)
+}
+
 ################################################################
 # DISCARDED CODE (kept for rough)                              #
 ################################################################
