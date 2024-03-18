@@ -2,13 +2,6 @@
 # TODO LIST                                                    #
 ################################################################
 
-# HIGH PRIORITY
-
-# LOW PRIORITY
-# 1. See if it is possible to download/upload a proper .txt file format
-# may need to ask on StackOverFlow.
-# 2. 
-
 ################################################################
 # LIBRARIES                                                    #
 ################################################################
