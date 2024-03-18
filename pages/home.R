@@ -1,10 +1,11 @@
 page_home = div(
   titlePanel("Home Page"),
   
-  p("The technical details underlying the algorithms implemented on this website can be found in the following paper:"),
+  p("The technical details underlying the algorithms implemented on this website can 
+    be found in the following paper:"),
   tags$div(
     tags$a(href="https://www.utstat.toronto.edu/mikevans/multnormregress/paper.pdf", 
-           "Prior Elicitation and Posterior Calculations for Linear Models with Normal Error"),
+           "Prior Elicitation and Relative Belief Inferences for Linear Models"),
   ),
   br(),
   p("Note: currently the link does not work; it will be updated once the paper is finished."),

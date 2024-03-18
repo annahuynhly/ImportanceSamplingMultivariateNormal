@@ -9,8 +9,8 @@ choose_file_Y_type = reactive({
     read.csv(input$sample_post_Y$datapath, header = TRUE)
   } else if (input$post_input_type == "txt"){
     read.csv(input$sample_post_Y_txt$datapath, sep = "\t")
-    #write.table(input$sample_post_Y_txt$datapath, file, sep = "\t", 
-    #            row.names = FALSE, col.names = TRUE)
+  } else if (input$post_input_type == "default"){
+    test_sample_data()
   }
 })
 

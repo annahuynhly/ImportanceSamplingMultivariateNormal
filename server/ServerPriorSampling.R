@@ -4,7 +4,7 @@
 
 prior_sampling_seed = reactive(input$prior_seed)
 
-sample_prior_values = eventReactive(input$submit_prior_elicit_mu, {
+sample_prior_values = eventReactive(input$submit_prior_sampling, {
   set.seed(prior_sampling_seed())
   sample_prior(N = input$prior_sample_bigN, 
                p = input$num_dimensions, 
@@ -14,7 +14,7 @@ sample_prior_values = eventReactive(input$submit_prior_elicit_mu, {
                lambda0 = prior_elicitation_mu_values()$lambda0)
 })
 
-sample_prior_values_cleaned = reactive({
+sample_prior_values_cleaned = eventReactive(input$submit_prior_sampling, {
   sample_prior_data_cleaning(N = input$prior_sample_bigN, 
                              p = input$num_dimensions, 
                              mu_matrix = sample_prior_values()$mu_matrix, 
@@ -22,9 +22,14 @@ sample_prior_values_cleaned = reactive({
                              correlation_matrix = sample_prior_values()$correlation_matrix)
 })
 
+prior_sample_display_head = eventReactive(input$submit_prior_sampling, {
+  head(sample_prior_values_cleaned(), 10)
+})
+
 # may not be displayed anymore?
 output$prior_sample_sample = renderPrint({
-  head(sample_prior_values_cleaned(), 10)
+  prior_sample_display_head()
+  #head(sample_prior_values_cleaned(), 10)
 })
 
 # previously: sample_prior_content_values

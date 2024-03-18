@@ -18,6 +18,9 @@ page_sample_computation = div(
     sidebarPanel(
       width = 3,
       
+      actionButton(inputId = "submit_prior_sampling", 
+                   label = "Submit Data"),
+      
       numericInput(inputId = "prior_seed",
                    label = "Insert the seed",
                    value = 1),

@@ -53,9 +53,16 @@ page_posteriorcomputations = div(
       
       selectInput(inputId = "post_input_type",
                   label = 'How do you want to upload the data?',
-                  choices = list("Text file" = "txt",
+                  choices = list("Default file" = "default",
+                                 "Text file" = "txt",
                                  "CSV file" = "csv"),
-                  selected = "csv"),
+                  selected = "default"),
+      
+      conditionalPanel(
+        condition = "input.post_input_type == 'csv'",
+        p("The data is based off of the generated sample detailed in 
+          the description section.")
+      ),
       
       conditionalPanel(
         condition = "input.post_input_type == 'csv'",
@@ -114,52 +121,17 @@ page_posteriorcomputations = div(
                   value = "1, 1, 1"),
       ),
       
-      numericInput(inputId = "post_graph_num",
-                   label = "The column of $\\mu$ for the graph.",
-                   value = 1),
-      
-      colourInput(inputId = "post_line_col",
-                  label = 'Input colour of the line plot',
-                  value = "#4287f5"), 
-      
     ),
     mainPanel(
       downloadButton(outputId = 'plot_post_mu', label = 'Plot'),
       downloadButton(outputId = "postsample_download_mu", label = "$\\mu$"),
       downloadButton(outputId = "postsample_download_xi", label = "$\\Xi$"),
       
+      p("need to provide the weights.")
+      
       #withSpinner(verbatimTextOutput(outputId = "testing_post")),
-      withSpinner(plotOutput("sample_post_graph")),
+      #withSpinner(plotOutput("sample_post_graph")),
 
-      fluidRow(
-        column(4, 
-               fluidRow(box(width = 12,
-                 splitLayout(
-                    numericInput(inputId = "post_xlim_min", 
-                                 label = "Lower x limit", value = -5),
-                    numericInput(inputId = "post_xlim_max", 
-                                 label = "Upper x limit", value = 5),
-                  )
-               )),
-              #numericInput(inputId = "post_graph_delta",
-              #              label = "Length of the bins)",
-              #              value = 0.05),
-        ),
-        
-        column(4, 
-               sliderInput(inputId = "post_transparency", 
-                           label = "Scale for colour transparency",
-                           min = 0, max = 1, value = 0.2), 
-        ),
-        
-        column(4, 
-               sliderInput(inputId = "post_graph_smoother", 
-                           label = "# of Average Points (Smoother)", 
-                           min = 1, max = 15, value = 3, step = 2)
-        )
-      ),
-      
-      
     ),
   )
 )
