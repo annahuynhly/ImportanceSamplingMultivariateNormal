@@ -27,7 +27,6 @@ page_elicitdescription = div(
   p("Also specify the lower and upper bounds for the iterative process that determines the values of ($\\alpha_{01i}, \\alpha_{02i}$), $i= 1, ..., p.$"),
   hr(),
   h4("How to Submit .txt or .csv files"),
-  p("NOTE: right now there is not proper text file support, please use .csv!"),
   p("Although you can manually enter values such as $(s_{1i}, s_{2i}), (m_{1i}, m_{2i})$, for large p it may be more convenient for the user to input .txt or .csv files."),
   p("You may download the samples below for the acceptable format of .txt or .csv files to get an idea of how to upload."),
   downloadButton(outputId = "prior_sigma_csv_example", label = "Download .csv Sample"),
