@@ -27,8 +27,10 @@ true_prior_comparison = function(p, alpha01, alpha02, mu0, lambda0, grid){
 }
 
 sample_sigma_ii = function(N, p, alpha01, alpha02){
-  # meant to generate sigma_ii without any of the other stuff
-  # todo: write more instructions later.
+  #' Generates a sample of sigma_ii, without having the sample the entire prior.
+  #' @param N represents the Monte Carlo sample size.
+  #' @param p represents the number of dimensions.
+  #' #' The other parameters match the descriptions from the paper.
   sigma_ii = c()
   for(i in 1:N){
     sigma_ii_val = 1/rgamma(p, alpha01, alpha02)
@@ -111,7 +113,12 @@ weights = function(N, p, mu, xi, mu0, lambda0, sigma_ii, alpha01, alpha02){
 }
 
 sample_post_reformat = function(N, p, post_mu, post_xi, weights){
-  # formats it the way mike suggested for it to format
+  #' Reformats the data for the user to download.
+  #' @param N represents the Monte Carlo sample size.
+  #' @param p represents the number of dimensions.
+  #' @param post_mu represents the mu from integrating w.r.t. the posterior.
+  #' @param post_xi represents the xi from integrating w.r.t. the posterior.
+  #' @param weights represents the weights calculated from post_mu and post_xi.
   sigma_title = c()
   mu_title = c()
   weights_title = c()
@@ -148,18 +155,13 @@ posterior_content = function(N, p, effective_range, mu, xi, weights){
   post_content_matrix = c()
   post_density_matrix = c()
   
-  for(k in 1:p){
+  for(k in 1:p){ # for each colum...
     grid = effective_range[[k]]
-    #grid = effective_range[,k]
     delta = diff(effective_range[[k]])[1]
     post_content_vec = c() 
-    for(i in 1:(length(grid) - 1)){
-      post_content = 0
-      for(j in 1:N){
-        if(between(psi_val[,k][j], grid[i], grid[i+1])){
-          post_content = post_content + weights[,k][j]
-        }
-      }
+    for(i in 1:(length(grid) - 1)){ # for each grid point...
+      when_true = between(psi_val[,k], grid[i], grid[i + 1])
+      post_content = sum(weights[,k][when_true])
       post_content_vec = c(post_content_vec, post_content)
     }
     post_density = post_content_vec / delta

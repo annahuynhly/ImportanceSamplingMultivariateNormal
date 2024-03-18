@@ -61,6 +61,15 @@ elicit_prior_mu_function = function(p, gamma, m1, m2, s1, s2, alpha01, alpha02){
 
 elicit_prior_effective_range = function(p, m = 200, alpha01, alpha02, mu0, lambda0, 
                                         x_low, quantile_val = c(0.005, 0.995)){
+  #' Computes the effective range from the true prior.
+  #' @param p represents the number of dimensions.
+  #' @param m represents the number of desired sub-intervals for the effective range.
+  #' @param quantile_val represents a vector of size two where the first value denotes the 
+  #' smaller quantile, and the second denotes the larger quantile. 
+  #' @param x_low denotes the initation of where the search begins to find the effective range.
+  #' The other parameters match the descriptions in section 2.1.
+  #' @details 
+  #' This function assumes that m is consistent throughout each mu. 
   desired_range = quantile_val[2] - quantile_val[1]
   
   x_range_list = list()

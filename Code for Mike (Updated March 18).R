@@ -1,5 +1,4 @@
 # Code for Mike Evans (Prior Elicitation Only)
-
 # install.packages(latex2exp) # if you haven't installed it yet
 library(latex2exp) # for latex within graphs
 library(MASS)
@@ -11,11 +10,10 @@ library(dplyr)
 ##################################################
 
 # Mandatory manual inputs
-
 p = 5
 gamma = 0.99
-N = 1000 # monte carlo sample size
-m = 25 # number of sub-intervals (oddly consistent all around)
+N = 10000 # monte carlo sample size
+m = 50 # number of sub-intervals (oddly consistent all around)
 
 # Manual input data version ############################
 
@@ -185,10 +183,11 @@ psi = function(mu, xi){
   return(mu)
 }
 
-# below is a NEW function
 sample_sigma_ii = function(N, p, alpha01, alpha02){
-  # meant to generate sigma_ii without any of the other stuff
-  # todo: write more instructions later.
+  #' Generates a sample of sigma_ii, without having the sample the entire prior.
+  #' @param N represents the Monte Carlo sample size.
+  #' @param p represents the number of dimensions.
+  #' #' The other parameters match the descriptions from the paper.
   sigma_ii = c()
   for(i in 1:N){
     sigma_ii_val = 1/rgamma(p, alpha01, alpha02)
@@ -251,7 +250,6 @@ true_prior_density = function(p, alpha01, alpha02, lambda0, mu0){
   return(newlist)
 }
 
-# NEW function: may actually work for desired effects.
 find_effective_range = function(p, m, x_vector_matrix, y_vector_matrix,
                                 quantile_val = c(0.005,0.995)){
   #' Calculates the effective range.
@@ -336,37 +334,17 @@ content_density_plot = function(density, col_num, grid, type = "Prior",
   polygon(grid[, col_num], density_vals, col = area_col, border = NA)
 }
 
-##################################################
-# ELICITATION FOR THE PRIOR (VALUES)             #
-##################################################
-
-prior_sigma_vals = elicit_prior_sigma_function(p, gamma, s1, s2, upper_bd, lower_bd)
-
-prior_sigma_vals
-
-alpha01 = prior_sigma_vals$alpha01
-alpha02 = prior_sigma_vals$alpha02
-c1 = prior_sigma_vals$c1
-c2 = prior_sigma_vals$c2
-z0 = prior_sigma_vals$z0
-
-prior_mu_vals = elicit_prior_mu_function(p, gamma, m1, m2, s1, s2, alpha01, alpha02)
-
-lambda0 = prior_mu_vals$lambda0
-mu0 = prior_mu_vals$mu0
-
-prior_mu_vals
-
-
-test_vector = c(0.00000012, 0.1222333, 0.112334)
-round(test_vector, 4)
-
-
-
-# making a function that gets the effective range from the true prior
-
 elicit_prior_effective_range = function(p, m = 200, alpha01, alpha02, mu0, x_low,
                                         quantile_val = c(0.005, 0.995)){
+  #' Computes the effective range from the true prior.
+  #' @param p represents the number of dimensions.
+  #' @param m represents the number of desired sub-intervals for the effective range.
+  #' @param quantile_val represents a vector of size two where the first value denotes the 
+  #' smaller quantile, and the second denotes the larger quantile. 
+  #' @param x_low denotes the initation of where the search begins to find the effective range.
+  #' The other parameters match the descriptions in section 2.1.
+  #' @details 
+  #' This function assumes that m is consistent throughout each mu. 
   desired_range = quantile_val[2] - quantile_val[1]
   
   x_range_list = list()
@@ -417,33 +395,40 @@ elicit_prior_effective_range = function(p, m = 200, alpha01, alpha02, mu0, x_low
   return(newlist)
 }
 
+
+##################################################
+# ELICITATION FOR THE PRIOR (VALUES)             #
+##################################################
+
+prior_sigma_vals = elicit_prior_sigma_function(p, gamma, s1, s2, upper_bd, lower_bd)
+
+prior_sigma_vals
+
+alpha01 = prior_sigma_vals$alpha01
+alpha02 = prior_sigma_vals$alpha02
+c1 = prior_sigma_vals$c1
+c2 = prior_sigma_vals$c2
+z0 = prior_sigma_vals$z0
+
+prior_mu_vals = elicit_prior_mu_function(p, gamma, m1, m2, s1, s2, alpha01, alpha02)
+
+lambda0 = prior_mu_vals$lambda0
+mu0 = prior_mu_vals$mu0
+
+prior_mu_vals
+
+
 TRU_eff_ran = elicit_prior_effective_range(p, m = 25, alpha01, alpha02, mu0, x_low = -10,
-                             quantile_val = c(0.005, 0.995))
+                                           quantile_val = c(0.005, 0.995))
 
 ############################################
 # SAMPLING THE PRIOR                       #
 ############################################
-
-# note: this section should be optional.
-
-set.seed(1) # note: seed does seem to influence the results quite a bit!
-
+# Note: this section is optional.
+set.seed(1)
 sample_prior_vals = sample_prior(N, p, alpha01, alpha02, mu0, lambda0)
-
 sigma_ii = sample_prior_vals$sigma_ii
-
-#sample_prior_data_cleaning(N = N, p =p, 
-#                           mu_matrix= sample_prior_vals$mu_matrix, 
-#                           sigma_ii_matrix = sample_prior_vals$sigma_ii,
-#                           correlation_matrix = sample_prior_vals$correlation_matrix)
-
 test_tru_prior_vals = true_prior_density(p, alpha01, alpha02, lambda0, mu0)
-
-#eff_ran = find_effective_range(p = p, m = m, 
-#                               x_vector_matrix = test_tru_prior_vals$x_vector, 
-#                               y_vector_matrix = test_tru_prior_vals$y_vector)
-#test_tru_prior_vals$x_vector
-#eff_ran$x_range
 
 ############################################
 # FUNCTIONS FOR THE POSTERIOR              #
@@ -560,18 +545,13 @@ posterior_content = function(N, p, effective_range, mu, xi, weights){
   post_content_matrix = c()
   post_density_matrix = c()
   
-  for(k in 1:p){
+  for(k in 1:p){ # for each colum...
     grid = effective_range[[k]]
-    #grid = effective_range[,k]
     delta = diff(effective_range[[k]])[1]
     post_content_vec = c() 
-    for(i in 1:(length(grid) - 1)){
-      post_content = 0
-      for(j in 1:N){
-        if(between(psi_val[,k][j], grid[i], grid[i+1])){
-          post_content = post_content + weights[,k][j]
-        }
-      }
+    for(i in 1:(length(grid) - 1)){ # for each grid point...
+      when_true = between(psi_val[,k], grid[i], grid[i + 1])
+      post_content = sum(weights[,k][when_true])
       post_content_vec = c(post_content_vec, post_content)
     }
     post_density = post_content_vec / delta
@@ -688,8 +668,6 @@ post_vals = sample_post_computations(N, Y = Y_data, p, mu0, lambda0)
 post_xi = post_vals$xi
 post_mu = post_vals$mu
 
-TRU_eff_ran$grid[[1]]
-
 sigma_ii = sample_sigma_ii(N = N, p = p, alpha01 = alpha01, alpha02 = alpha01)
 
 test_weights = weights(N = N, p = p, 
@@ -697,10 +675,13 @@ test_weights = weights(N = N, p = p,
                        mu0 = mu0, lambda0 = lambda0, 
                        sigma_ii = sigma_ii, alpha01 = alpha01, alpha02 = alpha02)
 
-
-# new function that needs to be added!!
 sample_post_reformat = function(N, p, post_mu, post_xi, weights){
-  # formats it the way mike suggested for it to format
+  #' Reformats the data for the user to download.
+  #' @param N represents the Monte Carlo sample size.
+  #' @param p represents the number of dimensions.
+  #' @param post_mu represents the mu from integrating w.r.t. the posterior.
+  #' @param post_xi represents the xi from integrating w.r.t. the posterior.
+  #' @param weights represents the weights calculated from post_mu and post_xi.
   sigma_title = c()
   mu_title = c()
   weights_title = c()
@@ -727,11 +708,6 @@ sample_post_reformat = function(N, p, post_mu, post_xi, weights){
 
 test_test = sample_post_reformat(N = N, p = p, post_mu = post_mu, 
                                  post_xi = post_xi, weights = test_weights)
-
-
-
-
-
 
 post_content_vals = posterior_content(N, p, 
                                       effective_range = TRU_eff_ran$grid, #eff_ran$grid,
