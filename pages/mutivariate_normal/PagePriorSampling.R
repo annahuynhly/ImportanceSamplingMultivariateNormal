@@ -45,7 +45,10 @@ page_sample_computation = div(
         correlations and the $\\mu_{i}$ are the means."),
       p("Below is the first few lines of the file and contains the first set of values 
         generated from the prior."),
-      withSpinner(verbatimTextOutput("prior_sample_sample"))
+      actionButton('prior_prev_five', 'Previous Cols'),
+      actionButton('prior_next_five', 'Next Cols'),
+      withSpinner(DTOutput('prior_sample_table'))
+      #withSpinner(verbatimTextOutput("prior_sample_sample"))
     )
   )
 )
@@ -140,7 +143,7 @@ page_sample_hist = div(
       )),
       
       numericInput(inputId = "prior_sample_col", 
-                   label = 'The column of $\\mu$ for the graph.',
+                   label = 'Which $\\mu_{i}$ for the graph?',
                    value = 1),
       
       colourInput(inputId = "prior_sample_colour",

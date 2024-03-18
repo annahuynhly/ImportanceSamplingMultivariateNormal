@@ -26,6 +26,17 @@ true_prior_comparison = function(p, alpha01, alpha02, mu0, lambda0, grid){
   return(newlist)
 }
 
+sample_sigma_ii = function(N, p, alpha01, alpha02){
+  # meant to generate sigma_ii without any of the other stuff
+  # todo: write more instructions later.
+  sigma_ii = c()
+  for(i in 1:N){
+    sigma_ii_val = 1/rgamma(p, alpha01, alpha02)
+    sigma_ii = rbind(sigma_ii, sigma_ii_val)
+  }
+  return(sigma_ii)
+}
+
 sample_post_computations = function(N, Y, p, mu0, lambda0){
   #' This represents section 3.2 of the paper.
   #' @param N represents the Monte Carlo sample size.
@@ -97,6 +108,32 @@ weights = function(N, p, mu, xi, mu0, lambda0, sigma_ii, alpha01, alpha02){
   }
   #weights_vector = k_vector / colSums(k_vector)
   return(weights_vector)
+}
+
+sample_post_reformat = function(N, p, post_mu, post_xi, weights){
+  # formats it the way mike suggested for it to format
+  sigma_title = c()
+  mu_title = c()
+  weights_title = c()
+  xi_matrix = c()
+  for(i in 1:p){
+    weights_name = paste("Weight_", i, sep = "") # Names for the weights
+    weights_title = c(weights_title, weights_name)
+    mu_name = paste("Mu_", i, sep = "") # Names for mu
+    mu_title = c(mu_title, mu_name)
+    for(j in 1:p){
+      sigma_name = paste("Sigma_", i, j, sep = "") # Names for sigma
+      sigma_title = c(sigma_title, sigma_name)
+    }
+  }
+  for(i in 1:N){ xi_matrix = rbind(xi_matrix, as.vector(post_xi[,,i])) }
+  weights_data = as.data.frame(weights)
+  names(weights_data) = weights_title
+  mu_data = as.data.frame(post_mu)
+  names(mu_data) = mu_title
+  xi_matrix = as.data.frame(xi_matrix)
+  names(xi_matrix) = sigma_title
+  return(cbind(weights_data, mu_data, xi_matrix))
 }
 
 posterior_content = function(N, p, effective_range, mu, xi, weights){

@@ -123,14 +123,15 @@ page_posteriorcomputations = div(
       
     ),
     mainPanel(
-      downloadButton(outputId = 'plot_post_mu', label = 'Plot'),
-      downloadButton(outputId = "postsample_download_mu", label = "$\\mu$"),
-      downloadButton(outputId = "postsample_download_xi", label = "$\\Xi$"),
+      downloadButton(outputId = "post_computation_download", label = "Download Values"),
       
-      p("need to provide the weights.")
+      p("below are action buttons for viewing the data"),
       
+      actionButton('post_prev_five', 'Previous Cols'),
+      actionButton('post_next_five', 'Next Cols'),
+      
+      withSpinner(DTOutput(outputId = 'post_display_table')),
       #withSpinner(verbatimTextOutput(outputId = "testing_post")),
-      #withSpinner(plotOutput("sample_post_graph")),
 
     ),
   )
@@ -146,26 +147,6 @@ page_prior_effective_range = div(
     sidebarPanel(
       width = 3,
       
-      actionButton(inputId = "submit_prior_eff_range", #"submit_sample_prior", 
-                   label = "Submit Data (for the effective range)"),
-    
-      numericInput(inputId = "prior_eff_range_m", #"prior_sample_m",
-                   label = 'Insert the number of desired subintervals for the effective range',
-                   value = 50),
-      
-      p("Below is for denoting the smaller and larger quantiles for 
-        computing the effective range."),
-      
-      fluidRow(box(width = 12,
-                   splitLayout(
-                     numericInput(inputId = "prior_eff_range_small_quantile", 
-                                  #"prior_sample_small_quantile", 
-                                  label = "Small Quantile", value = 0.005),
-                     numericInput(inputId = "prior_eff_range_large_quantile", 
-                                  #"prior_sample_large_quantile", 
-                                  label = "Large Quantile", value = 0.995),
-                   )
-      )),
       
     ),
     mainPanel(
@@ -185,16 +166,27 @@ page_comparison_graphs = div(
   sidebarLayout(
     sidebarPanel(
       width = 3,
+    
+      actionButton(inputId = "submit_prior_eff_range", #"submit_sample_prior", 
+                   label = "Submit Data"),
       
-      downloadButton(outputId = 'comparison_download_plot', 
-                     label = 'Prior/Posterior Plot'),
+      numericInput(inputId = "prior_eff_range_m", #"prior_sample_m",
+                   label = 'Insert the number of desired subintervals for the effective range',
+                   value = 50),
       
-      downloadButton(outputId = 'rbr_download_plot', 
-                     label = 'RBR Plot'),
+      p("Below is for denoting the smaller and larger quantiles for 
+        computing the effective range."),
       
-      #numericInput(inputId = "comparison_mu_col", 
-      #             label = 'The column of $\\mu$ for the graph.',
-      #             value = 1),
+      fluidRow(box(width = 12,
+                   splitLayout(
+                     numericInput(inputId = "prior_eff_range_small_quantile", 
+                                  #"prior_sample_small_quantile", 
+                                  label = "Small Quantile", value = 0.005),
+                     numericInput(inputId = "prior_eff_range_large_quantile", 
+                                  #"prior_sample_large_quantile", 
+                                  label = "Large Quantile", value = 0.995),
+                   )
+      )),
       
       selectInput(inputId = "comparison_modify_which",
                   label = 'Select line to modify',
@@ -240,6 +232,12 @@ page_comparison_graphs = div(
       
     ),
     mainPanel(
+      downloadButton(outputId = 'comparison_download_plot', 
+                     label = 'Prior/Posterior Plot'),
+      
+      downloadButton(outputId = 'rbr_download_plot', 
+                     label = 'RBR Plot'),
+      
       tabPanel("Plots",
         fluidRow(
           splitLayout(
@@ -251,24 +249,12 @@ page_comparison_graphs = div(
         ),
       ),
       
+      
       fluidRow(
         column(4,
                numericInput(inputId = "comparison_mu_col", 
-                            label = 'The column of $\\mu$ for the graph.',
+                            label = 'Which $\\mu_{i}$ for the graph?',
                             value = 1),
-               
-               #fluidRow(box(width = 12,
-               #    splitLayout(
-                #    numericInput(inputId = "comparison_xlim_min", 
-                #                 label = "Lower x limit", value = -5),
-                #    numericInput(inputId = "comparison_xlim_max", 
-                #                 label = "Upper x limit", value = 5),
-                #  )
-               #)),
-               
-               #sliderInput(inputId = "comparison_graph_delta",
-               #             label = "Length of the bins",
-               #            min = 0.01, max = 1, value = 0.1),
         ),
         column(4, 
                sliderInput(inputId = "comparison_smoother", 
@@ -282,6 +268,11 @@ page_comparison_graphs = div(
         )
       ),
       
+      #withSpinner(verbatimTextOutput("prior_eff_range_delta")),
+      
+      withSpinner(tableOutput(outputId = "prior_eff_range_delta_table1")),
+      withSpinner(tableOutput(outputId = "prior_eff_range_delta_table2"))
+      
     ),
   ),
 )
@@ -294,7 +285,6 @@ page_sampling = div(
   titlePanel("Posterior Computations"),
   tabsetPanel(type = "tabs",
               tabPanel("Description", page_post_comp_description),
-              tabPanel("Calculating the Effective Range", page_prior_effective_range),
               tabPanel("Integrating with Respect to the Posterior", page_posteriorcomputations),
               tabPanel("Comparison Plots for Mu", page_comparison_graphs),
               #tabPanel("Graphs", page_priorgraph),

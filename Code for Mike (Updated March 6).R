@@ -185,6 +185,19 @@ psi = function(mu, xi){
   return(mu)
 }
 
+# below is a NEW function
+sample_sigma_ii = function(N, p, alpha01, alpha02){
+  # meant to generate sigma_ii without any of the other stuff
+  # todo: write more instructions later.
+  sigma_ii = c()
+  for(i in 1:N){
+    sigma_ii_val = 1/rgamma(p, alpha01, alpha02)
+    sigma_ii = rbind(sigma_ii, sigma_ii_val)
+  }
+  return(sigma_ii)
+  
+}
+
 sample_prior = function(N, p, alpha01, alpha02, mu0, lambda0){
   #' This represents section 3.1 of the paper.
   #' @param N represents the Monte Carlo sample size.
@@ -345,6 +358,11 @@ mu0 = prior_mu_vals$mu0
 prior_mu_vals
 
 
+test_vector = c(0.00000012, 0.1222333, 0.112334)
+round(test_vector, 4)
+
+
+
 # making a function that gets the effective range from the true prior
 
 elicit_prior_effective_range = function(p, m = 200, alpha01, alpha02, mu0, x_low,
@@ -405,6 +423,8 @@ TRU_eff_ran = elicit_prior_effective_range(p, m = 25, alpha01, alpha02, mu0, x_l
 ############################################
 # SAMPLING THE PRIOR                       #
 ############################################
+
+# note: this section should be optional.
 
 set.seed(1) # note: seed does seem to influence the results quite a bit!
 
@@ -670,10 +690,48 @@ post_mu = post_vals$mu
 
 TRU_eff_ran$grid[[1]]
 
+sigma_ii = sample_sigma_ii(N = N, p = p, alpha01 = alpha01, alpha02 = alpha01)
+
 test_weights = weights(N = N, p = p, 
                        mu = post_mu, xi = post_xi, 
                        mu0 = mu0, lambda0 = lambda0, 
                        sigma_ii = sigma_ii, alpha01 = alpha01, alpha02 = alpha02)
+
+
+# new function that needs to be added!!
+sample_post_reformat = function(N, p, post_mu, post_xi, weights){
+  # formats it the way mike suggested for it to format
+  sigma_title = c()
+  mu_title = c()
+  weights_title = c()
+  xi_matrix = c()
+  for(i in 1:p){
+    weights_name = paste("Weight_", i, sep = "") # Names for the weights
+    weights_title = c(weights_title, weights_name)
+    mu_name = paste("Mu_", i, sep = "") # Names for mu
+    mu_title = c(mu_title, mu_name)
+    for(j in 1:p){
+      sigma_name = paste("Sigma_", i, j, sep = "") # Names for sigma
+      sigma_title = c(sigma_title, sigma_name)
+    }
+  }
+  for(i in 1:N){ xi_matrix = rbind(xi_matrix, as.vector(post_xi[,,i])) }
+  weights_data = as.data.frame(weights)
+  names(weights_data) = weights_title
+  mu_data = as.data.frame(post_mu)
+  names(mu_data) = mu_title
+  xi_matrix = as.data.frame(xi_matrix)
+  names(xi_matrix) = sigma_title
+  return(cbind(weights_data, mu_data, xi_matrix))
+}
+
+test_test = sample_post_reformat(N = N, p = p, post_mu = post_mu, 
+                                 post_xi = post_xi, weights = test_weights)
+
+
+
+
+
 
 post_content_vals = posterior_content(N, p, 
                                       effective_range = TRU_eff_ran$grid, #eff_ran$grid,
