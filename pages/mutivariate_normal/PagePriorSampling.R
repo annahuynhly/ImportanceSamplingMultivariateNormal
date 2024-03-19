@@ -31,7 +31,6 @@ page_sample_computation = div(
       
     ),
     mainPanel(
-      
       downloadButton(outputId = 'download_prior_sample', 
                      label = 'Download Values'),
       
@@ -46,6 +45,7 @@ page_sample_computation = div(
         correlations and the $\\mu_{i}$ are the means."),
       p("Below is the first few lines of the file and contains the first set of values 
         generated from the prior."),
+      p("Below are used to view different columns within the dataframe."),
       actionButton('prior_prev_five', 'Previous Cols'),
       actionButton('prior_next_five', 'Next Cols'),
       withSpinner(DTOutput('prior_sample_table'))
@@ -53,43 +53,6 @@ page_sample_computation = div(
     )
   )
 )
-
-################################################################
-# SAMPLING FROM THE MU                                         #
-################################################################
-
-page_sample_effective_range = div(
-  titlePanel("Sampling from the Prior"),
-  sidebarLayout(
-    sidebarPanel(
-      width = 3,
-      
-      #actionButton(inputId = "submit_sample_prior", 
-      #             label = "Submit Data (for the effective range)"),
-      
-      #numericInput(inputId = "prior_sample_m",
-      #             label = 'Insert the number of desired subintervals for the effective range',
-      #             value = 25),
-      
-      p("Below is for denoting the smaller and larger quantiles for 
-        computing the effective range."),
-      
-      #fluidRow(box(width = 12,
-      #             splitLayout(
-      #               numericInput(inputId = "prior_sample_small_quantile", 
-      #                            label = "Small Quantile", value = 0.005),
-      #               numericInput(inputId = "prior_sample_large_quantile", 
-      #                            label = "Large Quantile", value = 0.995),
-      #             )
-      #)),
-      
-    ),
-    mainPanel(
-      withSpinner(verbatimTextOutput("prior_sample_delta")),
-    )
-  )
-)
-
 
 
 ################################################################
@@ -100,8 +63,7 @@ page_prior_sample = div(
   titlePanel("Sampling from the Prior"),
   tabsetPanel(type = "tabs",
               tabPanel("Description", page_sample_description),
-              tabPanel("Sample", page_sample_computation)#,
-              #tabPanel("Effective Range", page_sample_effective_range)
+              tabPanel("Sample", page_sample_computation)
   )
 )
 

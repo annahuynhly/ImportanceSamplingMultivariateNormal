@@ -125,7 +125,7 @@ page_posteriorcomputations = div(
     mainPanel(
       downloadButton(outputId = "post_computation_download", label = "Download Values"),
       
-      p("below are action buttons for viewing the data"),
+      p("Below are used to view different columns within the dataframe."),
       
       actionButton('post_prev_five', 'Previous Cols'),
       actionButton('post_next_five', 'Next Cols'),
