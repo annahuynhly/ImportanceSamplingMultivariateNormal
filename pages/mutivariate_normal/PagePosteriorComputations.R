@@ -16,7 +16,7 @@ page_post_comp_description = div(
     We generated a sample of $n = 50$ from a $\\mathcal{N}_{5}(\\mu, \\Sigma)$ distribution
     where:"),
   p("$\\mu = (-2, -1, 0, 1, 2)^{'}, \\sigma_{1} = 2, \\sigma_{2} = 1, \\sigma_{3} = 0.5, 
-     \\sigma_{4} = 1, \\sigma_{5} = 2, R = \\frac{1}{2} 1_{5} + \\frac{1}{2} 
+     \\sigma_{4} = 1, \\sigma_{5} = 2, R = \\frac{1}{2} I_{5} + \\frac{1}{2} 
      \\underset{\\sim}{1_{5}} \\underset{\\sim}{1_{5}^{'}}$ 
     where $\\underset{\\sim}{1_{5}} = (1, 1, 1, 1, 1)^{'}$ and"),
   p("$\\Sigma = $ diag($\\sigma_{1}, ..., \\sigma_{p}$)$ \\enspace R \\enspace 
@@ -53,7 +53,7 @@ page_posteriorcomputations = div(
       
       selectInput(inputId = "post_input_type",
                   label = 'How do you want to upload the data?',
-                  choices = list("Default file" = "default",
+                  choices = list("Use default data" = "default",
                                  "Text file" = "txt",
                                  "CSV file" = "csv"),
                   selected = "default"),
@@ -138,35 +138,17 @@ page_posteriorcomputations = div(
 )
 
 ################################################################
-# PORTION FOR EFFECTIVE RANGE                                  #
-################################################################
-
-page_prior_effective_range = div(
-  titlePanel("Effective Range from the Prior"),
-  sidebarLayout(
-    sidebarPanel(
-      width = 3,
-      
-      
-    ),
-    mainPanel(
-      withSpinner(verbatimTextOutput("prior_eff_range_delta")),
-      #withSpinner(verbatimTextOutput("prior_sample_delta")),
-    )
-  )
-)
-
-################################################################
 # PORTION FOR GRAPH BUILDING                                   #
 ################################################################
 
 page_comparison_graphs = div(
   titlePanel("Plots for $\\mu$"), 
-  p("Note: will not work unless the user inputs the data from the previous section."),
   sidebarLayout(
     sidebarPanel(
       width = 3,
     
+      p("Note: will not work unless the user inputs the data from the previous section."),
+      
       actionButton(inputId = "submit_prior_eff_range", #"submit_sample_prior", 
                    label = "Submit Data"),
       
@@ -178,14 +160,12 @@ page_comparison_graphs = div(
         computing the effective range."),
       
       fluidRow(box(width = 12,
-                   splitLayout(
-                     numericInput(inputId = "prior_eff_range_small_quantile", 
-                                  #"prior_sample_small_quantile", 
-                                  label = "Small Quantile", value = 0.005),
-                     numericInput(inputId = "prior_eff_range_large_quantile", 
-                                  #"prior_sample_large_quantile", 
-                                  label = "Large Quantile", value = 0.995),
-                   )
+        splitLayout(
+          numericInput(inputId = "prior_eff_range_small_quantile", 
+                       label = "Small Quantile", value = 0.005),
+          numericInput(inputId = "prior_eff_range_large_quantile", 
+                       label = "Large Quantile", value = 0.995),
+        )
       )),
       
       selectInput(inputId = "comparison_modify_which",
@@ -249,6 +229,12 @@ page_comparison_graphs = div(
         ),
       ),
       
+      tabPanel("effective range display",
+        fluidRow(
+          column(7, align="center",h3("Values for the Effective Range:")),
+          column(4, withSpinner(tableOutput(outputId = "prior_eff_range_delta_table1")))
+        )
+      ),
       
       fluidRow(
         column(4,
@@ -266,14 +252,9 @@ page_comparison_graphs = div(
                            label = "Scale for colour transparency",
                            min = 0, max = 1, value = 0.2), 
         )
-      ),
+      ), # end fluidRow
       
-      #withSpinner(verbatimTextOutput("prior_eff_range_delta")),
-      
-      withSpinner(tableOutput(outputId = "prior_eff_range_delta_table1")),
-      withSpinner(tableOutput(outputId = "prior_eff_range_delta_table2"))
-      
-    ),
+    ), # end mainPanel
   ),
 )
 
@@ -287,7 +268,6 @@ page_sampling = div(
               tabPanel("Description", page_post_comp_description),
               tabPanel("Integrating with Respect to the Posterior", page_posteriorcomputations),
               tabPanel("Comparison Plots for Mu", page_comparison_graphs),
-              #tabPanel("Graphs", page_priorgraph),
   )
 )
 

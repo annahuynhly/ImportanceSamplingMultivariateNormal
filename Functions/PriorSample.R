@@ -204,7 +204,7 @@ sample_prior_data_cleaning = function(N, p, mu_matrix,
   names(mu_data) = mu_names
   row.names(mu_data) = 1:N
   
-  return(cbind(sigma_ii_data, rho_data, mu_data))
+  return(cbind(mu_data, sigma_ii_data, rho_data))
 }
 
 content_density_plot = function(density, col_num, grid, type = "Prior",
@@ -338,7 +338,6 @@ sample_prior_hist = function(mu_prior, col_num, delta = 0.1,
 #                                  sigma_ii_matrix = test$sigma_ii,
 #                                  correlation_matrix = test$correlation_matrix)
 
-
 #plot(vals$plotting_grid[,1],
 #     vals$prior_content_matrix[,1], type = "l")
 
@@ -354,7 +353,6 @@ sample_prior_hist = function(mu_prior, col_num, delta = 0.1,
 #            border = "white", col = area_col)
 
 #hist$mids
-
 #lines(hist$mids, hist$density, lty = 2)
 
 # the graph verson

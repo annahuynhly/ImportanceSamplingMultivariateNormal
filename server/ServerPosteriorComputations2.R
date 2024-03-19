@@ -55,32 +55,17 @@ true_prior_effective_range = eventReactive(input$submit_prior_eff_range, {
                                                 input$prior_eff_range_large_quantile))
 })
 
-# mostly for display
 prior_delta_values = reactive({
+  index = input$comparison_mu_col
+  grid = true_prior_effective_range()$grid[[index]]
   
-  x_effective_range_title = c()
-  delta_title = c()
-  x_effective_range_matrix = c()
-  for(i in 1:post_sample_p_val()){
-    newtitle1 = paste("Effective Range", i, sep = " ")
-    newtitle2 = paste("Delta", i, sep = " ")
-    x_effective_range_title = c(x_effective_range_title, newtitle1)
-    delta_title = c(delta_title, newtitle2)
-    grid = true_prior_effective_range()$grid[[i]]
-    min_val = grid[1]
-    max_val = grid[length(grid)]
-    x_effective_range_matrix = cbind(x_effective_range_matrix, 
-                                     c(min_val, max_val))
-  }
-  x_effective_range_matrix = as.data.frame(x_effective_range_matrix)
-  names(x_effective_range_matrix) = x_effective_range_title
-  rownames(x_effective_range_matrix) = c("Min", "Max")
+  min_val = grid[1]
+  max_val = grid[length(grid)]
   
-  delta_data = as.data.frame(t(true_prior_effective_range()$delta))
-  names(delta_data) = delta_title
-  
-  list("Delta" = delta_data,
-       "Effective_Range" = x_effective_range_matrix)
+  delta = true_prior_effective_range()$delta[index]
+  datatable = as.data.frame(t(c(delta, min_val, max_val)))
+  names(datatable) = c("Delta", "Min", "Max")
+  datatable
 })
 
 xlim_comparison_vals = reactive({
@@ -95,9 +80,5 @@ xlim_comparison_vals = reactive({
 })
 
 output$prior_eff_range_delta_table1 = renderTable({
-  prior_delta_values()$Delta
-})
-
-output$prior_eff_range_delta_table2 = renderTable({
-  prior_delta_values()$Effective_Range
+  prior_delta_values()
 })

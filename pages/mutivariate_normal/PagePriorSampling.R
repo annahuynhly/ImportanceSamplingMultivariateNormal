@@ -37,10 +37,11 @@ page_sample_computation = div(
       
       p("The downloaded values above are formatted as follows, where each row in the file 
         contains:"),
-      p("$\\frac{1}{\\sigma^{2}_{1}}, \\frac{1}{\\sigma^{2}_{2}}, \\frac{1}{\\sigma^{2}_{3}}, ..., 
-        \\frac{1}{\\sigma^{2}_{p}}, \\rho_{12}, \\rho_{13}, ..., \\rho_{1p}, 
-        \\rho_{23}, \\rho_{24}, ..., \\rho_{2p}, ..., \\rho_{(p-1)(p)}, 
-        \\mu_{1}, \\mu_{2}, ..., \\mu_{6}$"),
+      p("$\\mu_{1}, \\mu_{2}, ..., \\mu_{p}, 
+        \\frac{1}{\\sigma^{2}_{1}}, \\frac{1}{\\sigma^{2}_{2}}, \\frac{1}{\\sigma^{2}_{3}}, ..., 
+        \\frac{1}{\\sigma^{2}_{p}}, 
+        \\rho_{12}, \\rho_{13}, ..., \\rho_{1p}, \\rho_{23}, 
+        \\rho_{24}, ..., \\rho_{2p}, ..., \\rho_{(p-1)(p)}$"),
       p("Here, the $\\sigma^{2}_{i}$ are the variances, the $\\rho_{ij}$ are the 
         correlations and the $\\mu_{i}$ are the means."),
       p("Below is the first few lines of the file and contains the first set of values 
