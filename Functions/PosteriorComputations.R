@@ -82,15 +82,15 @@ k = function(p, mu, xi, mu0, lambda0, sigma_ii, alpha01, alpha02){
   #' This represents the k function explained in theorem 2.
   #' @param p represents the number of dimensions.
   #' The other parameters match the descriptions in the paper.
+  lambda02=(max(lambda0))**2
   Lambda0 = diag(lambda0)
   inv_Lambda0 = find_inverse_alt(Lambda0)
-  x1 = exp(-(1/2) * t(mu - mu0) %*% inv_Lambda0 %*% xi %*% inv_Lambda0 * (mu - mu0))
-  x3 = exp(-alpha02/sigma_ii)
+  logk = -(1/2) * t(mu - mu0) %*% (inv_Lambda0 %*% xi %*% inv_Lambda0 - (1/lambda02)*xi) %*% (mu - mu0)
   x2 = 1
   for(i in 1:p){
-    x2 = x2 * (1/sigma_ii[i])^(alpha01[i] + (p+1)/2)
+    x2 = x2 * (1/sigma_ii[i])^(alpha01[i] + (p+1)/2) * exp(-alpha02[i]/sigma_ii[i])
   }
-  return(x1 * x2 * x3)
+  return(exp(logk)*x2)
 }
 
 weights = function(N, p, mu, xi, mu0, lambda0, sigma_ii, alpha01, alpha02){
@@ -103,12 +103,7 @@ weights = function(N, p, mu, xi, mu0, lambda0, sigma_ii, alpha01, alpha02){
     k_val = k(p, mu[i,], xi[,,i], mu0, lambda0, sigma_ii[i,], alpha01, alpha02)
     k_vector = rbind(k_vector, k_val)
   }
-  weights_vector = c()
-  for(q in 1:p){
-    k_val2 = k_vector[,q] / sum(k_vector[,q])
-    weights_vector = cbind(weights_vector, k_val2)
-  }
-  #weights_vector = k_vector / colSums(k_vector)
+  weights_vector = k_vector / colSums(k_vector)
   return(weights_vector)
 }
 
@@ -121,11 +116,9 @@ sample_post_reformat = function(N, p, post_mu, post_xi, weights){
   #' @param weights represents the weights calculated from post_mu and post_xi.
   sigma_title = c()
   mu_title = c()
-  weights_title = c()
+  weights_title = "Weights"
   xi_matrix = c()
   for(i in 1:p){
-    weights_name = paste("Weight_", i, sep = "") # Names for the weights
-    weights_title = c(weights_title, weights_name)
     mu_name = paste("Mu_", i, sep = "") # Names for mu
     mu_title = c(mu_title, mu_name)
     for(j in 1:p){
@@ -149,7 +142,7 @@ posterior_content = function(N, p, effective_range, mu, xi, weights){
   #' @param p represents the number of dimensions.
   #' @param effective_range denotes a list of grid points where the density
   #'        is highly concentrated (this is computed from the sampling of the  prior).'
-  #' @param weights denote the weights given to each value of psi.
+  #' @param weights denote the weights given, calculated from the psi.
   #'        The other parameters match the descriptions in the paper.
   psi_val = psi(mu, xi) # note: the user will need to manually change this
   post_content_matrix = c()
@@ -161,7 +154,7 @@ posterior_content = function(N, p, effective_range, mu, xi, weights){
     post_content_vec = c() 
     for(i in 1:(length(grid) - 1)){ # for each grid point...
       when_true = between(psi_val[,k], grid[i], grid[i + 1])
-      post_content = sum(weights[,k][when_true])
+      post_content = sum(weights[when_true])
       post_content_vec = c(post_content_vec, post_content)
     }
     post_density = post_content_vec / delta
