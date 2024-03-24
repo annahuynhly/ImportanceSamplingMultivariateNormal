@@ -98,7 +98,6 @@ weights = function(N, p, mu, xi, mu0, lambda0, sigma_ii, alpha01, alpha02){
   k_vector = numeric(N)
   for(i in 1:N){
     k_vector[i] = k(p, mu[i,], xi[,,i], mu0, lambda0, sigma_ii[i,], alpha01, alpha02)
-    #k_vector = rbind(k_vector, k_val)
   }
   weights_vector = k_vector / sum(k_vector)
   return(weights_vector)

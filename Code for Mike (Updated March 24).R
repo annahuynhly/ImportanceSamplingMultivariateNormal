@@ -4,6 +4,7 @@ library(latex2exp) # for latex within graphs
 library(MASS)
 library(pracma)
 library(dplyr)
+library(reticulate)
 
 ##################################################
 # Inputs                                         #
@@ -12,8 +13,8 @@ library(dplyr)
 # Mandatory manual inputs
 p = 5
 gamma = 0.99
-N = 10000 # monte carlo sample size
-m = 50 # number of sub-intervals (oddly consistent all around)
+N = 50000 # monte carlo sample size
+m = 30 # number of sub-intervals (oddly consistent all around)
 
 # Manual input data version ############################
 
@@ -188,13 +189,9 @@ sample_sigma_ii = function(N, p, alpha01, alpha02){
   #' @param N represents the Monte Carlo sample size.
   #' @param p represents the number of dimensions.
   #' #' The other parameters match the descriptions from the paper.
-  sigma_ii = c()
-  for(i in 1:N){
-    sigma_ii_val = 1/rgamma(p, alpha01, alpha02)
-    sigma_ii = rbind(sigma_ii, sigma_ii_val)
-  }
+  sigma_ii_matrix = 1/rgamma(N * p, alpha01, alpha02)
+  sigma_ii = matrix(sigma_ii_matrix, nrow = N, ncol = p, byrow = TRUE)
   return(sigma_ii)
-  
 }
 
 sample_prior = function(N, p, alpha01, alpha02, mu0, lambda0){
@@ -202,11 +199,12 @@ sample_prior = function(N, p, alpha01, alpha02, mu0, lambda0){
   #' @param N represents the Monte Carlo sample size.
   #' @param p represents the number of dimensions.
   #' The other parameters match the descriptions in section 2.1.
-  mu_mat = c()
-  sigma_mat = list()
-  covariance_mat = list() 
-  correlation_mat = list()
-  sigma_ii_mat = c()
+  
+  mu_mat = matrix(NA, nrow = N, ncol = p)
+  sigma_ii_mat = matrix(NA, nrow = N, ncol = p)
+  sigma_mat = vector("list", length = N)
+  covariance_mat = vector("list", length = N)
+  correlation_mat = vector("list", length = N)
   
   for(i in 1:N){
     sigma_ii = 1/rgamma(p, alpha01, alpha02)
@@ -214,17 +212,18 @@ sample_prior = function(N, p, alpha01, alpha02, mu0, lambda0){
     R = onion(p) # the correlation matrix
     Lambda = diag(lambda0)
     SIGMA = D %*% R %*% D
-    
     var_mat = Lambda %*% SIGMA %*% Lambda
     
     MU = mvrnorm(n = 1, mu = mu0, Sigma = var_mat)
     
-    mu_mat = rbind(mu_mat, MU)
-    sigma_ii_mat = rbind(sigma_ii_mat, sigma_ii)
+    # Store results in preallocated matrices/lists
+    mu_mat[i,] = MU
+    sigma_ii_mat[i,] = sigma_ii
     sigma_mat[[i]] = SIGMA
     covariance_mat[[i]] = var_mat
     correlation_mat[[i]] = R
   }
+  
   return(list("mu_matrix" = mu_mat, "sigma_ii" = sigma_ii_mat,
               "sigma_matrix" = sigma_mat,
               "covariance_matrix" = covariance_mat, 
@@ -418,7 +417,7 @@ mu0 = prior_mu_vals$mu0
 prior_mu_vals
 
 
-TRU_eff_ran = elicit_prior_effective_range(p, m = 25, alpha01, alpha02, mu0, x_low = -10,
+TRU_eff_ran = elicit_prior_effective_range(p, m = m, alpha01, alpha02, mu0, x_low = -10,
                                            quantile_val = c(0.005, 0.995))
 
 ############################################
@@ -519,12 +518,11 @@ weights = function(N, p, mu, xi, mu0, lambda0, sigma_ii, alpha01, alpha02){
   #' @param N represents the Monte Carlo sample size.
   #' @param p represents the number of dimensions.
   #' The other parameters match the descriptions in the paper.
-  k_vector = c()
+  k_vector = numeric(N)
   for(i in 1:N){
-    k_val = k(p, mu[i,], xi[,,i], mu0, lambda0, sigma_ii[i,], alpha01, alpha02)
-    k_vector = rbind(k_vector, k_val)
+    k_vector[i] = k(p, mu[i,], xi[,,i], mu0, lambda0, sigma_ii[i,], alpha01, alpha02)
   }
-  weights_vector = k_vector / colSums(k_vector)
+  weights_vector = k_vector / sum(k_vector)
   return(weights_vector)
 }
 
@@ -678,16 +676,11 @@ sample_post_reformat = function(N, p, post_mu, post_xi, weights){
   #' @param post_xi represents the xi from integrating w.r.t. the posterior.
   #' @param weights represents the weights calculated from post_mu and post_xi.
   sigma_title = c()
-  mu_title = c()
+  mu_title = paste("Mu_", 1:p, sep = "")
   weights_title = "Weights"
   xi_matrix = c()
   for(i in 1:p){
-    mu_name = paste("Mu_", i, sep = "") # Names for mu
-    mu_title = c(mu_title, mu_name)
-    for(j in 1:p){
-      sigma_name = paste("Sigma_", i, j, sep = "") # Names for sigma
-      sigma_title = c(sigma_title, sigma_name)
-    }
+    sigma_title = c(sigma_title, paste("Sigma_", i, 1:p, sep = ""))
   }
   for(i in 1:N){ xi_matrix = rbind(xi_matrix, as.vector(post_xi[,,i])) }
   weights_data = as.data.frame(weights)
@@ -699,8 +692,11 @@ sample_post_reformat = function(N, p, post_mu, post_xi, weights){
   return(cbind(weights_data, mu_data, xi_matrix))
 }
 
-test_test = sample_post_reformat(N = N, p = p, post_mu = post_mu, 
-                                 post_xi = post_xi, weights = test_weights)
+# This part of the code is optional; it's to make the table given to the user, but
+# isn't used elsewhere. I've commented it out for now as it actually does take
+# quite a bit of time to reformat the data, hence the long times for the site.
+#test_test = sample_post_reformat(N = N, p = p, post_mu = post_mu, 
+#                                 post_xi = post_xi, weights = test_weights)
 
 post_content_vals = posterior_content(N, p, 
                                       effective_range = TRU_eff_ran$grid, #eff_ran$grid,
@@ -714,7 +710,7 @@ test_tru_prior = true_prior_comparison(p, alpha01, alpha02, mu0, lambda0,
 
 par(mfrow = c(1, 2))
 
-column_number = 5
+column_number = 1
 
 eff_range_min = TRU_eff_ran$grid[[column_number]][1] #eff_ran$x_range[,column_number][1]
 eff_range_max = TRU_eff_ran$grid[[column_number]][length(TRU_eff_ran$grid[[column_number]])]#eff_ran$x_range[,column_number][2]
@@ -729,7 +725,7 @@ comparison_content_density_plot(prior_density = test_tru_prior$prior_matrix,
                                 post_grid = test_tru_prior$midpoint_grid_matrix,
                                 min_xlim = eff_range_min, 
                                 max_xlim = eff_range_max,
-                                smooth_num = c(1,1), colour_choice = c("red", "blue"),
+                                smooth_num = c(1,3), colour_choice = c("red", "blue"),
                                 lty_type = c(2, 2), transparency = 0)
 
 rbr_vals = relative_belief_ratio(p, 
@@ -744,6 +740,6 @@ content_density_plot(density = rbr_vals$RBR_modified,
                      type = "RBR",
                      min_xlim = eff_range_min, 
                      max_xlim = eff_range_max,
-                     smooth_num = 1, colour_choice = "green",
+                     smooth_num = 3, colour_choice = "green",
                      lty_type = 2, transparency = 0)
 

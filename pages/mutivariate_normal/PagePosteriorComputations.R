@@ -92,7 +92,7 @@ page_posteriorcomputations = div(
       
       numericInput(inputId = "post_bigN",
                    label = 'Insert the Monte Carlo sample size',
-                   value = 3000),
+                   value = 20000),
     
       selectInput(inputId = "post_comp_use", 
                   label = 'What values of the hyperparameters do you want to use?', 
@@ -154,7 +154,7 @@ page_comparison_graphs = div(
       
       numericInput(inputId = "prior_eff_range_m", #"prior_sample_m",
                    label = 'Insert the number of desired subintervals for the effective range',
-                   value = 50),
+                   value = 35),
       
       p("Below is for denoting the smaller and larger quantiles for 
         computing the effective range."),

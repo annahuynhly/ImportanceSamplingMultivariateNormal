@@ -27,7 +27,7 @@ page_sample_computation = div(
       
       numericInput(inputId = "prior_sample_bigN",
                    label = 'Insert the Monte Carlo sample size',
-                   value = 3000),
+                   value = 20000),
       
     ),
     mainPanel(
