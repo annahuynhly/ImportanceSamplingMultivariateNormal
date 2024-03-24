@@ -101,5 +101,5 @@ sample_post_values_reformatted = reactive({
 })
 
 sample_post_values_reformatted_round = eventReactive(input$submit_sample_post, {
-  round(sample_post_values_reformatted(), 4)
+  round(sample_post_values_reformatted(), 10)
 })

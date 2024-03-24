@@ -51,11 +51,12 @@ sample_prior = function(N, p, alpha01, alpha02, mu0, lambda0){
   #' @param N represents the Monte Carlo sample size.
   #' @param p represents the number of dimensions.
   #' The other parameters match the descriptions in section 2.1.
-  mu_mat = c()
-  sigma_mat = list()
-  covariance_mat = list() 
-  correlation_mat = list()
-  sigma_ii_mat = c()
+  
+  mu_mat = matrix(NA, nrow = N, ncol = p)
+  sigma_ii_mat = matrix(NA, nrow = N, ncol = p)
+  sigma_mat = vector("list", length = N)
+  covariance_mat = vector("list", length = N)
+  correlation_mat = vector("list", length = N)
   
   for(i in 1:N){
     sigma_ii = 1/rgamma(p, alpha01, alpha02)
@@ -63,17 +64,18 @@ sample_prior = function(N, p, alpha01, alpha02, mu0, lambda0){
     R = onion(p) # the correlation matrix
     Lambda = diag(lambda0)
     SIGMA = D %*% R %*% D
-
     var_mat = Lambda %*% SIGMA %*% Lambda
     
     MU = mvrnorm(n = 1, mu = mu0, Sigma = var_mat)
     
-    mu_mat = rbind(mu_mat, MU)
-    sigma_ii_mat = rbind(sigma_ii_mat, sigma_ii)
+    # Store results in preallocated matrices/lists
+    mu_mat[i,] = MU
+    sigma_ii_mat[i,] = sigma_ii
     sigma_mat[[i]] = SIGMA
     covariance_mat[[i]] = var_mat
     correlation_mat[[i]] = R
   }
+  
   return(list("mu_matrix" = mu_mat, "sigma_ii" = sigma_ii_mat,
               "sigma_matrix" = sigma_mat,
               "covariance_matrix" = covariance_mat, 

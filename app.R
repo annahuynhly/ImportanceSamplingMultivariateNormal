@@ -27,6 +27,7 @@ library(MASS)
 library(matrixcalc)
 library(stats)
 library(pracma)
+library(reticulate)
 
 # Globally setting the spinner colour and type
 options(spinner.type = 8, spinner.color = "#6990EE")

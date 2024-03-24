@@ -31,11 +31,8 @@ sample_sigma_ii = function(N, p, alpha01, alpha02){
   #' @param N represents the Monte Carlo sample size.
   #' @param p represents the number of dimensions.
   #' #' The other parameters match the descriptions from the paper.
-  sigma_ii = c()
-  for(i in 1:N){
-    sigma_ii_val = 1/rgamma(p, alpha01, alpha02)
-    sigma_ii = rbind(sigma_ii, sigma_ii_val)
-  }
+  sigma_ii_matrix = 1/rgamma(N * p, alpha01, alpha02)
+  sigma_ii = matrix(sigma_ii_matrix, nrow = N, ncol = p, byrow = TRUE)
   return(sigma_ii)
 }
 
@@ -98,12 +95,12 @@ weights = function(N, p, mu, xi, mu0, lambda0, sigma_ii, alpha01, alpha02){
   #' @param N represents the Monte Carlo sample size.
   #' @param p represents the number of dimensions.
   #' The other parameters match the descriptions in the paper.
-  k_vector = c()
+  k_vector = numeric(N)
   for(i in 1:N){
-    k_val = k(p, mu[i,], xi[,,i], mu0, lambda0, sigma_ii[i,], alpha01, alpha02)
-    k_vector = rbind(k_vector, k_val)
+    k_vector[i] = k(p, mu[i,], xi[,,i], mu0, lambda0, sigma_ii[i,], alpha01, alpha02)
+    #k_vector = rbind(k_vector, k_val)
   }
-  weights_vector = k_vector / colSums(k_vector)
+  weights_vector = k_vector / sum(k_vector)
   return(weights_vector)
 }
 
@@ -115,16 +112,11 @@ sample_post_reformat = function(N, p, post_mu, post_xi, weights){
   #' @param post_xi represents the xi from integrating w.r.t. the posterior.
   #' @param weights represents the weights calculated from post_mu and post_xi.
   sigma_title = c()
-  mu_title = c()
+  mu_title = paste("Mu_", 1:p, sep = "")
   weights_title = "Weights"
   xi_matrix = c()
   for(i in 1:p){
-    mu_name = paste("Mu_", i, sep = "") # Names for mu
-    mu_title = c(mu_title, mu_name)
-    for(j in 1:p){
-      sigma_name = paste("Sigma_", i, j, sep = "") # Names for sigma
-      sigma_title = c(sigma_title, sigma_name)
-    }
+    sigma_title = c(sigma_title, paste("Sigma_", i, 1:p, sep = ""))
   }
   for(i in 1:N){ xi_matrix = rbind(xi_matrix, as.vector(post_xi[,,i])) }
   weights_data = as.data.frame(weights)
