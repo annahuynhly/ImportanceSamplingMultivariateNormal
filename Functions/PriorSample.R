@@ -91,17 +91,17 @@ psi = function(mu, xi){
 true_prior_density = function(p, alpha01, alpha02, lambda0, mu0){
   #' Plots the true prior.
   #' @param p represents the number of dimensions.
-  x = -10+20*c(0:1000)/1000
-  x_vector = c()
-  y_vector = c()
+  x = seq(-10, 10, length.out = 1001)
+  x_vector = matrix(nrow = length(x), ncol = p)
+  y_vector = matrix(nrow = length(x), ncol = p)
   for(i in 1:p){
     y = dt(x,2*alpha01[i])
     scale = sqrt(alpha02[i]/alpha01[i])*lambda0[i]
     xnew = mu0[i] + scale*x
     ynew = y/scale
     
-    x_vector = cbind(x_vector, xnew)
-    y_vector = cbind(y_vector, ynew)
+    x_vector[, i] = xnew
+    y_vector[, i] = ynew
   }
   newlist = list("x_vector" = x_vector, "y_vector" = y_vector)
   return(newlist)
@@ -115,43 +115,33 @@ find_effective_range = function(p, m, x_vector_matrix, y_vector_matrix,
   #' @param quantile_val represents the smaller quantile of interest for the effective range.
   #' @details 
   #' This function assumes that m is consistent throughout each mu. 
-  desired_range = quantile_val[2] - quantile_val[1]
+  desired_range = diff(quantile_val)
   
-  x_range_matrix = c()
-  y_range_matrix = c()
-  delta_vector = c()
-  grid_matrix = c()
+  x_range_matrix = matrix(nrow = 2, ncol = p)
+  y_range_matrix = matrix(nrow = 2, ncol = p)
+  delta_vector = numeric(p)
+  grid_matrix = list()
   
   for(k in 1:p){
     x_vector = x_vector_matrix[,k]
     y_vector = y_vector_matrix[,k]
-    found_range = FALSE
-    if(length(x_vector) == length(y_vector)){
-      n = length(x_vector)
-    } else {
-      return("Error: x_vector and y_vector contain different lengths.")
-    }
-    i = 0
-    while(found_range == FALSE){
-      x_new = x_vector[(i+1):(n-i)]
-      y_new = y_vector[(i+1):(n-i)]
-      area = trapz(x_new, y_new)
-      if(area <= desired_range){
-        found_range = TRUE
-      } else {
-        i = i + 1
-      }
-    }
-    x_range = c(x_new[1], x_new[length(x_new)])
-    y_range = c(x_new[1], x_new[length(x_new)])
-    # creating new grid points based off of the effective range
-    delta = (x_range[2] - x_range[1])/m # length of the sub intervals
-    x_grid = seq(x_range[1], x_range[2], by = delta) # constructing the new grid
     
-    x_range_matrix = cbind(x_range_matrix, x_range)
-    y_range_matrix = cbind(y_range_matrix, y_range)
-    delta_vector = c(delta_vector, delta)
-    grid_matrix = cbind(grid_matrix, x_grid)
+    area_cum = cumsum(y_vector)
+    total_area = compute_area(x_vector, y_vector)
+    
+    lower_index = max(which(area_cum / total_area <= quantile_val[1]))
+    upper_index = min(which(area_cum / total_area >= quantile_val[2]))
+    
+    x_range = x_vector[c(lower_index, upper_index)]
+    y_range = y_vector[c(lower_index, upper_index)]
+    
+    delta = diff(x_range) / m
+    x_grid = seq(x_range[1], x_range[2], by = delta)
+    
+    x_range_matrix[, k] = x_range
+    y_range_matrix[, k] = y_range
+    delta_vector[k] = delta
+    grid_matrix[[k]] = x_grid
   }
   
   newlist = list("x_range" = x_range_matrix, "y_range" = y_range_matrix,
@@ -160,51 +150,29 @@ find_effective_range = function(p, m, x_vector_matrix, y_vector_matrix,
 }
 
 sample_prior_data_cleaning = function(N, p, mu_matrix, 
-                                      sigma_ii_matrix,
-                                      correlation_matrix){
+                                       sigma_ii_matrix,
+                                       correlation_matrix) {
   #' Mike requested a specific file format, and this cleans it accordingly.
-  sigma_names = c()
-  mu_names = c()
-  for(i in 1:p){
-    mu_names = c(mu_names, paste("mu_", i, sep = ""))
-    sigma_names = c(sigma_names, paste("1/sigma_", i, "^2", sep = ""))
-  }
+  sigma_names = paste("1/sigma_", 1:p, "^2", sep = "")
+  mu_names = paste("mu_", 1:p, sep = "")
+  rho_names = combn(p, 2, FUN = function(x) paste("rho_", x[1], x[2], sep = ""), simplify = TRUE)
   
   # FIRST: cleaning 1/sigma^2
   sigma_ii_data = as.data.frame(1/sigma_ii_matrix)
   names(sigma_ii_data) = sigma_names
-  row.names(sigma_ii_data) = 1:N
   
   # SECOND: cleaning rhos from the correlation matrix
-  rho_matrix = c()
+  rho_matrix = matrix(nrow = N, ncol = length(rho_names))
   for(k in 1:N){
-    rho_values = c()
-    # first: checking the rows
-    for(i in 1:(p-1)){
-      next_index = i + 1
-      for(j in next_index:p){
-        rho_values = c(rho_values, correlation_matrix[[k]][,i][j])
-      }
-    }
-    rho_matrix = rbind(rho_matrix, rho_values)
+    rho_matrix[k,] = as.vector(correlation_matrix[[k]][lower.tri(correlation_matrix[[k]])])
   }
   
   rho_data = as.data.frame(rho_matrix)
-  rho_names = c() # changing the names
-  for(i in 1:(p-1)){
-    next_index = i + 1
-    for(j in next_index:p){
-      new_rho = paste("rho_", i, j, sep = "")
-      rho_names = c(rho_names, new_rho)
-    }
-  }
   names(rho_data) = rho_names
-  row.names(rho_data) = 1:N
   
   # THIRD: cleaning mus from the mu matrix
   mu_data = as.data.frame(mu_matrix)
   names(mu_data) = mu_names
-  row.names(mu_data) = 1:N
   
   return(cbind(mu_data, sigma_ii_data, rho_data))
 }
@@ -317,60 +285,4 @@ sample_prior_hist = function(mu_prior, col_num, delta = 0.1,
   lines(hist$mids, average_vector_values(hist$density, smooth_num), 
         xlim = c(min_xlim, max_xlim), lty = lty_type, col = colour_choice)
 }
-
-################################################################
-# TESTING                                                      #
-################################################################
-
-# inputs
-#p = 3
-#alpha01 = c(3, 3, 3)
-#alpha02 = c(6, 6, 6)
-#mu0 = c(0, 0, 0)
-#lambda0 = c(1, 1, 1)
-
-#N = 1000 # monte carlo 
-#test = sample_prior(N, p, alpha01, alpha02, mu0, lambda0)
-
-#vals = prior_content(N, p, m = 50, mu = test$mu_matrix, xi = find_inverse_alt(test$covariance_matrix[,,1]))
-
-#bleh = sample_prior_data_cleaning(p = 3, 
-#                                  N = 1000, 
-#                                  mu_matrix = test$mu_matrix,
-#                                  sigma_ii_matrix = test$sigma_ii,
-#                                  correlation_matrix = test$correlation_matrix)
-
-#plot(vals$plotting_grid[,1],
-#     vals$prior_content_matrix[,1], type = "l")
-
-#test$sigma_matrix[[1]]
-
-#test$mu_matrix[,1]
-
-#test2 = test$mu_matrix
-
-#grid = seq(-1700, 1700, by = 1)
-
-#hist = hist(test$mu_matrix[,1], breaks = grid, prob = T, xlim = c(-20, 20),
-#            border = "white", col = area_col)
-
-#hist$mids
-#lines(hist$mids, hist$density, lty = 2)
-
-# the graph verson
-#grid = seq(-20, 20, by = 0.01)
-
-#mu0_vectors = list()
-#for(i in 1:p){
-#  mu0_vectors[[i]] = mu0[i] + sqrt(alpha02[i]/alpha01[i]) * lambda0[i] * dt(grid, df = 2 * alpha01[i])
-#}
-#mu0_vectors[[1]]
-#plot(grid, mu0_vectors[[1]], xlim = c(-20, 20), type = "l")
-
-
-
-
-
-
-
 

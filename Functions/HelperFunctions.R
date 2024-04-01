@@ -97,40 +97,25 @@ create_necessary_vector = function(x){
   }
 }
 
-average_vector_values = function(vector, num_average_pts = 3){
+average_vector_values = function(vector, num_average_pts = 3) {
   #' Generates a new vector by averaging the values of a given vector based on the proximity 
   #' of each element to its neighbors.
   #' @param vector The input vector to be smoothed.
   #' @param num_average_pts The number of neighboring points to consider when calculating 
   #' the average for each element. Only the odd case is implemented.
-  if(num_average_pts %% 2 == 0){
+  if (num_average_pts %% 2 == 0) {
     return("Error: num_average_pts must be an odd number.")
   }
   
-  if(num_average_pts == 1){
-    return(vector)
-  } 
-  new_vector = rep(0, length(vector))
+  if (num_average_pts == 1) {return(vector)} 
   
-  pts = 0
-  num_neighbours = floor(num_average_pts/2)
-  for(i in 1:length(vector)){
-    if(i <= num_neighbours | (length(vector) - i) < num_neighbours){ # Edge points case
-      if(i == 1 | i == length(vector)){
-        new_vector[i] = vector[i]
-      } else {
-        if (i <= num_neighbours){
-          pts = i - 1
-        } else if ((length(vector) - i) < num_neighbours){
-          pts = length(vector) - i
-        }
-        new_vector[i] = sum(vector[(i-pts):(i+pts)])/(2*pts + 1)
-      }
-    } else {
-      lower_int = i - num_neighbours
-      upper_int = i + num_neighbours
-      new_vector[i] = sum(vector[lower_int:upper_int])/(2*num_neighbours + 1)
-    }
+  num_neighbours = floor(num_average_pts / 2)
+  new_vector = numeric(length(vector))
+  
+  for (i in 1:length(vector)) {
+    lower_index = max(1, i - num_neighbours)
+    upper_index = min(length(vector), i + num_neighbours)
+    new_vector[i] = mean(vector[lower_index:upper_index])
   }
   
   return(new_vector)
@@ -162,21 +147,18 @@ find_inverse_alt = function(matrix){
   return(inverse_matrix)
 }
 
-divison_alt = function(num, denom){
+division_alt = function(num, denom) {
   #' An alternative method for division. When a denominator is zero, the 
   #' corresponding result is set to NaN instead of raising an error.
   #' @param num the numerator.
   #' @param denom the denominator.
   #' @details
   #' The function assumes that the length of 'num' is equal to the length of 'denom'.
-  x = c()
-  for(i in 1:length(num)){
-    if(denom[i] == 0){
-      x = c(x, NaN)
-    } else {
-      x = c(x, num[i]/denom[i])
-    }
+  if (any(denom == 0)) {
+    warning("Some denominators are zero. Returning NaN for those cases.")
   }
+  x = num / denom
+  x[denom == 0] = NA
   return(x)
 }
 
@@ -187,4 +169,11 @@ force_bounds_0 = function(v){
   v = v[2:(length(v)-1)]
   v = c(0, v, 0)
   return(v)
+}
+
+compute_area = function(x, y){
+  #' Given two vectors, computes the area via the method of rectangles.
+  #' @param x represents the vector along the x-axis.
+  #' @param y represents the vector along the y-axis.
+  sum(diff(x) * (head(y, -1) + tail(y, -1)) / 2)
 }

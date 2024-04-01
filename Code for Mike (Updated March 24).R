@@ -233,17 +233,17 @@ sample_prior = function(N, p, alpha01, alpha02, mu0, lambda0){
 true_prior_density = function(p, alpha01, alpha02, lambda0, mu0){
   #' Plots the true prior.
   #' @param p represents the number of dimensions.
-  x = -10+20*c(0:1000)/1000
-  x_vector = c()
-  y_vector = c()
+  x = seq(-10, 10, length.out = 1001)
+  x_vector = matrix(nrow = length(x), ncol = p)
+  y_vector = matrix(nrow = length(x), ncol = p)
   for(i in 1:p){
     y = dt(x,2*alpha01[i])
     scale = sqrt(alpha02[i]/alpha01[i])*lambda0[i]
     xnew = mu0[i] + scale*x
     ynew = y/scale
     
-    x_vector = cbind(x_vector, xnew)
-    y_vector = cbind(y_vector, ynew)
+    x_vector[, i] = xnew
+    y_vector[, i] = ynew
   }
   newlist = list("x_vector" = x_vector, "y_vector" = y_vector)
   return(newlist)
@@ -257,43 +257,33 @@ find_effective_range = function(p, m, x_vector_matrix, y_vector_matrix,
   #' @param quantile_val represents the smaller quantile of interest for the effective range.
   #' @details 
   #' This function assumes that m is consistent throughout each mu. 
-  desired_range = quantile_val[2] - quantile_val[1]
+  desired_range = diff(quantile_val)
   
-  x_range_matrix = c()
-  y_range_matrix = c()
-  delta_vector = c()
-  grid_matrix = c()
+  x_range_matrix = matrix(nrow = 2, ncol = p)
+  y_range_matrix = matrix(nrow = 2, ncol = p)
+  delta_vector = numeric(p)
+  grid_matrix = list()
   
   for(k in 1:p){
     x_vector = x_vector_matrix[,k]
     y_vector = y_vector_matrix[,k]
-    found_range = FALSE
-    if(length(x_vector) == length(y_vector)){
-      n = length(x_vector)
-    } else {
-      return("Error: x_vector and y_vector contain different lengths.")
-    }
-    i = 0
-    while(found_range == FALSE){
-      x_new = x_vector[(i+1):(n-i)]
-      y_new = y_vector[(i+1):(n-i)]
-      area = trapz(x_new, y_new)
-      if(area <= desired_range){
-        found_range = TRUE
-      } else {
-        i = i + 1
-      }
-    }
-    x_range = c(x_new[1], x_new[length(x_new)])
-    y_range = c(x_new[1], x_new[length(x_new)])
-    # creating new grid points based off of the effective range
-    delta = (x_range[2] - x_range[1])/m # length of the sub intervals
-    x_grid = seq(x_range[1], x_range[2], by = delta) # constructing the new grid
     
-    x_range_matrix = cbind(x_range_matrix, x_range)
-    y_range_matrix = cbind(y_range_matrix, y_range)
-    delta_vector = c(delta_vector, delta)
-    grid_matrix = cbind(grid_matrix, x_grid)
+    area_cum = cumsum(y_vector)
+    total_area = compute_area(x_vector, y_vector)
+    
+    lower_index = max(which(area_cum / total_area <= quantile_val[1]))
+    upper_index = min(which(area_cum / total_area >= quantile_val[2]))
+    
+    x_range = x_vector[c(lower_index, upper_index)]
+    y_range = y_vector[c(lower_index, upper_index)]
+    
+    delta = diff(x_range) / m
+    x_grid = seq(x_range[1], x_range[2], by = delta)
+    
+    x_range_matrix[, k] = x_range
+    y_range_matrix[, k] = y_range
+    delta_vector[k] = delta
+    grid_matrix[[k]] = x_grid
   }
   
   newlist = list("x_range" = x_range_matrix, "y_range" = y_range_matrix,
