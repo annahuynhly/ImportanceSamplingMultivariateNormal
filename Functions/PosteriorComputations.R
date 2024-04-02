@@ -110,21 +110,37 @@ sample_post_reformat = function(N, p, post_mu, post_xi, weights){
   #' @param post_mu represents the mu from integrating w.r.t. the posterior.
   #' @param post_xi represents the xi from integrating w.r.t. the posterior.
   #' @param weights represents the weights calculated from post_mu and post_xi.
-  sigma_title = c()
+  
   mu_title = paste("Mu_", 1:p, sep = "")
   weights_title = "Weights"
-  xi_matrix = c()
+  
+  xi_title = character(p*(p+1)/2)  # Preallocate memory for the vector
+  k = 1
   for(i in 1:p){
-    sigma_title = c(sigma_title, paste("Sigma_", i, 1:p, sep = ""))
+    for(j in i:p){
+      xi_title[k] = paste("Xi_", i, j, sep = "")
+      k = k + 1
+    }
   }
-  for(i in 1:N){ xi_matrix = rbind(xi_matrix, as.vector(post_xi[,,i])) }
+  xi_matrix = matrix(NA, nrow = N, ncol = length(xi_title))
+  for(i in 1:N){ 
+    indices = which(upper.tri(post_xi[,,i], diag=TRUE), arr.ind=TRUE)
+    new_row = post_xi[,,i][indices[order(indices[,1]),]]
+    xi_matrix[i,] = as.vector(new_row)
+  }
+  
   weights_data = as.data.frame(weights)
-  names(weights_data) = weights_title
   mu_data = as.data.frame(post_mu)
-  names(mu_data) = mu_title
   xi_matrix = as.data.frame(xi_matrix)
-  names(xi_matrix) = sigma_title
-  return(cbind(weights_data, mu_data, xi_matrix))
+  
+  names(weights_data) = weights_title
+  names(mu_data) = mu_title
+  names(xi_matrix) = xi_title
+  
+  result = cbind(weights_data, mu_data, xi_matrix)
+  rownames(result) = 1:N
+  
+  return(result)
 }
 
 posterior_content = function(N, p, effective_range, mu, xi, weights){
@@ -157,19 +173,14 @@ posterior_content = function(N, p, effective_range, mu, xi, weights){
   return(newlist)
 }
 
-relative_belief_ratio = function(p, prior_content, post_content){
+relative_belief_ratio = function(p, prior_content, post_content) {
   #' Computes the relative belief ratio.
   #' @param p represents the number of dimensions.
   #' @param prior_content denotes the vector containing the prior.
   #' @param post_content denotes the vector containing the posterior.
-  rbr_vector = c()
-  for(k in 1:p){
-    rbr_vals = post_content[,k] / prior_content[,k] 
-    rbr_vector = cbind(rbr_vector, rbr_vals)
-  }
   
-  rbr_vector_mod = rbr_vector
-  rbr_vector_mod[is.na(rbr_vector_mod)] = 0 # force NA to 0
+  rbr_vector = post_content / prior_content
+  rbr_vector_mod = ifelse(is.na(rbr_vector), 0, rbr_vector)
   
   newlist = list("RBR" = rbr_vector, "RBR_modified" = rbr_vector_mod)
   return(newlist)

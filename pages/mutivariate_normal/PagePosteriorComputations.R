@@ -159,14 +159,30 @@ page_comparison_graphs = div(
       p("Below is for denoting the smaller and larger quantiles for 
         computing the effective range."),
       
-      fluidRow(box(width = 12,
-        splitLayout(
-          numericInput(inputId = "prior_eff_range_small_quantile", 
-                       label = "Small Quantile", value = 0.005),
-          numericInput(inputId = "prior_eff_range_large_quantile", 
-                       label = "Large Quantile", value = 0.995),
-        )
-      )),
+      # NEW
+      selectInput(inputId = "post_interval_use", 
+                  label = 'What interval would you like to use?', 
+                  choices = list("Effective Range from the True Prior" = 1,
+                                 "Input values" = 2), 
+                  selected = 1),
+      
+      conditionalPanel(
+        condition = "input.post_interval_use == 2",
+        fluidRow(box(width = 12,
+          splitLayout(
+            numericInput(inputId = "post_graph_lwr_bd", 
+                         label = "Lower Bound", value = -10),
+            numericInput(inputId = "post_graph_upp_bd", 
+                         label = "Upper Bound", value = 10),
+            # Previously let the user denote the effective range - but this was strictly
+            # for the prior.
+            #numericInput(inputId = "prior_eff_range_small_quantile", 
+            #             label = "Small Quantile", value = 0.005),
+            #numericInput(inputId = "prior_eff_range_large_quantile", 
+            #             label = "Large Quantile", value = 0.995),
+          )
+        )),
+      ),
       
       selectInput(inputId = "comparison_modify_which",
                   label = 'Select line to modify',
@@ -222,7 +238,7 @@ page_comparison_graphs = div(
         fluidRow(
           splitLayout(
             cellWidths = c("50%", "50%"), 
-            #withSpinner(verbatimTextOutput("debugging_prior")),
+            #withSpinner(verbatimTextOutput(outputId = "testing_post_graph")),
             withSpinner(plotOutput("sample_priorpost_graph")), 
             withSpinner(plotOutput("sample_rbr_graph"))
           )

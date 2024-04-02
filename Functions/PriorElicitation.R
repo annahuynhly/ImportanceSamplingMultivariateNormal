@@ -95,8 +95,6 @@ elicit_prior_effective_range = function(p, m = 200, alpha01, alpha02, mu0, lambd
       x_area = xnew[x_low_range:x_high_range]
       y_area = ynew[x_low_range:x_high_range]
       area = trapz(x_area, y_area)
-      #print(area)
-      #print(c(x_low_range,x_high_range))
       if(area >= desired_range){
         found_range = TRUE
         x_range = x_area

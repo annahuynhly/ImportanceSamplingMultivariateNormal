@@ -13,7 +13,7 @@ library(reticulate)
 # Mandatory manual inputs
 p = 5
 gamma = 0.99
-N = 50000 # monte carlo sample size
+N = 10000 # monte carlo sample size
 m = 30 # number of sub-intervals (oddly consistent all around)
 
 # Manual input data version ############################
@@ -140,40 +140,25 @@ onion = function(dimension){
   return(next_corr)
 }
 
-average_vector_values = function(vector, num_average_pts = 3){
+average_vector_values = function(vector, num_average_pts = 3) {
   #' Generates a new vector by averaging the values of a given vector based on the proximity 
   #' of each element to its neighbors.
   #' @param vector The input vector to be smoothed.
   #' @param num_average_pts The number of neighboring points to consider when calculating 
   #' the average for each element. Only the odd case is implemented.
-  if(num_average_pts %% 2 == 0){
+  if (num_average_pts %% 2 == 0) {
     return("Error: num_average_pts must be an odd number.")
   }
   
-  if(num_average_pts == 1){
-    return(vector)
-  } 
-  new_vector = rep(0, length(vector))
+  if (num_average_pts == 1) {return(vector)} 
   
-  pts = 0
-  num_neighbours = floor(num_average_pts/2)
-  for(i in 1:length(vector)){
-    if(i <= num_neighbours | (length(vector) - i) < num_neighbours){ # Edge points case
-      if(i == 1 | i == length(vector)){
-        new_vector[i] = vector[i]
-      } else {
-        if (i <= num_neighbours){
-          pts = i - 1
-        } else if ((length(vector) - i) < num_neighbours){
-          pts = length(vector) - i
-        }
-        new_vector[i] = sum(vector[(i-pts):(i+pts)])/(2*pts + 1)
-      }
-    } else {
-      lower_int = i - num_neighbours
-      upper_int = i + num_neighbours
-      new_vector[i] = sum(vector[lower_int:upper_int])/(2*num_neighbours + 1)
-    }
+  num_neighbours = floor(num_average_pts / 2)
+  new_vector = numeric(length(vector))
+  
+  for (i in 1:length(vector)) {
+    lower_index = max(1, i - num_neighbours)
+    upper_index = min(length(vector), i + num_neighbours)
+    new_vector[i] = mean(vector[lower_index:upper_index])
   }
   
   return(new_vector)
@@ -521,7 +506,7 @@ posterior_content = function(N, p, effective_range, mu, xi, weights){
   #' @param N represents the Monte Carlo sample size.
   #' @param p represents the number of dimensions.
   #' @param effective_range denotes a list of grid points where the density
-  #'        is highly concentrated (this is computed from the sampling of the  prior).'
+  #'        is highly concentrated (this is computed from the sampling of the prior).
   #' @param weights denote the weights given, calculated from the psi.
   #'        The other parameters match the descriptions in the paper.
   psi_val = psi(mu, xi) # note: the user will need to manually change this
@@ -570,19 +555,14 @@ true_prior_comparison = function(p, alpha01, alpha02, mu0, lambda0, grid){
   return(newlist)
 }
 
-relative_belief_ratio = function(p, prior_content, post_content){
+relative_belief_ratio = function(p, prior_content, post_content) {
   #' Computes the relative belief ratio.
   #' @param p represents the number of dimensions.
   #' @param prior_content denotes the vector containing the prior.
   #' @param post_content denotes the vector containing the posterior.
-  rbr_vector = c()
-  for(k in 1:p){
-    rbr_vals = post_content[,k] / prior_content[,k] 
-    rbr_vector = cbind(rbr_vector, rbr_vals)
-  }
   
-  rbr_vector_mod = rbr_vector
-  rbr_vector_mod[is.na(rbr_vector_mod)] = 0 # force NA to 0
+  rbr_vector = post_content / prior_content
+  rbr_vector_mod = ifelse(is.na(rbr_vector), 0, rbr_vector)
   
   newlist = list("RBR" = rbr_vector, "RBR_modified" = rbr_vector_mod)
   return(newlist)
@@ -658,6 +638,7 @@ test_weights = weights(N = N, p = p,
                        mu0 = mu0, lambda0 = lambda0, 
                        sigma_ii = sigma_ii, alpha01 = alpha01, alpha02 = alpha02)
 
+
 sample_post_reformat = function(N, p, post_mu, post_xi, weights){
   #' Reformats the data for the user to download.
   #' @param N represents the Monte Carlo sample size.
@@ -665,21 +646,37 @@ sample_post_reformat = function(N, p, post_mu, post_xi, weights){
   #' @param post_mu represents the mu from integrating w.r.t. the posterior.
   #' @param post_xi represents the xi from integrating w.r.t. the posterior.
   #' @param weights represents the weights calculated from post_mu and post_xi.
-  sigma_title = c()
+
   mu_title = paste("Mu_", 1:p, sep = "")
   weights_title = "Weights"
-  xi_matrix = c()
+  
+  xi_title = character(p*(p+1)/2)  # Preallocate memory for the vector
+  k = 1
   for(i in 1:p){
-    sigma_title = c(sigma_title, paste("Sigma_", i, 1:p, sep = ""))
+    for(j in i:p){
+      xi_title[k] = paste("Xi_", i, j, sep = "")
+      k = k + 1
+    }
   }
-  for(i in 1:N){ xi_matrix = rbind(xi_matrix, as.vector(post_xi[,,i])) }
+  xi_matrix = matrix(NA, nrow = N, ncol = length(xi_title))
+  for(i in 1:N){ 
+    indices = which(upper.tri(post_xi[,,i], diag=TRUE), arr.ind=TRUE)
+    new_row = post_xi[,,i][indices[order(indices[,1]),]]
+    xi_matrix[i,] = as.vector(new_row)
+  }
+  
   weights_data = as.data.frame(weights)
-  names(weights_data) = weights_title
   mu_data = as.data.frame(post_mu)
-  names(mu_data) = mu_title
   xi_matrix = as.data.frame(xi_matrix)
-  names(xi_matrix) = sigma_title
-  return(cbind(weights_data, mu_data, xi_matrix))
+  
+  names(weights_data) = weights_title
+  names(mu_data) = mu_title
+  names(xi_matrix) = xi_title
+  
+  result = cbind(weights_data, mu_data, xi_matrix)
+  rownames(result) = 1:N
+  
+  return(result)
 }
 
 # This part of the code is optional; it's to make the table given to the user, but
@@ -733,3 +730,59 @@ content_density_plot(density = rbr_vals$RBR_modified,
                      smooth_num = 3, colour_choice = "green",
                      lty_type = 2, transparency = 0)
 
+
+#################################################################
+# this is the modified version for when the user denotes a specific range!
+# Graphs look AWFUL by the way.
+
+manual_grid = seq(from = -3, to = -1.5, length.out = m+1)
+post_manual_grid = vector("list", p)
+post_manual_grid[] = list(manual_grid)
+
+post_content_vals_mod = posterior_content(N, p, 
+                                          effective_range = post_manual_grid,
+                                          post_mu, 
+                                          post_xi, 
+                                          test_weights)
+
+test_tru_prior_mod = true_prior_comparison(p, alpha01, alpha02, mu0, lambda0, 
+                                       grid = post_manual_grid)
+
+rbr_vals_mod = relative_belief_ratio(p, 
+                                 prior_content = test_tru_prior_mod$prior_matrix, 
+                                 post_content = post_content_vals_mod$post_content)
+
+par(mfrow = c(1, 2))
+
+column_number = 1
+
+eff_range_min = -3
+eff_range_max = -1.5
+
+#eff_range_min
+#eff_range_max
+
+comparison_content_density_plot(prior_density = test_tru_prior_mod$prior_matrix, 
+                                post_density = post_content_vals_mod$post_density, 
+                                col_num = column_number, 
+                                prior_grid = test_tru_prior_mod$midpoint_grid_matrix,
+                                post_grid = test_tru_prior_mod$midpoint_grid_matrix,
+                                min_xlim = eff_range_min, 
+                                max_xlim = eff_range_max,
+                                smooth_num = c(1,3), colour_choice = c("red", "blue"),
+                                lty_type = c(2, 2), transparency = 0)
+
+rbr_vals = relative_belief_ratio(p, 
+                                 prior_content = test_tru_prior$prior_matrix, 
+                                 post_content = post_content_vals$post_content)
+
+
+# the relative belief ratio
+content_density_plot(density = rbr_vals_mod$RBR_modified, 
+                     col_num = column_number, 
+                     grid = test_tru_prior_mod$midpoint_grid_matrix, 
+                     type = "RBR",
+                     min_xlim = eff_range_min, 
+                     max_xlim = eff_range_max,
+                     smooth_num = 3, colour_choice = "green",
+                     lty_type = 2, transparency = 0)

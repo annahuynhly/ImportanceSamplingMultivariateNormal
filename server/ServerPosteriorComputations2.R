@@ -50,9 +50,9 @@ true_prior_effective_range = eventReactive(input$submit_prior_eff_range, {
                                alpha02 = prior_elicitation_sigma_values()$alpha02,
                                mu0 = prior_elicitation_mu_values()$mu0, 
                                lambda0 = prior_elicitation_mu_values()$lambda0, 
-                               x_low = -10,
-                               quantile_val = c(input$prior_eff_range_small_quantile, 
-                                                input$prior_eff_range_large_quantile))
+                               x_low = -10)#,
+                               #quantile_val = c(input$prior_eff_range_small_quantile, 
+                               #                  input$prior_eff_range_large_quantile))
 })
 
 prior_delta_values = reactive({
