@@ -1,5 +1,8 @@
 # Code for Mike Evans (Prior Elicitation Only)
 # install.packages(latex2exp) # if you haven't installed it yet
+# add the rest of these for mike
+#install.packages("pracma")
+# also add what each of them are doing
 library(latex2exp) # for latex within graphs
 library(MASS)
 library(pracma)
@@ -43,6 +46,9 @@ Y_data = as.matrix(Y_data)
 # FUNCTIONS FOR THE PRIOR                  #
 ############################################
 
+# refer to the paper more -> refer to section and display (equation number)
+
+# TODO: make a more elegant way instead of numeric()
 elicit_prior_sigma_function = function(p, gamma, s1, s2, upper_bd, lower_bd){
   #' This represents section 2.1 of the paper.
   #' @param p represents the number of dimensions.
@@ -55,10 +61,10 @@ elicit_prior_sigma_function = function(p, gamma, s1, s2, upper_bd, lower_bd){
   
   gam = (1+gamma)/2
   z0 = qnorm(gam,0,1)
-  c1 = (z0/s1)**2
-  c2 = (z0/s2)**2
+  c1 = (z0/s1)**2 # LABEL this better
+  c2 = (z0/s2)**2 # LABEL this better
   
-  alpha01 = numeric()
+  alpha01 = numeric() 
   alpha02 = numeric()
   
   for(j in 1:p){
@@ -100,6 +106,7 @@ elicit_prior_mu_function = function(p, gamma, m1, m2, s1, s2, alpha01, alpha02){
   return(newlist)
 }
 
+# mention below that this is for the onion method (helper function)
 vnorm = function(x, t){
   # Computes the norm of the matrix x of type t.
   norm(matrix(x, ncol=1), t)
@@ -140,6 +147,7 @@ onion = function(dimension){
   return(next_corr)
 }
 
+# technically part of the plotting/smoothing (move to a different section)
 average_vector_values = function(vector, num_average_pts = 3) {
   #' Generates a new vector by averaging the values of a given vector based on the proximity 
   #' of each element to its neighbors.
@@ -192,8 +200,10 @@ sample_prior = function(N, p, alpha01, alpha02, mu0, lambda0){
   correlation_mat = vector("list", length = N)
   
   for(i in 1:N){
+    # check if this is a bug; make sure the first value MUST be associated with the first entry of alpha01, and
+    # alpha02
     sigma_ii = 1/rgamma(p, alpha01, alpha02)
-    D = diag(sigma_ii^2)
+    D = diag(sqrt(sigma_ii)) # BIG MISTAKE HERE!!!!!!!!!!!!!
     R = onion(p) # the correlation matrix
     Lambda = diag(lambda0)
     SIGMA = D %*% R %*% D
@@ -234,6 +244,7 @@ true_prior_density = function(p, alpha01, alpha02, lambda0, mu0){
   return(newlist)
 }
 
+# move to the plotting
 find_effective_range = function(p, m, x_vector_matrix, y_vector_matrix,
                                 quantile_val = c(0.005,0.995)){
   #' Calculates the effective range.
@@ -275,7 +286,7 @@ find_effective_range = function(p, m, x_vector_matrix, y_vector_matrix,
                  "delta" = delta_vector, "grid" = grid_matrix)
   return(newlist)
 }
-
+# move to plotting
 content_density_plot = function(density, col_num, grid, type = "Prior",
                                 min_xlim = -10, max_xlim = 10,
                                 smooth_num = 1, colour_choice = "blue",
@@ -308,6 +319,7 @@ content_density_plot = function(density, col_num, grid, type = "Prior",
   polygon(grid[, col_num], density_vals, col = area_col, border = NA)
 }
 
+# move to plotting
 elicit_prior_effective_range = function(p, m = 200, alpha01, alpha02, mu0, x_low,
                                         quantile_val = c(0.005, 0.995)){
   #' Computes the effective range from the true prior.
@@ -369,7 +381,6 @@ elicit_prior_effective_range = function(p, m = 200, alpha01, alpha02, mu0, x_low
   return(newlist)
 }
 
-
 ##################################################
 # ELICITATION FOR THE PRIOR (VALUES)             #
 ##################################################
@@ -380,9 +391,9 @@ prior_sigma_vals
 
 alpha01 = prior_sigma_vals$alpha01
 alpha02 = prior_sigma_vals$alpha02
-c1 = prior_sigma_vals$c1
-c2 = prior_sigma_vals$c2
-z0 = prior_sigma_vals$z0
+c1 = prior_sigma_vals$c1 # NOTE: NEED TO GIVE THIS A BETTER NAME
+c2 = prior_sigma_vals$c2 # LABEL THIS BETTER (EQN 2 OF THE PAPER)
+z0 = prior_sigma_vals$z0 # LABEL: REFER TO THE PAPER
 
 prior_mu_vals = elicit_prior_mu_function(p, gamma, m1, m2, s1, s2, alpha01, alpha02)
 
@@ -420,20 +431,6 @@ find_inverse_alt = function(matrix){
   return(inverse_matrix)
 }
 
-seq_alt = function(values, delta){
-  #' Generate an alternative sequence of values based on the input vector and the distance between
-  #' two points. If the maximum value is not already present in the sequence, it is added to the end.
-  #' @param values represents the numerical vector for which an alternative sequence is generated.
-  #' @param delta represents the distance between two points.
-  min = floor(min(values))
-  max = ceiling(max(values))
-  grid = seq(min, max, by = delta)
-  if(!(max %in% grid) == TRUE){
-    grid = c(grid, max)
-  }
-  return(grid)
-}
-
 sample_post_computations = function(N, Y, p, mu0, lambda0){
   #' This represents section 3.2 of the paper.
   #' @param N represents the Monte Carlo sample size.
@@ -455,15 +452,17 @@ sample_post_computations = function(N, Y, p, mu0, lambda0){
     In = matrix(t(rep(1, n))) # identity column
     Ybar_t = matrix(Ybar, nrow=1, ncol = p) # transpose
     
-    S = (1/(n-1)) * t(Y - In%*%rowMeans(t(Y))) %*% (Y - In%*%rowMeans(t(Y))) 
+    S = t(Y - In%*%rowMeans(t(Y))) %*% (Y - In%*%rowMeans(t(Y))) 
   } else {
     return("Error: no data given.")
   }
   
-  lambda0 = rep(max(lambda0), p)
+  lambda0 = rep(max(lambda0), p) # this dDOESN'T need to be a vector!!
+  # test out when it isn't a vector.
   
   # instead of using solve, may need to move to an alt version (see helper functions)
   Sigma_Y = find_inverse_alt((S + n/(1 + n * lambda0^2) * (rowMeans(t(Y)) - mu0) %*% t(rowMeans(t(Y)) - mu0)))
+  # see theorem 4!!
   mu_Y = ((n + 1/lambda0^2)^-1) * (mu0/lambda0^2 + n * rowMeans(t(Y)))
   mu_Sigma = ((n + 1/lambda0^2)^-1) * find_inverse_alt(Sigma_Y)
   
