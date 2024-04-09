@@ -3,12 +3,10 @@
 #install.packages("MASS")
 #install.packages("pracma")
 #install.packages("dplyr")
-#install.packages("reticulate")
-library(latex2exp) # for Latex within graphs
-library(MASS) # for some operations
-library(pracma) # for smth
-library(dplyr) # for data cleaning
-library(reticulate) # i forgot - will check
+library(latex2exp) # for LaTeXing in the graphs
+library(MASS) # Used for mvrnorm (generating from a multinormal dist)
+library(pracma) # Used for trapz (computing area of histogram)
+library(dplyr) # Used for between
 
 ##################################################
 # Inputs                                         #
@@ -17,7 +15,7 @@ library(reticulate) # i forgot - will check
 # Mandatory manual inputs
 p = 5
 gamma = 0.99
-N = 10000 # monte carlo sample size
+N = 100000 # monte carlo sample size
 m = 30 # number of sub-intervals (oddly consistent all around)
 
 # Manual input (data version) #####
@@ -42,10 +40,11 @@ colnames(Y_data) = c("Y1", "Y2", "Y3", "Y4", "Y5")
 
 Y_data = as.matrix(Y_data)
 
-############################################
-# FUNCTIONS FOR THE PRIOR                  #
-############################################
+##################################################
+# PART 1: ELICITATION FOR THE PRIOR              #
+##################################################
 
+# Functions ######################################
 elicit_prior_sigma_function = function(p, gamma, s1, s2, upper_bd, lower_bd){
   #' This represents section 2.1 of the paper.
   #' @param p represents the number of dimensions.
@@ -103,6 +102,30 @@ elicit_prior_mu_function = function(p, gamma, m1, m2, s1, s2, alpha01, alpha02){
   return(newlist)
 }
 
+# Values #########################################
+prior_sigma_vals = elicit_prior_sigma_function(p, gamma, s1, s2, upper_bd, lower_bd)
+
+prior_sigma_vals
+
+alpha01 = prior_sigma_vals$alpha01
+alpha02 = prior_sigma_vals$alpha02
+
+z0 = prior_sigma_vals$z0 # this is the (1+gamma)/2 quantile of the standard normal dist.
+
+c1 = prior_sigma_vals$c1 # This is (z0/s1)^2
+c2 = prior_sigma_vals$c2 # This is (z0/s2)^2
+
+prior_mu_vals = elicit_prior_mu_function(p, gamma, m1, m2, s1, s2, alpha01, alpha02)
+
+lambda0 = prior_mu_vals$lambda0
+mu0 = prior_mu_vals$mu0
+
+##################################################
+# PART 2: SAMPLING FROM THE PRIOR                #
+##################################################
+
+# Functions ######################################
+
 vnorm = function(x, t){
   #' Computes the norm of the matrix x of type t.
   #' This is a helper function for the onion method.
@@ -144,7 +167,320 @@ onion = function(dimension){
   return(next_corr)
 }
 
-# technically part of the plotting/smoothing (move to a different section)
+sample_prior = function(N, p, alpha01, alpha02, mu0, lambda0){
+  #' This represents section 3.1 of the paper.
+  #' @param N represents the Monte Carlo sample size.
+  #' @param p represents the number of dimensions.
+  #' The other parameters match the descriptions in section 2.1.
+  
+  mu_mat = matrix(NA, nrow = N, ncol = p)
+  sigma_ii_mat = matrix(NA, nrow = N, ncol = p)
+  sigma_mat = vector("list", length = N)
+  covariance_mat = vector("list", length = N)
+  correlation_mat = vector("list", length = N)
+  
+  for(i in 1:N){
+    sigma_ii = 1/rgamma(p, alpha01, alpha02)
+    D = diag(sqrt(sigma_ii)) 
+    R = onion(p) # the correlation matrix
+    Lambda = diag(lambda0)
+    SIGMA = D %*% R %*% D
+    var_mat = Lambda %*% SIGMA %*% Lambda
+    
+    MU = mvrnorm(n = 1, mu = mu0, Sigma = var_mat)
+    
+    # Store results in preallocated matrices/lists
+    mu_mat[i,] = MU
+    sigma_ii_mat[i,] = sigma_ii
+    sigma_mat[[i]] = SIGMA
+    covariance_mat[[i]] = var_mat
+    correlation_mat[[i]] = R
+  }
+  
+  return(list("mu_matrix" = mu_mat, "sigma_ii" = sigma_ii_mat,
+              "sigma_matrix" = sigma_mat,
+              "covariance_matrix" = covariance_mat, 
+              "correlation_matrix" = correlation_mat))
+}
+
+# Values #########################################
+
+set.seed(1)
+
+sample_prior_vals = sample_prior(N, p, alpha01, alpha02, mu0, lambda0)
+
+sigma_ii = sample_prior_vals$sigma_ii
+
+##################################################
+# PART 3: INTEGRATING W.R.T THE POSTERIOR        #
+##################################################
+
+# Functions ######################################
+
+psi = function(mu, xi){
+  #' User should modify this. for now, we have a degenerate function
+  return(mu)
+}
+
+elicit_prior_effective_range = function(p, m = 200, alpha01, alpha02, mu0, lambda0, 
+                                        x_low, quantile_val = c(0.005, 0.995)){
+  #' Computes the effective range from the true prior.
+  #' @param p represents the number of dimensions.
+  #' @param m represents the number of desired sub-intervals for the effective range.
+  #' @param quantile_val represents a vector of size two where the first value denotes the 
+  #' smaller quantile, and the second denotes the larger quantile. 
+  #' @param x_low denotes the initation of where the search begins to find the effective range.
+  #' The other parameters match the descriptions in section 2.1.
+  #' @details 
+  #' This function assumes that m is consistent throughout each mu. 
+  desired_range = diff(quantile_val)
+  
+  x_range_list = vector("list", length = p)
+  y_range_list = vector("list", length = p)
+  delta_vector = numeric(p)
+  grid_list = vector("list", length = p)
+  
+  for(k in 1:p){
+    if (x_low < 0) {x = seq(x_low, -x_low, by = 0.02)}
+    else {x_low = seq(x_low, x_low*2, by = 0.02)}
+    y = dt(x,2*alpha01[k])
+    scale = sqrt(alpha02[k]/alpha01[k])*lambda0[k]
+    xnew = mu0[k] + scale*x
+    ynew = y/scale
+    # now computing the actual effective range
+    x_center = which.min(abs(xnew-(mu0[k])))
+    # computing the area underneath
+    i = 1
+    found_range = FALSE
+    while(found_range == FALSE){
+      x_low_range = x_center - i
+      x_high_range = x_center + i
+      x_area = xnew[x_low_range:x_high_range]
+      y_area = ynew[x_low_range:x_high_range]
+      area = trapz(x_area, y_area)
+      if(area >= desired_range){
+        found_range = TRUE
+        x_range = x_area
+        y_range = y_area
+      } else {
+        i = i + 1
+      }
+    }
+    
+    # creating new grid points based off of the effective range
+    delta = (x_range[length(x_range)] - x_range[1])/m # length of the sub intervals
+    x_grid = seq(x_range[1], x_range[length(x_range)], by = delta) # constructing the new grid
+    
+    x_range_list[[k]] = x_range
+    y_range_list[[k]] = y_range
+    delta_vector[k] = delta
+    grid_list[[k]] = x_grid
+  }
+  newlist = list("x_range" = x_range_list, "y_range" = y_range_list,
+                 "delta" = delta_vector, "grid" = grid_list)
+  return(newlist)
+}
+
+sample_sigma_ii = function(N, p, alpha01, alpha02){
+  #' Generates a sample of sigma_ii, without having the sample the entire prior.
+  #' @param N represents the Monte Carlo sample size.
+  #' @param p represents the number of dimensions.
+  #' #' The other parameters match the descriptions from the paper.
+  sigma_ii_matrix = 1/rgamma(N * p, alpha01, alpha02)
+  sigma_ii = matrix(sigma_ii_matrix, nrow = N, ncol = p, byrow = TRUE)
+  return(sigma_ii)
+}
+
+find_inverse_alt = function(matrix){
+  #' Helper functio that computes the inverse of a matrix using an 
+  #' alternative method that preserves positive-definiteness.
+  #' @param matrix represents the matrix that is being inputted. 
+  x = eigen(matrix, symmetric = TRUE, only.values=FALSE)
+  Q = x$vectors
+  V_inv = diag(1/x$values)
+  B = Q%*%sqrt(V_inv)
+  inverse_matrix = B%*%t(B)
+  return(inverse_matrix)
+}
+
+sample_post_computations = function(N, Y, p, mu0, lambda0){
+  #' This represents section 3.2 of the paper, theorem 4.
+  #' @param N represents the Monte Carlo sample size.
+  #' @param Y represents the observed sample.
+  #' @param p represents the number of dimensions.
+  #' The other parameters match the descriptions in section 3.2.
+  
+  if((p != length(mu0)) & (p != length(lambda0))){
+    return("Error: the vector for mu0 and lambda0 are of a different size.")
+  }
+  
+  if(is.numeric(Y) == TRUE){
+    n = nrow(Y)
+    if(n < (2*p)){
+      return("Error: the value of n (size of Y) is too small.")
+    }
+    Yprime = t(Y)
+    Ybar = rowMeans(Yprime) # rowMeans(t(Y))
+    In = matrix(t(rep(1, n))) # identity column
+    Ybar_t = matrix(Ybar, nrow=1, ncol = p) # transpose
+    
+    S = t(Y - In%*%rowMeans(t(Y))) %*% (Y - In%*%rowMeans(t(Y))) 
+  } else {
+    return("Error: no data given.")
+  }
+  
+  lambda0 = max(lambda0)
+  
+  Sigma_Y = find_inverse_alt((S + n/(1 + n * lambda0^2) * (rowMeans(t(Y)) - mu0) %*% t(rowMeans(t(Y)) - mu0)))
+  mu_Y = ((n + 1/lambda0^2)^-1) * (mu0/lambda0^2 + n * rowMeans(t(Y)))
+  xi = rWishart(n = N, df = (n - p - 1), Sigma = Sigma_Y) # See Eq 13
+  
+  mu_xi = matrix(NA, nrow = N, ncol = p)
+  for(k in 1:N){
+    mu_Sigma = ((n + 1/lambda0^2)^-1) * find_inverse_alt(xi[,,k])
+    mu_xi[k,] = mvrnorm(n = 1, mu = mu_Y, Sigma = mu_Sigma) # See Eq 13 (mu conditional on xi)
+  }
+  
+  return(list("xi" = xi, "mu_xi" = mu_xi))
+}
+
+k = function(p, mu, xi, mu0, lambda0, sigma_ii, alpha01, alpha02){
+  #' This represents the k function explained in theorem 3.
+  #' @param p represents the number of dimensions.
+  #' The other parameters match the descriptions in the paper.
+  lambda02 = (max(lambda0))**2
+  Lambda0 = diag(lambda0)
+  inv_Lambda0 = find_inverse_alt(Lambda0)
+  logk = -(1/2) * t(mu - mu0) %*% (inv_Lambda0 %*% xi %*% inv_Lambda0 - (1/lambda02)*xi) %*% (mu - mu0)
+  x2 = 1
+  for(i in 1:p){
+    x2 = x2 * (1/sigma_ii[i])^(alpha01[i] + (p+1)/2) * exp(-alpha02[i]/sigma_ii[i])
+  }
+  return(exp(logk)*x2)
+}
+
+weights = function(N, p, mu, xi, mu0, lambda0, sigma_ii, alpha01, alpha02){
+  #' Computes the weights given for the posterior content.
+  #' @param N represents the Monte Carlo sample size.
+  #' @param p represents the number of dimensions.
+  #' The other parameters match the descriptions in the paper.
+  k_vector = numeric(N)
+  for(i in 1:N){
+    k_vector[i] = k(p, mu[i,], xi[,,i], mu0, lambda0, sigma_ii[i,], alpha01, alpha02)
+  }
+  weights_vector = k_vector / sum(k_vector)
+  return(weights_vector)
+}
+
+posterior_content = function(N, p, effective_range, mu, xi, weights) {
+  #' Computes the posterior content.
+  #' @param N represents the Monte Carlo sample size.
+  #' @param p represents the number of dimensions.
+  #' @param effective_range denotes a list of grid points where the density
+  #'        is highly concentrated (this is computed from the sampling of the  prior).'
+  #' @param weights denote the weights given, calculated from the psi.
+  #'        The other parameters match the descriptions in the paper.
+  psi_val = psi(mu, xi)
+  post_content_matrix = matrix(0, nrow = length(effective_range[[1]]) - 1, ncol = p)
+  post_density_matrix = matrix(0, nrow = length(effective_range[[1]]) - 1, ncol = p)
+  
+  for (k in 1:p) {
+    grid = effective_range[[k]]
+    delta = diff(grid)[1]
+    post_content_vec = numeric(length(grid) - 1)
+    
+    for (i in 1:(length(grid) - 1)) {
+      when_true <- psi_val[, k] >= grid[i] & psi_val[, k] < grid[i + 1]
+      post_content_vec[i] = sum(weights[when_true])
+    }
+    
+    post_density = post_content_vec / delta
+    post_content_matrix[, k] = post_content_vec
+    post_density_matrix[, k] = post_density
+  }
+  
+  newlist <- list("post_content" = post_content_matrix,
+                  "post_density" = post_density_matrix)
+  return(newlist)
+}
+
+true_prior_comparison = function(p, alpha01, alpha02, mu0, lambda0, grid) {
+  #' Given a grid of values (typically where the posterior density is allegedly 
+  #' concentrated), computes the true prior density.
+  #' This is used for graph building and computing the relative belief ratio.
+  #' @param p represents the number of dimensions.
+  #' @param grid represents a list of the grid of values where the posterior is based off of.
+  #' The other parameters match the descriptions from the paper.
+  prior_matrix = matrix(0, nrow = length(grid[[1]]) - 1, ncol = p)
+  midpt_grid_matrix = matrix(0, nrow = length(grid[[1]]) - 1, ncol = p)
+  
+  for (i in 1:p) {
+    midpt_grid = grid[[i]][-length(grid[[i]])] + diff(grid[[i]]) / 2
+    scale = sqrt(alpha02[i] / alpha01[i]) * lambda0[i]
+    reg_x = (midpt_grid - mu0[i]) / scale
+    y = dt(reg_x, 2 * alpha01[i]) / scale
+    
+    prior_matrix[, i] = y
+    midpt_grid_matrix[, i] = midpt_grid
+  }
+  
+  newlist = list("prior_matrix" = prior_matrix,
+                 "midpoint_grid_matrix" = midpt_grid_matrix)
+  return(newlist)
+}
+
+relative_belief_ratio = function(p, prior_content, post_content) {
+  #' Computes the relative belief ratio.
+  #' @param p represents the number of dimensions.
+  #' @param prior_content denotes the vector containing the prior.
+  #' @param post_content denotes the vector containing the posterior.
+  
+  rbr_vector = post_content / prior_content
+  rbr_vector_mod = ifelse(is.na(rbr_vector), 0, rbr_vector)
+  
+  newlist = list("RBR" = rbr_vector, "RBR_modified" = rbr_vector_mod)
+  return(newlist)
+}
+
+# Values #########################################
+
+post_vals = sample_post_computations(N, Y = Y_data, p, mu0, lambda0)
+
+post_xi = post_vals$xi
+post_mu = post_vals$mu
+
+sigma_ii = sample_sigma_ii(N = N, p = p, alpha01 = alpha01, alpha02 = alpha01)
+
+test_weights = weights(N = N, p = p, 
+                       mu = post_mu, xi = post_xi, 
+                       mu0 = mu0, lambda0 = lambda0, 
+                       sigma_ii = sigma_ii, alpha01 = alpha01, alpha02 = alpha02)
+
+TRU_eff_ran = elicit_prior_effective_range(p, m = m, alpha01, alpha02, mu0, lambda0, 
+                                           x_low = -10, quantile_val = c(0.005, 0.995))
+
+post_content_vals = posterior_content(N, p, 
+                                      effective_range = TRU_eff_ran$grid, #eff_ran$grid,
+                                      post_mu, 
+                                      post_xi, 
+                                      test_weights)
+
+test_tru_prior = true_prior_comparison(p, alpha01, alpha02, mu0, lambda0, 
+                                       grid = TRU_eff_ran$grid)
+
+rbr_vals = relative_belief_ratio(p, 
+                                 prior_content = test_tru_prior$prior_matrix, 
+                                 post_content = post_content_vals$post_content)
+
+##################################################
+# PART 4: PLOTTING                               #
+##################################################
+
+column_number = 1 # pick a value from 1 to p
+
+eff_range_min = TRU_eff_ran$grid[[column_number]][1] #eff_ran$x_range[,column_number][1]
+eff_range_max = TRU_eff_ran$grid[[column_number]][length(TRU_eff_ran$grid[[column_number]])]#eff_ran$x_range[,column_number][2]
+
 average_vector_values = function(vector, num_average_pts = 3) {
   #' Generates a new vector by averaging the values of a given vector based on the proximity 
   #' of each element to its neighbors.
@@ -169,120 +505,6 @@ average_vector_values = function(vector, num_average_pts = 3) {
   return(new_vector)
 }
 
-# this is for the sample
-psi = function(mu, xi){
-  #' User should modify this. for now, we have a degenerate function
-  return(mu)
-}
-
-sample_sigma_ii = function(N, p, alpha01, alpha02){
-  #' Generates a sample of sigma_ii, without having the sample the entire prior.
-  #' @param N represents the Monte Carlo sample size.
-  #' @param p represents the number of dimensions.
-  #' #' The other parameters match the descriptions from the paper.
-  sigma_ii_matrix = 1/rgamma(N * p, alpha01, alpha02)
-  sigma_ii = matrix(sigma_ii_matrix, nrow = N, ncol = p, byrow = TRUE)
-  return(sigma_ii)
-}
-
-sample_prior = function(N, p, alpha01, alpha02, mu0, lambda0){
-  #' This represents section 3.1 of the paper.
-  #' @param N represents the Monte Carlo sample size.
-  #' @param p represents the number of dimensions.
-  #' The other parameters match the descriptions in section 2.1.
-  
-  mu_mat = matrix(NA, nrow = N, ncol = p)
-  sigma_ii_mat = matrix(NA, nrow = N, ncol = p)
-  sigma_mat = vector("list", length = N)
-  covariance_mat = vector("list", length = N)
-  correlation_mat = vector("list", length = N)
-  
-  for(i in 1:N){
-    sigma_ii = 1/rgamma(p, alpha01, alpha02)
-    D = diag(sqrt(sigma_ii)) # BIG MISTAKE HERE!!!!!!!!!!!!!
-    R = onion(p) # the correlation matrix
-    Lambda = diag(lambda0)
-    SIGMA = D %*% R %*% D
-    var_mat = Lambda %*% SIGMA %*% Lambda
-    
-    MU = mvrnorm(n = 1, mu = mu0, Sigma = var_mat)
-    
-    # Store results in preallocated matrices/lists
-    mu_mat[i,] = MU
-    sigma_ii_mat[i,] = sigma_ii
-    sigma_mat[[i]] = SIGMA
-    covariance_mat[[i]] = var_mat
-    correlation_mat[[i]] = R
-  }
-  
-  return(list("mu_matrix" = mu_mat, "sigma_ii" = sigma_ii_mat,
-              "sigma_matrix" = sigma_mat,
-              "covariance_matrix" = covariance_mat, 
-              "correlation_matrix" = correlation_mat))
-}
-
-true_prior_density = function(p, alpha01, alpha02, lambda0, mu0){
-  #' Plots the true prior.
-  #' @param p represents the number of dimensions.
-  x = seq(-10, 10, length.out = 1001)
-  x_vector = matrix(nrow = length(x), ncol = p)
-  y_vector = matrix(nrow = length(x), ncol = p)
-  for(i in 1:p){
-    y = dt(x,2*alpha01[i])
-    scale = sqrt(alpha02[i]/alpha01[i])*lambda0[i]
-    xnew = mu0[i] + scale*x
-    ynew = y/scale
-    
-    x_vector[, i] = xnew
-    y_vector[, i] = ynew
-  }
-  newlist = list("x_vector" = x_vector, "y_vector" = y_vector)
-  return(newlist)
-}
-
-# move to the plotting
-find_effective_range = function(p, m, x_vector_matrix, y_vector_matrix,
-                                quantile_val = c(0.005,0.995)){
-  #' Calculates the effective range.
-  #' @param p represents the number of dimensions.
-  #' @param m represents the number of desired sub-intervals for the effective range.
-  #' @param quantile_val represents the smaller quantile of interest for the effective range.
-  #' @details 
-  #' This function assumes that m is consistent throughout each mu. 
-  desired_range = diff(quantile_val)
-  
-  x_range_matrix = matrix(nrow = 2, ncol = p)
-  y_range_matrix = matrix(nrow = 2, ncol = p)
-  delta_vector = numeric(p)
-  grid_matrix = list()
-  
-  for(k in 1:p){
-    x_vector = x_vector_matrix[,k]
-    y_vector = y_vector_matrix[,k]
-    
-    area_cum = cumsum(y_vector)
-    total_area = compute_area(x_vector, y_vector)
-    
-    lower_index = max(which(area_cum / total_area <= quantile_val[1]))
-    upper_index = min(which(area_cum / total_area >= quantile_val[2]))
-    
-    x_range = x_vector[c(lower_index, upper_index)]
-    y_range = y_vector[c(lower_index, upper_index)]
-    
-    delta = diff(x_range) / m
-    x_grid = seq(x_range[1], x_range[2], by = delta)
-    
-    x_range_matrix[, k] = x_range
-    y_range_matrix[, k] = y_range
-    delta_vector[k] = delta
-    grid_matrix[[k]] = x_grid
-  }
-  
-  newlist = list("x_range" = x_range_matrix, "y_range" = y_range_matrix,
-                 "delta" = delta_vector, "grid" = grid_matrix)
-  return(newlist)
-}
-# move to plotting
 content_density_plot = function(density, col_num, grid, type = "Prior",
                                 min_xlim = -10, max_xlim = 10,
                                 smooth_num = 1, colour_choice = "blue",
@@ -315,254 +537,6 @@ content_density_plot = function(density, col_num, grid, type = "Prior",
   polygon(grid[, col_num], density_vals, col = area_col, border = NA)
 }
 
-# move to plotting
-elicit_prior_effective_range = function(p, m = 200, alpha01, alpha02, mu0, x_low,
-                                        quantile_val = c(0.005, 0.995)){
-  #' Computes the effective range from the true prior.
-  #' @param p represents the number of dimensions.
-  #' @param m represents the number of desired sub-intervals for the effective range.
-  #' @param quantile_val represents a vector of size two where the first value denotes the 
-  #' smaller quantile, and the second denotes the larger quantile. 
-  #' @param x_low denotes the initation of where the search begins to find the effective range.
-  #' The other parameters match the descriptions in section 2.1.
-  #' @details 
-  #' This function assumes that m is consistent throughout each mu. 
-  desired_range = quantile_val[2] - quantile_val[1]
-  
-  x_range_list = list()
-  y_range_list = list()
-  delta_vector = c()
-  grid_list = list()
-  
-  for(k in 1:p){
-    if (x_low < 0) {x = seq(x_low, -x_low, by = 0.02)}
-    else {x_low = seq(x_low, x_low*2, by = 0.02)}
-    y = dt(x,2*alpha01[k])
-    scale = sqrt(alpha02[k]/alpha01[k])*lambda0[k]
-    xnew = mu0[k] + scale*x
-    ynew = y/scale
-    # now computing the actual effective range
-    x_center = which.min(abs(xnew-(mu0[k])))
-    # computing the area underneath
-    i = 1
-    found_range = FALSE
-    while(found_range == FALSE){
-      x_low_range = x_center - i
-      x_high_range = x_center + i
-      x_area = xnew[x_low_range:x_high_range]
-      y_area = ynew[x_low_range:x_high_range]
-      area = trapz(x_area, y_area)
-      #print(area)
-      #print(c(x_low_range,x_high_range))
-      if(area >= desired_range){
-        found_range = TRUE
-        x_range = x_area
-        y_range = y_area
-      } else {
-        i = i + 1
-      }
-    }
-    
-    # creating new grid points based off of the effective range
-    delta = (x_range[length(x_range)] - x_range[1])/m # length of the sub intervals
-    x_grid = seq(x_range[1], x_range[length(x_range)], by = delta) # constructing the new grid
-    
-    x_range_list[[k]] = x_range
-    y_range_list[[k]] = y_range
-    delta_vector = c(delta_vector, delta)
-    grid_list[[k]] = x_grid
-  }
-  newlist = list("x_range" = x_range_list, "y_range" = y_range_list,
-                 "delta" = delta_vector, "grid" = grid_list)
-  return(newlist)
-}
-
-##################################################
-# ELICITATION FOR THE PRIOR (VALUES)             #
-##################################################
-
-prior_sigma_vals = elicit_prior_sigma_function(p, gamma, s1, s2, upper_bd, lower_bd)
-
-prior_sigma_vals
-
-alpha01 = prior_sigma_vals$alpha01
-alpha02 = prior_sigma_vals$alpha02
-
-z0 = prior_sigma_vals$z0 # this is the (1+gamma)/2 quantile of the standard normal dist.
-
-c1 = prior_sigma_vals$c1 # This is (z0/s1)^2
-c2 = prior_sigma_vals$c2 # This is (z0/s2)^2
-
-prior_mu_vals = elicit_prior_mu_function(p, gamma, m1, m2, s1, s2, alpha01, alpha02)
-
-lambda0 = prior_mu_vals$lambda0
-mu0 = prior_mu_vals$mu0
-
-TRU_eff_ran = elicit_prior_effective_range(p, m = m, alpha01, alpha02, mu0, x_low = -10,
-                                           quantile_val = c(0.005, 0.995))
-
-############################################
-# SAMPLING THE PRIOR                       #
-############################################
-# Note: this section is optional.
-set.seed(1)
-sample_prior_vals = sample_prior(N, p, alpha01, alpha02, mu0, lambda0)
-sigma_ii = sample_prior_vals$sigma_ii
-test_tru_prior_vals = true_prior_density(p, alpha01, alpha02, lambda0, mu0)
-
-############################################
-# FUNCTIONS FOR THE POSTERIOR              #
-############################################
-
-find_inverse_alt = function(matrix){
-  #' Computes the inverse of a matrix using an alternative method that 
-  #' preserves positive-definiteness.
-  #' @param matrix represents the matrix that is being inputted. 
-  x = eigen(matrix, symmetric = TRUE, only.values=FALSE)
-  Q = x$vectors
-  V_inv = diag(1/x$values)
-  B = Q%*%sqrt(V_inv)
-  inverse_matrix = B%*%t(B)
-  return(inverse_matrix)
-}
-
-sample_post_computations = function(N, Y, p, mu0, lambda0){
-  #' This represents section 3.2 of the paper.
-  #' @param N represents the Monte Carlo sample size.
-  #' @param Y represents the observed sample.
-  #' @param p represents the number of dimensions.
-  #' The other parameters match the descriptions in section 3.2.
-  
-  if((p != length(mu0)) & (p != length(lambda0))){
-    return("Error: the vector for mu0 and lambda0 are of a different size.")
-  }
-  
-  if(is.numeric(Y) == TRUE){
-    n = nrow(Y)
-    if(n < (2*p)){
-      return("Error: the value of n (size of Y) is too small.")
-    }
-    Yprime = t(Y)
-    Ybar = rowMeans(Yprime) # rowMeans(t(Y))
-    In = matrix(t(rep(1, n))) # identity column
-    Ybar_t = matrix(Ybar, nrow=1, ncol = p) # transpose
-    
-    S = t(Y - In%*%rowMeans(t(Y))) %*% (Y - In%*%rowMeans(t(Y))) 
-  } else {
-    return("Error: no data given.")
-  }
-  
-  lambda0 = rep(max(lambda0), p) # this dDOESN'T need to be a vector!!
-  # test out when it isn't a vector.
-  
-  # instead of using solve, may need to move to an alt version (see helper functions)
-  Sigma_Y = find_inverse_alt((S + n/(1 + n * lambda0^2) * (rowMeans(t(Y)) - mu0) %*% t(rowMeans(t(Y)) - mu0)))
-  # see theorem 4!!
-  mu_Y = ((n + 1/lambda0^2)^-1) * (mu0/lambda0^2 + n * rowMeans(t(Y)))
-  mu_Sigma = ((n + 1/lambda0^2)^-1) * find_inverse_alt(Sigma_Y)
-  
-  xi = rWishart(n = N, df = (n - p - 1), Sigma = Sigma_Y)
-  mu_xi = mvrnorm(n = N, mu = mu_Y, Sigma = mu_Sigma)
-  
-  return(list("xi" = xi, "mu_xi" = mu_xi))
-}
-
-k = function(p, mu, xi, mu0, lambda0, sigma_ii, alpha01, alpha02){
-  #' This represents the k function explained in theorem 2.
-  #' @param p represents the number of dimensions.
-  #' The other parameters match the descriptions in the paper.
-  lambda02=(max(lambda0))**2
-  Lambda0 = diag(lambda0)
-  inv_Lambda0 = find_inverse_alt(Lambda0)
-  logk = -(1/2) * t(mu - mu0) %*% (inv_Lambda0 %*% xi %*% inv_Lambda0 - (1/lambda02)*xi) %*% (mu - mu0)
-  x2 = 1
-  for(i in 1:p){
-    x2 = x2 * (1/sigma_ii[i])^(alpha01[i] + (p+1)/2) * exp(-alpha02[i]/sigma_ii[i])
-  }
-  return(exp(logk)*x2)
-}
-
-weights = function(N, p, mu, xi, mu0, lambda0, sigma_ii, alpha01, alpha02){
-  #' Computes the weights given for the posterior content.
-  #' @param N represents the Monte Carlo sample size.
-  #' @param p represents the number of dimensions.
-  #' The other parameters match the descriptions in the paper.
-  k_vector = numeric(N)
-  for(i in 1:N){
-    k_vector[i] = k(p, mu[i,], xi[,,i], mu0, lambda0, sigma_ii[i,], alpha01, alpha02)
-  }
-  weights_vector = k_vector / sum(k_vector)
-  return(weights_vector)
-}
-
-posterior_content = function(N, p, effective_range, mu, xi, weights){
-  #' Computes the posterior content.
-  #' @param N represents the Monte Carlo sample size.
-  #' @param p represents the number of dimensions.
-  #' @param effective_range denotes a list of grid points where the density
-  #'        is highly concentrated (this is computed from the sampling of the prior).
-  #' @param weights denote the weights given, calculated from the psi.
-  #'        The other parameters match the descriptions in the paper.
-  psi_val = psi(mu, xi) # note: the user will need to manually change this
-  post_content_matrix = c()
-  post_density_matrix = c()
-  
-  for(k in 1:p){ # for each colum...
-    grid = effective_range[[k]]
-    delta = diff(effective_range[[k]])[1]
-    post_content_vec = c() 
-    for(i in 1:(length(grid) - 1)){ # for each grid point...
-      when_true = between(psi_val[,k], grid[i], grid[i + 1])
-      post_content = sum(weights[when_true])
-      post_content_vec = c(post_content_vec, post_content)
-    }
-    post_density = post_content_vec / delta
-    post_content_matrix = cbind(post_content_matrix, post_content_vec)
-    post_density_matrix = cbind(post_density_matrix, post_density)
-  }
-  newlist = list("post_content" = post_content_matrix,
-                 "post_density" = post_density_matrix)
-  return(newlist)
-}
-
-true_prior_comparison = function(p, alpha01, alpha02, mu0, lambda0, grid){
-  #' Given a grid of values (typically where the posterior density is allegedly 
-  #' concentrated), computes the true prior density.
-  #' This is used for graph building and computing the relative belief ratio.
-  #' @param p represents the number of dimensions.
-  #' @param grid represents a list of the grid of values where the posterior is based off of.
-  #' The other parameters match the descriptions from the paper.
-  prior_matrix = c()
-  midpt_grid_matrix = c()
-  for(i in 1:p){
-    midpt_grid = grid[[i]][-length(grid[[i]])] + diff(grid[[i]])/2
-    
-    scale = sqrt(alpha02[i]/alpha01[i])*lambda0[i]
-    reg_x = (midpt_grid - mu0[i])/scale
-    y = dt(reg_x,2*alpha01[i])/scale
-    
-    prior_matrix = cbind(prior_matrix, y)
-    midpt_grid_matrix = cbind(midpt_grid_matrix, midpt_grid)
-  }
-  newlist = list("prior_matrix" = prior_matrix,
-                 "midpoint_grid_matrix" = midpt_grid_matrix)
-  return(newlist)
-}
-
-relative_belief_ratio = function(p, prior_content, post_content) {
-  #' Computes the relative belief ratio.
-  #' @param p represents the number of dimensions.
-  #' @param prior_content denotes the vector containing the prior.
-  #' @param post_content denotes the vector containing the posterior.
-  
-  rbr_vector = post_content / prior_content
-  rbr_vector_mod = ifelse(is.na(rbr_vector), 0, rbr_vector)
-  
-  newlist = list("RBR" = rbr_vector, "RBR_modified" = rbr_vector_mod)
-  return(newlist)
-}
-
-# changed below.
 comparison_content_density_plot = function(prior_density, post_density, col_num, 
                                            prior_grid, post_grid,
                                            min_xlim = -10, max_xlim = 10,
@@ -616,88 +590,9 @@ comparison_content_density_plot = function(prior_density, post_density, col_num,
          col= colour_choice, lty=lty_type, cex=0.8)
 }
 
-##################################################
-# ELICITATION FOR THE POSTERIOR (VALUES)         #
-##################################################
 
-post_vals = sample_post_computations(N, Y = Y_data, p, mu0, lambda0)
-
-post_xi = post_vals$xi
-post_mu = post_vals$mu
-
-sigma_ii = sample_sigma_ii(N = N, p = p, alpha01 = alpha01, alpha02 = alpha01)
-
-test_weights = weights(N = N, p = p, 
-                       mu = post_mu, xi = post_xi, 
-                       mu0 = mu0, lambda0 = lambda0, 
-                       sigma_ii = sigma_ii, alpha01 = alpha01, alpha02 = alpha02)
-
-
-sample_post_reformat = function(N, p, post_mu, post_xi, weights){
-  #' Reformats the data for the user to download.
-  #' @param N represents the Monte Carlo sample size.
-  #' @param p represents the number of dimensions.
-  #' @param post_mu represents the mu from integrating w.r.t. the posterior.
-  #' @param post_xi represents the xi from integrating w.r.t. the posterior.
-  #' @param weights represents the weights calculated from post_mu and post_xi.
-
-  mu_title = paste("Mu_", 1:p, sep = "")
-  weights_title = "Weights"
-  
-  xi_title = character(p*(p+1)/2)  # Preallocate memory for the vector
-  k = 1
-  for(i in 1:p){
-    for(j in i:p){
-      xi_title[k] = paste("Xi_", i, j, sep = "")
-      k = k + 1
-    }
-  }
-  xi_matrix = matrix(NA, nrow = N, ncol = length(xi_title))
-  for(i in 1:N){ 
-    indices = which(upper.tri(post_xi[,,i], diag=TRUE), arr.ind=TRUE)
-    new_row = post_xi[,,i][indices[order(indices[,1]),]]
-    xi_matrix[i,] = as.vector(new_row)
-  }
-  
-  weights_data = as.data.frame(weights)
-  mu_data = as.data.frame(post_mu)
-  xi_matrix = as.data.frame(xi_matrix)
-  
-  names(weights_data) = weights_title
-  names(mu_data) = mu_title
-  names(xi_matrix) = xi_title
-  
-  result = cbind(weights_data, mu_data, xi_matrix)
-  rownames(result) = 1:N
-  
-  return(result)
-}
-
-# This part of the code is optional; it's to make the table given to the user, but
-# isn't used elsewhere. I've commented it out for now as it actually does take
-# quite a bit of time to reformat the data, hence the long times for the site.
-#test_test = sample_post_reformat(N = N, p = p, post_mu = post_mu, 
-#                                 post_xi = post_xi, weights = test_weights)
-
-post_content_vals = posterior_content(N, p, 
-                                      effective_range = TRU_eff_ran$grid, #eff_ran$grid,
-                                      post_mu, 
-                                      post_xi, 
-                                      test_weights)
-
-test_tru_prior = true_prior_comparison(p, alpha01, alpha02, mu0, lambda0, 
-                                       grid = TRU_eff_ran$grid)
-                                       #grid = eff_ran$grid)
 
 par(mfrow = c(1, 2))
-
-column_number = 1
-
-eff_range_min = TRU_eff_ran$grid[[column_number]][1] #eff_ran$x_range[,column_number][1]
-eff_range_max = TRU_eff_ran$grid[[column_number]][length(TRU_eff_ran$grid[[column_number]])]#eff_ran$x_range[,column_number][2]
-
-#eff_range_min
-#eff_range_max
 
 comparison_content_density_plot(prior_density = test_tru_prior$prior_matrix, 
                                 post_density = post_content_vals$post_density, 
@@ -709,12 +604,6 @@ comparison_content_density_plot(prior_density = test_tru_prior$prior_matrix,
                                 smooth_num = c(1,3), colour_choice = c("red", "blue"),
                                 lty_type = c(2, 2), transparency = 0)
 
-rbr_vals = relative_belief_ratio(p, 
-                                 prior_content = test_tru_prior$prior_matrix, 
-                                 post_content = post_content_vals$post_content)
-
-
-# the relative belief ratio
 content_density_plot(density = rbr_vals$RBR_modified, 
                      col_num = column_number, 
                      grid = test_tru_prior$midpoint_grid_matrix, 
@@ -724,59 +613,3 @@ content_density_plot(density = rbr_vals$RBR_modified,
                      smooth_num = 3, colour_choice = "green",
                      lty_type = 2, transparency = 0)
 
-
-#################################################################
-# this is the modified version for when the user denotes a specific range!
-# Graphs look AWFUL by the way.
-
-manual_grid = seq(from = -3, to = -1.5, length.out = m+1)
-post_manual_grid = vector("list", p)
-post_manual_grid[] = list(manual_grid)
-
-post_content_vals_mod = posterior_content(N, p, 
-                                          effective_range = post_manual_grid,
-                                          post_mu, 
-                                          post_xi, 
-                                          test_weights)
-
-test_tru_prior_mod = true_prior_comparison(p, alpha01, alpha02, mu0, lambda0, 
-                                       grid = post_manual_grid)
-
-rbr_vals_mod = relative_belief_ratio(p, 
-                                 prior_content = test_tru_prior_mod$prior_matrix, 
-                                 post_content = post_content_vals_mod$post_content)
-
-par(mfrow = c(1, 2))
-
-column_number = 1
-
-eff_range_min = -3
-eff_range_max = -1.5
-
-#eff_range_min
-#eff_range_max
-
-comparison_content_density_plot(prior_density = test_tru_prior_mod$prior_matrix, 
-                                post_density = post_content_vals_mod$post_density, 
-                                col_num = column_number, 
-                                prior_grid = test_tru_prior_mod$midpoint_grid_matrix,
-                                post_grid = test_tru_prior_mod$midpoint_grid_matrix,
-                                min_xlim = eff_range_min, 
-                                max_xlim = eff_range_max,
-                                smooth_num = c(1,3), colour_choice = c("red", "blue"),
-                                lty_type = c(2, 2), transparency = 0)
-
-rbr_vals = relative_belief_ratio(p, 
-                                 prior_content = test_tru_prior$prior_matrix, 
-                                 post_content = post_content_vals$post_content)
-
-
-# the relative belief ratio
-content_density_plot(density = rbr_vals_mod$RBR_modified, 
-                     col_num = column_number, 
-                     grid = test_tru_prior_mod$midpoint_grid_matrix, 
-                     type = "RBR",
-                     min_xlim = eff_range_min, 
-                     max_xlim = eff_range_max,
-                     smooth_num = 3, colour_choice = "green",
-                     lty_type = 2, transparency = 0)

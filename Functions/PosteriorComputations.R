@@ -2,27 +2,30 @@
 # MAIN FUNCTIONS                                               #
 ################################################################
 
-true_prior_comparison = function(p, alpha01, alpha02, mu0, lambda0, grid){
+true_prior_comparison = function(p, alpha01, alpha02, mu0, lambda0, grid) {
   #' Given a grid of values (typically where the posterior density is allegedly 
   #' concentrated), computes the true prior density.
   #' This is used for graph building and computing the relative belief ratio.
   #' @param p represents the number of dimensions.
   #' @param grid represents a list of the grid of values where the posterior is based off of.
   #' The other parameters match the descriptions from the paper.
-  prior_matrix = c()
-  midpt_grid_matrix = c()
-  for(i in 1:p){
-    midpt_grid = grid[[i]][-length(grid[[i]])] + diff(grid[[i]])/2
+  
+  prior_matrix = matrix(0, nrow = length(grid[[1]]) - 1, ncol = p)
+  midpt_grid_matrix = matrix(0, nrow = length(grid[[1]]) - 1, ncol = p)
+  
+  for (i in 1:p) {
+    midpt_grid = grid[[i]][-length(grid[[i]])] + diff(grid[[i]]) / 2
     
-    scale = sqrt(alpha02[i]/alpha01[i])*lambda0[i]
-    reg_x = (midpt_grid - mu0[i])/scale
-    y = dt(reg_x,2*alpha01[i])/scale
+    scale = sqrt(alpha02[i] / alpha01[i]) * lambda0[i]
+    reg_x = (midpt_grid - mu0[i]) / scale
+    y = dt(reg_x, 2 * alpha01[i]) / scale
     
-    prior_matrix = cbind(prior_matrix, y)
-    midpt_grid_matrix = cbind(midpt_grid_matrix, midpt_grid)
+    prior_matrix[, i] = y
+    midpt_grid_matrix[, i] = midpt_grid
   }
+  
   newlist = list("prior_matrix" = prior_matrix,
-                 "midpoint_grid_matrix" = midpt_grid_matrix)
+                  "midpoint_grid_matrix" = midpt_grid_matrix)
   return(newlist)
 }
 
@@ -37,12 +40,12 @@ sample_sigma_ii = function(N, p, alpha01, alpha02){
 }
 
 sample_post_computations = function(N, Y, p, mu0, lambda0){
-  #' This represents section 3.2 of the paper.
+  #' This represents section 3.2 of the paper, theorem 4.
   #' @param N represents the Monte Carlo sample size.
   #' @param Y represents the observed sample.
   #' @param p represents the number of dimensions.
   #' The other parameters match the descriptions in section 3.2.
-
+  
   if((p != length(mu0)) & (p != length(lambda0))){
     return("Error: the vector for mu0 and lambda0 are of a different size.")
   }
@@ -57,20 +60,22 @@ sample_post_computations = function(N, Y, p, mu0, lambda0){
     In = matrix(t(rep(1, n))) # identity column
     Ybar_t = matrix(Ybar, nrow=1, ncol = p) # transpose
     
-    S = (1/(n-1)) * t(Y - In%*%rowMeans(t(Y))) %*% (Y - In%*%rowMeans(t(Y))) 
+    S = t(Y - In%*%rowMeans(t(Y))) %*% (Y - In%*%rowMeans(t(Y))) 
   } else {
     return("Error: no data given.")
   }
   
-  lambda0 = rep(max(lambda0), p)
+  lambda0 = max(lambda0)
   
-  # instead of using solve, may need to move to an alt version (see helper functions)
   Sigma_Y = find_inverse_alt((S + n/(1 + n * lambda0^2) * (rowMeans(t(Y)) - mu0) %*% t(rowMeans(t(Y)) - mu0)))
   mu_Y = ((n + 1/lambda0^2)^-1) * (mu0/lambda0^2 + n * rowMeans(t(Y)))
-  mu_Sigma = ((n + 1/lambda0^2)^-1) * find_inverse_alt(Sigma_Y)
+  xi = rWishart(n = N, df = (n - p - 1), Sigma = Sigma_Y) # See Eq 13
   
-  xi = rWishart(n = N, df = (n - p - 1), Sigma = Sigma_Y)
-  mu_xi = mvrnorm(n = N, mu = mu_Y, Sigma = mu_Sigma)
+  mu_xi = matrix(NA, nrow = N, ncol = p)
+  for(k in 1:N){
+    mu_Sigma = ((n + 1/lambda0^2)^-1) * find_inverse_alt(xi[,,k])
+    mu_xi[k,] = mvrnorm(n = 1, mu = mu_Y, Sigma = mu_Sigma) # See Eq 13 (mu conditional on xi)
+  }
   
   return(list("xi" = xi, "mu_xi" = mu_xi))
 }
@@ -143,7 +148,7 @@ sample_post_reformat = function(N, p, post_mu, post_xi, weights){
   return(result)
 }
 
-posterior_content = function(N, p, effective_range, mu, xi, weights){
+posterior_content = function(N, p, effective_range, mu, xi, weights) {
   #' Computes the posterior content.
   #' @param N represents the Monte Carlo sample size.
   #' @param p represents the number of dimensions.
@@ -151,25 +156,28 @@ posterior_content = function(N, p, effective_range, mu, xi, weights){
   #'        is highly concentrated (this is computed from the sampling of the  prior).'
   #' @param weights denote the weights given, calculated from the psi.
   #'        The other parameters match the descriptions in the paper.
-  psi_val = psi(mu, xi) # note: the user will need to manually change this
-  post_content_matrix = c()
-  post_density_matrix = c()
   
-  for(k in 1:p){ # for each colum...
+  psi_val = psi(mu, xi)
+  post_content_matrix = matrix(0, nrow = length(effective_range[[1]]) - 1, ncol = p)
+  post_density_matrix = matrix(0, nrow = length(effective_range[[1]]) - 1, ncol = p)
+  
+  for (k in 1:p) {
     grid = effective_range[[k]]
-    delta = diff(effective_range[[k]])[1]
-    post_content_vec = c() 
-    for(i in 1:(length(grid) - 1)){ # for each grid point...
-      when_true = between(psi_val[,k], grid[i], grid[i + 1])
-      post_content = sum(weights[when_true])
-      post_content_vec = c(post_content_vec, post_content)
+    delta = diff(grid)[1]
+    post_content_vec = numeric(length(grid) - 1)
+    
+    for (i in 1:(length(grid) - 1)) {
+      when_true <- psi_val[, k] >= grid[i] & psi_val[, k] < grid[i + 1]
+      post_content_vec[i] = sum(weights[when_true])
     }
+    
     post_density = post_content_vec / delta
-    post_content_matrix = cbind(post_content_matrix, post_content_vec)
-    post_density_matrix = cbind(post_density_matrix, post_density)
+    post_content_matrix[, k] = post_content_vec
+    post_density_matrix[, k] = post_density
   }
-  newlist = list("post_content" = post_content_matrix,
-                 "post_density" = post_density_matrix)
+  
+  newlist <- list("post_content" = post_content_matrix,
+                  "post_density" = post_density_matrix)
   return(newlist)
 }
 

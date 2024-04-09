@@ -3,7 +3,8 @@
 ################################################################
 
 vnorm = function(x, t){
-  # Computes the norm of the matrix x of type t.
+  #' Computes the norm of the matrix x of type t.
+  #' This is a helper function for the onion method.
   norm(matrix(x, ncol=1), t)
 }
 
@@ -60,7 +61,7 @@ sample_prior = function(N, p, alpha01, alpha02, mu0, lambda0){
   
   for(i in 1:N){
     sigma_ii = 1/rgamma(p, alpha01, alpha02)
-    D = diag(sigma_ii^2)
+    D = diag(sqrt(sigma_ii))
     R = onion(p) # the correlation matrix
     Lambda = diag(lambda0)
     SIGMA = D %*% R %*% D

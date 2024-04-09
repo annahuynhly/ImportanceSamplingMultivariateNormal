@@ -17,8 +17,8 @@ elicit_prior_sigma_function = function(p, gamma, s1, s2, upper_bd, lower_bd){
   c1 = (z0/s1)**2
   c2 = (z0/s2)**2
   
-  alpha01 = numeric()
-  alpha02 = numeric()
+  alpha01 = numeric(p) 
+  alpha02 = numeric(p)
   
   for(j in 1:p){
     # iterate until prob content of s1<= sigma*z0 <= s2 is within eps of p 
@@ -70,12 +70,12 @@ elicit_prior_effective_range = function(p, m = 200, alpha01, alpha02, mu0, lambd
   #' The other parameters match the descriptions in section 2.1.
   #' @details 
   #' This function assumes that m is consistent throughout each mu. 
-  desired_range = quantile_val[2] - quantile_val[1]
+  desired_range = diff(quantile_val)
   
-  x_range_list = list()
-  y_range_list = list()
-  delta_vector = c()
-  grid_list = list()
+  x_range_list = vector("list", length = p)
+  y_range_list = vector("list", length = p)
+  delta_vector = numeric(p)
+  grid_list = vector("list", length = p)
   
   for(k in 1:p){
     if (x_low < 0) {x = seq(x_low, -x_low, by = 0.02)}
@@ -110,7 +110,7 @@ elicit_prior_effective_range = function(p, m = 200, alpha01, alpha02, mu0, lambd
     
     x_range_list[[k]] = x_range
     y_range_list[[k]] = y_range
-    delta_vector = c(delta_vector, delta)
+    delta_vector[k] = delta
     grid_list[[k]] = x_grid
   }
   newlist = list("x_range" = x_range_list, "y_range" = y_range_list,
