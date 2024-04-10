@@ -75,14 +75,14 @@ page_elicitsigma = div(
         condition = "input.prior_sigma_input_type == 'manual'",
         fluidRow(box(width = 12,
           splitLayout(
-            textInput(inputId = "elicit_s1", label = "Insert $s_{1i}, ..., s_{1p}$", 
+            textInput(inputId = "elicit_s1", label = "Insert $s_{11}, ..., s_{1p}$", 
                       value = "1,0.5,0.2,0.5,1"),
-            textInput(inputId = "elicit_s2", label = "Insert $s_{2i}, ..., s_{2p}$", 
+            textInput(inputId = "elicit_s2", label = "Insert $s_{21}, ..., s_{2p}$", 
                       value = "7,4,3,4,7"),
           )
         )),
         
-        p("Bounds for the iterative processes determining values for $\\alpha_{01i}, ..., \\alpha_{01p}$ and $\\alpha_{02i}, ..., \\alpha_{02p}$:"),
+        p("Bounds for the iterative processes determining values for $\\alpha_{011}, ..., \\alpha_{01p}$ and $\\alpha_{021}, ..., \\alpha_{02p}$:"),
         
         fluidRow(box(width = 12,
           splitLayout(

@@ -15,7 +15,7 @@ library(dplyr) # Used for between
 # Mandatory manual inputs
 p = 5
 gamma = 0.99
-N = 100000 # monte carlo sample size
+N = 10000 # monte carlo sample size (TODO: CHANGE BACK LATER...)
 m = 30 # number of sub-intervals (oddly consistent all around)
 
 # Manual input (data version) #####
@@ -340,7 +340,7 @@ k = function(N, p, mu, xi, mu0, lambda0, alpha01, alpha02){
   #' The other parameters match the descriptions in the paper.
   lambda02 = (max(lambda0))**2
   Lambda0 = diag(lambda0)
-  inv_L0 = diag(1/Lambda0)
+  inv_L0 = diag(1/lambda0)
   
   k_vector = numeric(N)
   for(i in 1:N){
@@ -348,7 +348,7 @@ k = function(N, p, mu, xi, mu0, lambda0, alpha01, alpha02){
     xi_i = xi[,,i]
     sigma_ii = diag(find_inverse_alt(xi_i)) # NEW
     logk = -(1/2) * t(mu_i - mu0) %*% (inv_L0 %*% xi_i %*% inv_L0 - (1/lambda02)*xi_i) %*% (mu_i - mu0)
-    logk2 = sum((1/sigma_ii)^(alpha01 + (p+1)/2) - (alpha02/sigma_ii))
+    logk2 = sum(-(alpha01 + (p+1)/2) * log(sigma_ii) - (alpha02/sigma_ii))
     k_vector[i] = exp(logk + logk2)
   }
   weights_vector = k_vector / sum(k_vector)
@@ -356,7 +356,7 @@ k = function(N, p, mu, xi, mu0, lambda0, alpha01, alpha02){
   return(newlist)
 }
 
-posterior_content = function(N, p, effective_range, mu, xi, weights) {
+posterior_content = function(N, p, effective_range, mu, xi, weights){
   #' Computes the posterior content.
   #' @param N represents the Monte Carlo sample size.
   #' @param p represents the number of dimensions.
@@ -433,21 +433,17 @@ post_vals = sample_post_computations(N, Y = Y_data, p, mu0, lambda0)
 post_xi = post_vals$xi
 post_mu = post_vals$mu
 
-sigma_ii = sample_sigma_ii(N = N, p = p, alpha01 = alpha01, alpha02 = alpha01)
-
-test_weights = weights(N = N, p = p, 
-                       mu = post_mu, xi = post_xi, 
-                       mu0 = mu0, lambda0 = lambda0, 
-                       sigma_ii = sigma_ii, alpha01 = alpha01, alpha02 = alpha02)
+k_weights = k(N = N, p = p, mu = post_mu, xi = post_xi, 
+              mu0 = mu0, lambda0 = lambda0, alpha01 = alpha01, alpha02 = alpha02)
 
 TRU_eff_ran = elicit_prior_effective_range(p, m = m, alpha01, alpha02, mu0, lambda0, 
                                            x_low = -10, quantile_val = c(0.005, 0.995))
 
-post_content_vals = posterior_content(N, p, 
+post_content_vals = posterior_content(N = n, p = p, 
                                       effective_range = TRU_eff_ran$grid, #eff_ran$grid,
-                                      post_mu, 
-                                      post_xi, 
-                                      test_weights)
+                                      mu = post_mu, 
+                                      xi = post_xi, 
+                                      weights = k_weights$weights_vector)
 
 test_tru_prior = true_prior_comparison(p, alpha01, alpha02, mu0, lambda0, 
                                        grid = TRU_eff_ran$grid)
