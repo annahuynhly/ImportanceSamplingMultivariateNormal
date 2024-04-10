@@ -9,7 +9,7 @@ sample_post_content_values = reactive({
                     effective_range = true_prior_effective_range()$grid, #sample_prior_effective_range()$grid, 
                     mu = post_sample_values()$mu_xi, 
                     xi = post_sample_values()$xi, 
-                    weights = post_sample_weights())
+                    weights = post_sample_weights()$weights_vector)
 }) 
 
 post_manual_grid = reactive({
@@ -33,7 +33,7 @@ sample_post_content_values_mod = reactive({
                     effective_range = post_manual_grid(),
                     mu = post_sample_values()$mu_xi, 
                     xi = post_sample_values()$xi, 
-                    weights = post_sample_weights())
+                    weights = post_sample_weights()$weights_vector)
 })
 
 #output$testing_post_graph = renderPrint({

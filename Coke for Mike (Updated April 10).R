@@ -15,7 +15,7 @@ library(dplyr) # Used for between
 # Mandatory manual inputs
 p = 5
 gamma = 0.99
-N = 10000 # monte carlo sample size (TODO: CHANGE BACK LATER...)
+N = 100000 # monte carlo sample size (TODO: CHANGE BACK LATER...)
 m = 30 # number of sub-intervals (oddly consistent all around)
 
 # Manual input (data version) #####
@@ -40,16 +40,46 @@ colnames(Y_data) = c("Y1", "Y2", "Y3", "Y4", "Y5")
 
 Y_data = as.matrix(Y_data)
 
+Y_metrics = function(Y, p){
+  #' Given the observed sample (Y) and the number of dimensions (p), 
+  #' computes Ybar (the row means of the observed sample) and S.
+  if(is.numeric(Y) == TRUE){
+    n = nrow(Y)
+    if(n < (2*p)){
+      return("Error: the value of n (size of Y) is too small.")
+    }
+    Yprime = t(Y)
+    Ybar = rowMeans(Yprime) # rowMeans(t(Y))
+    In = matrix(t(rep(1, n))) # identity column
+    Ybar_t = matrix(Ybar, nrow=1, ncol = p) # transpose
+    
+    S = t(Y - In%*%Ybar) %*% (Y - In%*%Ybar) 
+  } else {
+    return("Error: no proper data given.")
+  }
+  newlist = list("Ybar" = Ybar, "S" = S)
+  return(newlist)
+}
+
+Y_suff_stat = Y_metrics(Y = Y_data, p = p)
+
+S = Y_suff_stat$S
+Ybar = Y_suff_stat$Ybar
+
 ##################################################
 # PART 1: ELICITATION FOR THE PRIOR              #
 ##################################################
 
 # Functions ######################################
 elicit_prior_sigma_function = function(p, gamma, s1, s2, upper_bd, lower_bd){
-  #' This represents section 2.1 of the paper.
+  #' 1/sigma^2 ~ gamma(alpha01, alpha02). Here, we elicit the prior for sigma.
+  #' We must specify s1, s2 such that s1 <= sigma * z_{(1+gamma)/2} <= s2
+  #' Then the values alpha01, alpha02 must be solved for:
+  #' Gamma(alpha01, 1, alpha02 * z^{2}_{(1+p)/2}/s^{2}_{1}) = (1+gamma)/2
+  #' Gamma(alpha01, 1, alpha02 * z^{2}_{(1+p)/2}/s^{2}_{2}) = (1-gamma)/2
+  #' Using the bisection method.
   #' @param p represents the number of dimensions.
   #' @param gamma represents the virtual uncertainty.
-  #' The other parameters match the descriptions in section 2.1.
   vectors_of_interest = list(s1, s2, upper_bd, lower_bd)
   for(i in vectors_of_interest){
     if(length(i) != p){return("Error: there is a vector that doesn't have length p.")}
@@ -88,10 +118,10 @@ elicit_prior_sigma_function = function(p, gamma, s1, s2, upper_bd, lower_bd){
 }
 
 elicit_prior_mu_function = function(p, gamma, m1, m2, s1, s2, alpha01, alpha02){
-  #' This represents section 2.2 of the paper.
+  #' We elicit the prior for mu, which is given by:
+  #' mu ~ mu0 + sqrt(alpha02/alpha01) (lambda0) (t_{2*alpha01}) 
   #' @param p represents the number of dimensions.
   #' @param gamma represents the virtual uncertainty.
-  #' The other parameters match the descriptions in section 2.1.
   vectors_of_interest = list(m1, m2, s1, s2, alpha01, alpha02)
   for(i in vectors_of_interest){
     if(length(i) != p){ return("Error: there is a vector that doesn't have length p.") }
@@ -134,8 +164,8 @@ vnorm = function(x, t){
 }
 
 onion = function(dimension){
-  #' Generating using the onion method from the paper: 
-  #' On Bayesian Hotelling's T^{2} test for the mean
+  #' Generating using the onion method from the uniform distribution
+  #' on the set of all pxp correlation matrices.
   #' @param dimension denotes the number of dimensions of the matrix.
   d = dimension + 1
   prev_corr = matrix(1, 1, 1)
@@ -169,10 +199,13 @@ onion = function(dimension){
 }
 
 sample_prior = function(N, p, alpha01, alpha02, mu0, lambda0){
-  #' This represents section 3.1 of the paper.
+  #' This generates a sample of N from the prior on (mu, sigma).
+  #' 1/sigmaii ~ gamma(alpha01, alpha02)
+  #' R is a correlation matrix, R ~ uniform(pxp correlation matrices)
+  #' Sigma = diag(sigmaii^1/2) x R x diag(sigmaii^1/2)
+  #' mu|Sigma = multivariate_norm(mu0, diag(lambda0) x Sigma x diag(lambda0))
   #' @param N represents the Monte Carlo sample size.
   #' @param p represents the number of dimensions.
-  #' The other parameters match the descriptions in section 2.1.
   
   mu_mat = matrix(NA, nrow = N, ncol = p)
   sigma_ii_mat = matrix(NA, nrow = N, ncol = p)
@@ -221,6 +254,62 @@ psi = function(mu, xi){
   return(mu)
 }
 
+find_inverse_alt = function(matrix){
+  #' Helper function that computes the inverse of a matrix using an 
+  #' alternative method that preserves positive-definiteness.
+  #' @param matrix represents the matrix that is being inputted. 
+  x = eigen(matrix, symmetric = TRUE, only.values=FALSE)
+  Q = x$vectors
+  V_inv = diag(1/x$values)
+  B = Q%*%sqrt(V_inv)
+  inverse_matrix = B%*%t(B)
+  return(inverse_matrix)
+}
+
+sample_post_computations = function(N, Ybar, S, p, mu0, lambda0){
+  #' This generates a sample of N from the posterior on (mu, xi) from theorem 4 of the paper.
+  #' @param N represents the Monte Carlo sample size.
+  #' @param Y represents the row means of the observed sample.
+  #' @param S represents the covariance matrix of the observed sample.
+  #' @param p represents the number of dimensions.
+  lambda0 = max(lambda0)
+  
+  Sigma_Y = find_inverse_alt((S + n/(1 + n * lambda0^2) * (Ybar - mu0) %*% t(Ybar - mu0)))
+  mu_Y = ((n + 1/lambda0^2)^-1) * (mu0/lambda0^2 + n * Ybar)
+  xi = rWishart(n = N, df = (n - p - 1), Sigma = Sigma_Y) # See Eq 13
+  
+  mu_xi = matrix(NA, nrow = N, ncol = p)
+  for(k in 1:N){
+    mu_Sigma = ((n + 1/lambda0^2)^-1) * find_inverse_alt(xi[,,k])
+    mu_xi[k,] = mvrnorm(n = 1, mu = mu_Y, Sigma = mu_Sigma) # See Eq 13 (mu conditional on xi)
+  }
+  
+  return(list("xi" = xi, "mu_xi" = mu_xi))
+}
+
+k = function(N, p, mu, xi, mu0, lambda0, alpha01, alpha02){
+  #' This represents the k function explained in theorem 4. 
+  #' This function also computes the weights.
+  #' @param p represents the number of dimensions.
+  lambda02 = (max(lambda0))**2
+  Lambda0 = diag(lambda0)
+  inv_L0 = diag(1/lambda0)
+  
+  k_vector = numeric(N)
+  for(i in 1:N){
+    mu_i = mu[i,]
+    xi_i = xi[,,i]
+    sigma_ii = diag(find_inverse_alt(xi_i)) # NEW
+    logk = -(1/2) * t(mu_i - mu0) %*% (inv_L0 %*% xi_i %*% inv_L0 - (1/lambda02)*xi_i) %*% (mu_i - mu0)
+    logk2 = sum(-(alpha01 + (p+1)/2) * log(sigma_ii) - (alpha02/sigma_ii))
+    k_vector[i] = exp(logk + logk2)
+  }
+  weights_vector = k_vector / sum(k_vector)
+  newlist = list("k_vector" = k_vector, "weights_vector" = weights_vector)
+  return(newlist)
+}
+
+# Kind of unsure what better description to give here?
 elicit_prior_effective_range = function(p, m = 200, alpha01, alpha02, mu0, lambda0, 
                                         x_low, quantile_val = c(0.005, 0.995)){
   #' Computes the effective range from the true prior.
@@ -280,84 +369,8 @@ elicit_prior_effective_range = function(p, m = 200, alpha01, alpha02, mu0, lambd
   return(newlist)
 }
 
-find_inverse_alt = function(matrix){
-  #' Helper function that computes the inverse of a matrix using an 
-  #' alternative method that preserves positive-definiteness.
-  #' @param matrix represents the matrix that is being inputted. 
-  x = eigen(matrix, symmetric = TRUE, only.values=FALSE)
-  Q = x$vectors
-  V_inv = diag(1/x$values)
-  B = Q%*%sqrt(V_inv)
-  inverse_matrix = B%*%t(B)
-  return(inverse_matrix)
-}
-
-sample_post_computations = function(N, Y, p, mu0, lambda0){
-  #' This represents section 3.2 of the paper, theorem 4.
-  #' @param N represents the Monte Carlo sample size.
-  #' @param Y represents the observed sample.
-  #' @param p represents the number of dimensions.
-  #' The other parameters match the descriptions in section 3.2.
-  
-  if((p != length(mu0)) & (p != length(lambda0))){
-    return("Error: the vector for mu0 and lambda0 are of a different size.")
-  }
-  
-  if(is.numeric(Y) == TRUE){
-    n = nrow(Y)
-    if(n < (2*p)){
-      return("Error: the value of n (size of Y) is too small.")
-    }
-    Yprime = t(Y)
-    Ybar = rowMeans(Yprime) # rowMeans(t(Y))
-    In = matrix(t(rep(1, n))) # identity column
-    Ybar_t = matrix(Ybar, nrow=1, ncol = p) # transpose
-    
-    S = t(Y - In%*%Ybar) %*% (Y - In%*%Ybar) 
-  } else {
-    return("Error: no data given.")
-  }
-  
-  lambda0 = max(lambda0)
-  
-  Sigma_Y = find_inverse_alt((S + n/(1 + n * lambda0^2) * (Ybar - mu0) %*% t(Ybar - mu0)))
-  mu_Y = ((n + 1/lambda0^2)^-1) * (mu0/lambda0^2 + n * Ybar)
-  xi = rWishart(n = N, df = (n - p - 1), Sigma = Sigma_Y) # See Eq 13
-  
-  mu_xi = matrix(NA, nrow = N, ncol = p)
-  for(k in 1:N){
-    mu_Sigma = ((n + 1/lambda0^2)^-1) * find_inverse_alt(xi[,,k])
-    mu_xi[k,] = mvrnorm(n = 1, mu = mu_Y, Sigma = mu_Sigma) # See Eq 13 (mu conditional on xi)
-  }
-  
-  return(list("xi" = xi, "mu_xi" = mu_xi))
-}
-
-k = function(N, p, mu, xi, mu0, lambda0, alpha01, alpha02){
-  #' This represents the k function explained in theorem 4. 
-  #' This function also computes the weights.
-  #' @param p represents the number of dimensions.
-  #' The other parameters match the descriptions in the paper.
-  lambda02 = (max(lambda0))**2
-  Lambda0 = diag(lambda0)
-  inv_L0 = diag(1/lambda0)
-  
-  k_vector = numeric(N)
-  for(i in 1:N){
-    mu_i = mu[i,]
-    xi_i = xi[,,i]
-    sigma_ii = diag(find_inverse_alt(xi_i)) # NEW
-    logk = -(1/2) * t(mu_i - mu0) %*% (inv_L0 %*% xi_i %*% inv_L0 - (1/lambda02)*xi_i) %*% (mu_i - mu0)
-    logk2 = sum(-(alpha01 + (p+1)/2) * log(sigma_ii) - (alpha02/sigma_ii))
-    k_vector[i] = exp(logk + logk2)
-  }
-  weights_vector = k_vector / sum(k_vector)
-  newlist = list("k_vector" = k_vector, "weights_vector" = weights_vector)
-  return(newlist)
-}
-
 posterior_content = function(N, p, effective_range, mu, xi, weights){
-  #' Computes the posterior content.
+  #' Computes the posterior content from the sample of the posterior.
   #' @param N represents the Monte Carlo sample size.
   #' @param p represents the number of dimensions.
   #' @param effective_range denotes a list of grid points where the density
@@ -388,7 +401,7 @@ posterior_content = function(N, p, effective_range, mu, xi, weights){
   return(newlist)
 }
 
-true_prior_comparison = function(p, alpha01, alpha02, mu0, lambda0, grid) {
+true_prior_comparison = function(p, alpha01, alpha02, mu0, lambda0, grid){
   #' Given a grid of values (typically where the posterior density is allegedly 
   #' concentrated), computes the true prior density.
   #' This is used for graph building and computing the relative belief ratio.
@@ -413,7 +426,7 @@ true_prior_comparison = function(p, alpha01, alpha02, mu0, lambda0, grid) {
   return(newlist)
 }
 
-relative_belief_ratio = function(p, prior_content, post_content) {
+relative_belief_ratio = function(p, prior_content, post_content){
   #' Computes the relative belief ratio.
   #' @param p represents the number of dimensions.
   #' @param prior_content denotes the vector containing the prior.
@@ -428,7 +441,8 @@ relative_belief_ratio = function(p, prior_content, post_content) {
 
 # Values #########################################
 
-post_vals = sample_post_computations(N, Y = Y_data, p, mu0, lambda0)
+post_vals = sample_post_computations(N = N, Ybar = Ybar, S = S, p = p, 
+                                     mu0 = mu0, lambda0 = lambda0)
 
 post_xi = post_vals$xi
 post_mu = post_vals$mu

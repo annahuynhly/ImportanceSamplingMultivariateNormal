@@ -9,8 +9,8 @@ vnorm = function(x, t){
 }
 
 onion = function(dimension){
-  #' Generating using the onion method from the paper: 
-  #' On Bayesian Hotelling's T^{2} test for the mean
+  #' Generating using the onion method from the uniform distribution
+  #' on the set of all pxp correlation matrices.
   #' @param dimension denotes the number of dimensions of the matrix.
   d = dimension + 1
   prev_corr = matrix(1, 1, 1)
@@ -48,10 +48,13 @@ onion = function(dimension){
 ################################################################
 
 sample_prior = function(N, p, alpha01, alpha02, mu0, lambda0){
-  #' This represents section 3.1 of the paper.
+  #' This generates a sample of N from the prior on (mu, sigma).
+  #' 1/sigmaii ~ gamma(alpha01, alpha02)
+  #' R is a correlation matrix, R ~ uniform(pxp correlation matrices)
+  #' Sigma = diag(sigmaii^1/2) x R x diag(sigmaii^1/2)
+  #' mu|Sigma = multivariate_norm(mu0, diag(lambda0) x Sigma x diag(lambda0))
   #' @param N represents the Monte Carlo sample size.
   #' @param p represents the number of dimensions.
-  #' The other parameters match the descriptions in section 2.1.
   
   mu_mat = matrix(NA, nrow = N, ncol = p)
   sigma_ii_mat = matrix(NA, nrow = N, ncol = p)
@@ -61,7 +64,7 @@ sample_prior = function(N, p, alpha01, alpha02, mu0, lambda0){
   
   for(i in 1:N){
     sigma_ii = 1/rgamma(p, alpha01, alpha02)
-    D = diag(sqrt(sigma_ii))
+    D = diag(sqrt(sigma_ii)) 
     R = onion(p) # the correlation matrix
     Lambda = diag(lambda0)
     SIGMA = D %*% R %*% D

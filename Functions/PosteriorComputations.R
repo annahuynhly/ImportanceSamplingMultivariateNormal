@@ -2,112 +2,6 @@
 # MAIN FUNCTIONS                                               #
 ################################################################
 
-true_prior_comparison = function(p, alpha01, alpha02, mu0, lambda0, grid) {
-  #' Given a grid of values (typically where the posterior density is allegedly 
-  #' concentrated), computes the true prior density.
-  #' This is used for graph building and computing the relative belief ratio.
-  #' @param p represents the number of dimensions.
-  #' @param grid represents a list of the grid of values where the posterior is based off of.
-  #' The other parameters match the descriptions from the paper.
-  
-  prior_matrix = matrix(0, nrow = length(grid[[1]]) - 1, ncol = p)
-  midpt_grid_matrix = matrix(0, nrow = length(grid[[1]]) - 1, ncol = p)
-  
-  for (i in 1:p) {
-    midpt_grid = grid[[i]][-length(grid[[i]])] + diff(grid[[i]]) / 2
-    
-    scale = sqrt(alpha02[i] / alpha01[i]) * lambda0[i]
-    reg_x = (midpt_grid - mu0[i]) / scale
-    y = dt(reg_x, 2 * alpha01[i]) / scale
-    
-    prior_matrix[, i] = y
-    midpt_grid_matrix[, i] = midpt_grid
-  }
-  
-  newlist = list("prior_matrix" = prior_matrix,
-                  "midpoint_grid_matrix" = midpt_grid_matrix)
-  return(newlist)
-}
-
-sample_sigma_ii = function(N, p, alpha01, alpha02){
-  #' Generates a sample of sigma_ii, without having the sample the entire prior.
-  #' @param N represents the Monte Carlo sample size.
-  #' @param p represents the number of dimensions.
-  #' #' The other parameters match the descriptions from the paper.
-  sigma_ii_matrix = 1/rgamma(N * p, alpha01, alpha02)
-  sigma_ii = matrix(sigma_ii_matrix, nrow = N, ncol = p, byrow = TRUE)
-  return(sigma_ii)
-}
-
-sample_post_computations = function(N, Y, p, mu0, lambda0){
-  #' This represents section 3.2 of the paper, theorem 4.
-  #' @param N represents the Monte Carlo sample size.
-  #' @param Y represents the observed sample.
-  #' @param p represents the number of dimensions.
-  #' The other parameters match the descriptions in section 3.2.
-  
-  if((p != length(mu0)) & (p != length(lambda0))){
-    return("Error: the vector for mu0 and lambda0 are of a different size.")
-  }
-  
-  if(is.numeric(Y) == TRUE){
-    n = nrow(Y)
-    if(n < (2*p)){
-      return("Error: the value of n (size of Y) is too small.")
-    }
-    Yprime = t(Y)
-    Ybar = rowMeans(Yprime) # rowMeans(t(Y))
-    In = matrix(t(rep(1, n))) # identity column
-    Ybar_t = matrix(Ybar, nrow=1, ncol = p) # transpose
-    
-    S = t(Y - In%*%rowMeans(t(Y))) %*% (Y - In%*%rowMeans(t(Y))) 
-  } else {
-    return("Error: no data given.")
-  }
-  
-  lambda0 = max(lambda0)
-  
-  Sigma_Y = find_inverse_alt((S + n/(1 + n * lambda0^2) * (rowMeans(t(Y)) - mu0) %*% t(rowMeans(t(Y)) - mu0)))
-  mu_Y = ((n + 1/lambda0^2)^-1) * (mu0/lambda0^2 + n * rowMeans(t(Y)))
-  xi = rWishart(n = N, df = (n - p - 1), Sigma = Sigma_Y) # See Eq 13
-  
-  mu_xi = matrix(NA, nrow = N, ncol = p)
-  for(k in 1:N){
-    mu_Sigma = ((n + 1/lambda0^2)^-1) * find_inverse_alt(xi[,,k])
-    mu_xi[k,] = mvrnorm(n = 1, mu = mu_Y, Sigma = mu_Sigma) # See Eq 13 (mu conditional on xi)
-  }
-  
-  return(list("xi" = xi, "mu_xi" = mu_xi))
-}
-
-k = function(p, mu, xi, mu0, lambda0, sigma_ii, alpha01, alpha02){
-  #' This represents the k function explained in theorem 2.
-  #' @param p represents the number of dimensions.
-  #' The other parameters match the descriptions in the paper.
-  lambda02=(max(lambda0))**2
-  Lambda0 = diag(lambda0)
-  inv_Lambda0 = find_inverse_alt(Lambda0)
-  logk = -(1/2) * t(mu - mu0) %*% (inv_Lambda0 %*% xi %*% inv_Lambda0 - (1/lambda02)*xi) %*% (mu - mu0)
-  x2 = 1
-  for(i in 1:p){
-    x2 = x2 * (1/sigma_ii[i])^(alpha01[i] + (p+1)/2) * exp(-alpha02[i]/sigma_ii[i])
-  }
-  return(exp(logk)*x2)
-}
-
-weights = function(N, p, mu, xi, mu0, lambda0, sigma_ii, alpha01, alpha02){
-  #' Computes the weights given for the posterior content.
-  #' @param N represents the Monte Carlo sample size.
-  #' @param p represents the number of dimensions.
-  #' The other parameters match the descriptions in the paper.
-  k_vector = numeric(N)
-  for(i in 1:N){
-    k_vector[i] = k(p, mu[i,], xi[,,i], mu0, lambda0, sigma_ii[i,], alpha01, alpha02)
-  }
-  weights_vector = k_vector / sum(k_vector)
-  return(weights_vector)
-}
-
 sample_post_reformat = function(N, p, post_mu, post_xi, weights){
   #' Reformats the data for the user to download.
   #' @param N represents the Monte Carlo sample size.
@@ -148,15 +42,78 @@ sample_post_reformat = function(N, p, post_mu, post_xi, weights){
   return(result)
 }
 
-posterior_content = function(N, p, effective_range, mu, xi, weights) {
-  #' Computes the posterior content.
+Y_metrics = function(Y, p){
+  #' Given the observed sample (Y) and the number of dimensions (p), 
+  #' computes Ybar (the row means of the observed sample) and S.
+  if(is.numeric(Y) == TRUE){
+    n = nrow(Y)
+    if(n < (2*p)){
+      return("Error: the value of n (size of Y) is too small.")
+    }
+    Yprime = t(Y)
+    Ybar = rowMeans(Yprime) # rowMeans(t(Y))
+    In = matrix(t(rep(1, n))) # identity column
+    Ybar_t = matrix(Ybar, nrow=1, ncol = p) # transpose
+    
+    S = t(Y - In%*%Ybar) %*% (Y - In%*%Ybar) 
+  } else {
+    return("Error: no proper data given.")
+  }
+  newlist = list("n" = n, "Ybar" = Ybar, "S" = S)
+  return(newlist)
+}
+
+sample_post_computations = function(N, n, Ybar, S, p, mu0, lambda0){
+  #' This generates a sample of N from the posterior on (mu, xi) from theorem 4 of the paper.
+  #' @param N represents the Monte Carlo sample size.
+  #' @param n represents the number of rows from the observed sample.
+  #' @param Y represents the row means of the observed sample.
+  #' @param S represents the covariance matrix of the observed sample.
+  #' @param p represents the number of dimensions.
+  lambda02 = max(lambda0)^2
+  Sigma_Y = find_inverse_alt((S + n/(1 + n * lambda02) * (Ybar - mu0) %*% t(Ybar - mu0)))
+  mu_Y = ((n + 1/lambda02)^-1) * (mu0/lambda02 + n * Ybar)
+  xi = rWishart(n = N, df = (n - p - 1), Sigma = Sigma_Y) # See Eq 13
+  
+  mu_xi = matrix(NA, nrow = N, ncol = p)
+  for(k in 1:N){
+    mu_Sigma = ((n + 1/lambda02)^-1) * find_inverse_alt(xi[,,k])
+    mu_xi[k,] = mvrnorm(n = 1, mu = mu_Y, Sigma = mu_Sigma) # See Eq 13 (mu conditional on xi)
+  }
+  
+  return(list("xi" = xi, "mu_xi" = mu_xi))
+}
+
+k = function(N, p, mu, xi, mu0, lambda0, alpha01, alpha02){
+  #' This represents the k function explained in theorem 4. 
+  #' This function also computes the weights.
+  #' @param p represents the number of dimensions.
+  lambda02 = (max(lambda0))**2
+  Lambda0 = diag(lambda0)
+  inv_L0 = diag(1/lambda0)
+  
+  k_vector = numeric(N)
+  for(i in 1:N){
+    mu_i = mu[i,]
+    xi_i = xi[,,i]
+    sigma_ii = diag(find_inverse_alt(xi_i)) # NEW
+    logk = -(1/2) * t(mu_i - mu0) %*% (inv_L0 %*% xi_i %*% inv_L0 - (1/lambda02)*xi_i) %*% (mu_i - mu0)
+    logk2 = sum(-(alpha01 + (p+1)/2) * log(sigma_ii) - (alpha02/sigma_ii))
+    k_vector[i] = exp(logk + logk2)
+  }
+  weights_vector = k_vector / sum(k_vector)
+  newlist = list("k_vector" = k_vector, "weights_vector" = weights_vector)
+  return(newlist)
+}
+
+posterior_content = function(N, p, effective_range, mu, xi, weights){
+  #' Computes the posterior content from the sample of the posterior.
   #' @param N represents the Monte Carlo sample size.
   #' @param p represents the number of dimensions.
   #' @param effective_range denotes a list of grid points where the density
   #'        is highly concentrated (this is computed from the sampling of the  prior).'
   #' @param weights denote the weights given, calculated from the psi.
   #'        The other parameters match the descriptions in the paper.
-  
   psi_val = psi(mu, xi)
   post_content_matrix = matrix(0, nrow = length(effective_range[[1]]) - 1, ncol = p)
   post_density_matrix = matrix(0, nrow = length(effective_range[[1]]) - 1, ncol = p)
@@ -176,12 +133,37 @@ posterior_content = function(N, p, effective_range, mu, xi, weights) {
     post_density_matrix[, k] = post_density
   }
   
-  newlist <- list("post_content" = post_content_matrix,
-                  "post_density" = post_density_matrix)
+  newlist = list("post_content" = post_content_matrix,
+                 "post_density" = post_density_matrix)
   return(newlist)
 }
 
-relative_belief_ratio = function(p, prior_content, post_content) {
+true_prior_comparison = function(p, alpha01, alpha02, mu0, lambda0, grid){
+  #' Given a grid of values (typically where the posterior density is allegedly 
+  #' concentrated), computes the true prior density.
+  #' This is used for graph building and computing the relative belief ratio.
+  #' @param p represents the number of dimensions.
+  #' @param grid represents a list of the grid of values where the posterior is based off of.
+  #' The other parameters match the descriptions from the paper.
+  prior_matrix = matrix(0, nrow = length(grid[[1]]) - 1, ncol = p)
+  midpt_grid_matrix = matrix(0, nrow = length(grid[[1]]) - 1, ncol = p)
+  
+  for (i in 1:p) {
+    midpt_grid = grid[[i]][-length(grid[[i]])] + diff(grid[[i]]) / 2
+    scale = sqrt(alpha02[i] / alpha01[i]) * lambda0[i]
+    reg_x = (midpt_grid - mu0[i]) / scale
+    y = dt(reg_x, 2 * alpha01[i]) / scale
+    
+    prior_matrix[, i] = y
+    midpt_grid_matrix[, i] = midpt_grid
+  }
+  
+  newlist = list("prior_matrix" = prior_matrix,
+                 "midpoint_grid_matrix" = midpt_grid_matrix)
+  return(newlist)
+}
+
+relative_belief_ratio = function(p, prior_content, post_content){
   #' Computes the relative belief ratio.
   #' @param p represents the number of dimensions.
   #' @param prior_content denotes the vector containing the prior.

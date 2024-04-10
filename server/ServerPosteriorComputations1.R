@@ -42,18 +42,26 @@ post_sample_p_val = reactive({
   }
 })
 
+post_Y_metrics = reactive({
+  Y_metrics(Y = input_Y_values(), p = post_sample_p_val())
+})
+
 post_sample_values = reactive({
   set.seed(post_integ_seed())
   if(input$post_comp_use == 1){ # default option - use from the prior elicitation
     sample_post_computations(N = input$post_bigN,
-                             Y = input_Y_values(), 
+                             n = post_Y_metrics()$n,
+                             Ybar = post_Y_metrics()$Ybar, 
+                             S = post_Y_metrics()$S,
                              p = post_sample_p_val(),
                              mu0 = prior_elicitation_mu_values()$mu0,
                              lambda0 = prior_elicitation_mu_values()$lambda0
     )
   } else if (input$post_comp_use == 2){ # use what is manually inserted
     sample_post_computations(N = input$post_bigN, 
-                             Y = input_Y_values(), 
+                             n = post_Y_metrics()$n,
+                             Ybar = post_Y_metrics()$Ybar, 
+                             S = post_Y_metrics()$S,
                              p = post_sample_p_val(),
                              mu0 = create_necessary_vector(input$mu0_post),
                              lambda0 = create_necessary_vector(input$lambda0_post)
@@ -61,43 +69,37 @@ post_sample_values = reactive({
   }
 })
 
-post_sample_sigma_ii = reactive({
-  sample_sigma_ii(N = input$post_bigN, 
-                  p = post_sample_p_val(), 
-                  alpha01 = prior_elicitation_sigma_values()$alpha01,
-                  alpha02 = prior_elicitation_sigma_values()$alpha02)
-})
-
 post_sample_weights = reactive({
   if(input$post_comp_use == 1){ # use from the prior elicitation
-    weights(N = input$post_bigN, 
-            p = post_sample_p_val(), 
-            mu = post_sample_values()$mu_xi, 
-            xi = post_sample_values()$xi, 
-            mu0 = prior_elicitation_mu_values()$mu0,
-            lambda0 = prior_elicitation_mu_values()$lambda0,
-            sigma_ii = post_sample_sigma_ii(), #sample_prior_values()$sigma_ii,
-            alpha01 = prior_elicitation_sigma_values()$alpha01,
-            alpha02 = prior_elicitation_sigma_values()$alpha02)
+    k(N = input$post_bigN, 
+      p = post_sample_p_val(), 
+      mu = post_sample_values()$mu_xi, 
+      xi = post_sample_values()$xi, 
+      mu0 = prior_elicitation_mu_values()$mu0,
+      lambda0 = prior_elicitation_mu_values()$lambda0,
+      alpha01 = prior_elicitation_sigma_values()$alpha01,
+      alpha02 = prior_elicitation_sigma_values()$alpha02)
   } else if (input$post_comp_use == 2){
-    weights(N = input$post_bigN, 
-            p = post_sample_p_val(), 
-            mu = post_sample_values()$mu_xi, 
-            xi = post_sample_values()$xi, 
-            mu0 = create_necessary_vector(input$mu0_post),
-            lambda0 = create_necessary_vector(input$lambda0_post),
-            sigma_ii = post_sample_sigma_ii(), #sample_prior_values()$sigma_ii,
-            alpha01 = prior_elicitation_sigma_values()$alpha01,
-            alpha02 = prior_elicitation_sigma_values()$alpha02)
+    k(N = input$post_bigN, 
+      p = post_sample_p_val(), 
+      mu = post_sample_values()$mu_xi, 
+      xi = post_sample_values()$xi, 
+      mu0 = create_necessary_vector(input$mu0_post),
+      lambda0 = create_necessary_vector(input$lambda0_post),
+      alpha01 = prior_elicitation_sigma_values()$alpha01,
+      alpha02 = prior_elicitation_sigma_values()$alpha02)
   }
 })
+
+#0utput$testing_post = renderPrint({
+#})
 
 sample_post_values_reformatted = reactive({
   sample_post_reformat(N = input$post_bigN, 
                        p = post_sample_p_val(), 
                        post_mu = post_sample_values()$mu_xi,
                        post_xi = post_sample_values()$xi, 
-                       weights = post_sample_weights())
+                       weights = post_sample_weights()$weights_vector)
 })
 
 sample_post_values_reformatted_round = eventReactive(input$submit_sample_post, {
