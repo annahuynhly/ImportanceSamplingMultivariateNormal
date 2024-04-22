@@ -87,8 +87,8 @@ elicit_prior_sigma_function = function(p, gamma, s1, s2, upper_bd, lower_bd){
   
   gam = (1+gamma)/2
   z0 = qnorm(gam,0,1)
-  lwbdinvsigma2 = (z0/s1)**2 
-  upbdinvsigma2 = (z0/s2)**2 
+  upbdinvsigma2 = (z0/s1)**2 
+  lwbdinvsigma2 = (z0/s2)**2 
   
   alpha01 = numeric(p) 
   alpha02 = numeric(p)
@@ -101,8 +101,8 @@ elicit_prior_sigma_function = function(p, gamma, s1, s2, upper_bd, lower_bd){
     alphaup = upper_bd[j]
     for (i in 1:maxits){
       alpha = (alphalow + alphaup)/2
-      beta = qgamma(gam, alpha, 1)/lwbdinvsigma2[j]
-      test = pgamma(beta*upbdinvsigma2[j], alpha, 1)
+      beta = qgamma(gam, alpha, 1)/upbdinvsigma2[j]
+      test = pgamma(beta*lwbdinvsigma2[j], alpha, 1)
       if (abs(test-(1-gam)) <= eps) { break }
       if (test < 1 - gam) { alphaup = alpha} 
       else if (test > 1 - gam) { alphalow = alpha }
@@ -157,12 +157,6 @@ mu0 = prior_mu_vals$mu0
 
 # Functions ######################################
 
-vnorm = function(x, t){
-  #' Computes the norm of the matrix x of type t.
-  #' This is a helper function for the onion method.
-  norm(matrix(x, ncol=1), t)
-}
-
 onion = function(dimension){
   #' Generating using the onion method from the uniform distribution
   #' on the set of all pxp correlation matrices.
@@ -177,7 +171,7 @@ onion = function(dimension){
     
     # sample a unit vector theta uniformly from the unit ball surface B^(k-1)
     v = matrix(rnorm((k-1)), nrow=1)
-    theta = v/vnorm(v, '1')
+    theta = v/norm(v, 'F')
     
     w = r %*% theta # set w = r theta
     
@@ -199,7 +193,7 @@ onion = function(dimension){
 }
 
 sample_prior = function(N, p, alpha01, alpha02, mu0, lambda0){
-  #' This generates a sample of N from the prior on (mu, sigma).
+  #' This generates a sample of N from the prior on (mu, Sigma).
   #' 1/sigmaii ~ gamma(alpha01, alpha02)
   #' R is a correlation matrix, R ~ uniform(pxp correlation matrices)
   #' Sigma = diag(sigmaii^1/2) x R x diag(sigmaii^1/2)
@@ -266,47 +260,39 @@ find_inverse_alt = function(matrix){
   return(inverse_matrix)
 }
 
-sample_post_computations = function(N, Ybar, S, p, mu0, lambda0){
+# NOTE: not updated on the site yet; was modified to be sent to Mike to confirm first.
+sample_post_computations = function(N, Ybar, S, p, mu0, lambda0, alpha01, alpha02){
   #' This generates a sample of N from the posterior on (mu, xi) from theorem 4 of the paper.
+  #' It also computes the weights!
   #' @param N represents the Monte Carlo sample size.
   #' @param Y represents the row means of the observed sample.
   #' @param S represents the covariance matrix of the observed sample.
   #' @param p represents the number of dimensions.
-  lambda0 = max(lambda0)
-  
-  Sigma_Y = find_inverse_alt((S + n/(1 + n * lambda0^2) * (Ybar - mu0) %*% t(Ybar - mu0)))
-  mu_Y = ((n + 1/lambda0^2)^-1) * (mu0/lambda0^2 + n * Ybar)
-  xi = rWishart(n = N, df = (n - p - 1), Sigma = Sigma_Y) # See Eq 13
-  
-  mu_xi = matrix(NA, nrow = N, ncol = p)
-  for(k in 1:N){
-    mu_Sigma = ((n + 1/lambda0^2)^-1) * find_inverse_alt(xi[,,k])
-    mu_xi[k,] = mvrnorm(n = 1, mu = mu_Y, Sigma = mu_Sigma) # See Eq 13 (mu conditional on xi)
-  }
-  
-  return(list("xi" = xi, "mu_xi" = mu_xi))
-}
-
-k = function(N, p, mu, xi, mu0, lambda0, alpha01, alpha02){
-  #' This represents the k function explained in theorem 4. 
-  #' This function also computes the weights.
-  #' @param p represents the number of dimensions.
-  lambda02 = (max(lambda0))**2
+  lambda02 = max(lambda0)^2
   Lambda0 = diag(lambda0)
   inv_L0 = diag(1/lambda0)
   
+  Sigma_Y = find_inverse_alt((S + n/(1 + n * lambda02) * (Ybar - mu0) %*% t(Ybar - mu0)))
+  xi = rWishart(N, df = (n - p - 1), Sigma = Sigma_Y) # See Eq 13
+  mu_Y = ((n + 1/lambda02)^-1) * (mu0/lambda02 + n * Ybar)
+  mu_xi = matrix(NA, nrow = N, ncol = p)
+  
   k_vector = numeric(N)
-  for(i in 1:N){
-    mu_i = mu[i,]
-    xi_i = xi[,,i]
-    sigma_ii = diag(find_inverse_alt(xi_i)) # NEW
-    logk = -(1/2) * t(mu_i - mu0) %*% (inv_L0 %*% xi_i %*% inv_L0 - (1/lambda02)*xi_i) %*% (mu_i - mu0)
+  
+  for(k in 1:N){
+    mu_Sigma = ((n + 1/lambda02)^-1) * find_inverse_alt(xi[,,k])
+    mu_xi[k,] = mvrnorm(n = 1, mu = mu_Y, Sigma = mu_Sigma) # See Eq 13 (mu conditional on xi)
+    # computing the k function
+    sigma_ii = diag(find_inverse_alt(xi[,,k])) 
+    logk = -(1/2) * t(mu_xi[k,] - mu0) %*% (inv_L0 %*% xi[,,k] %*% inv_L0 - (1/lambda02)*xi[,,k]) %*% (mu_xi[k,] - mu0)
     logk2 = sum(-(alpha01 + (p+1)/2) * log(sigma_ii) - (alpha02/sigma_ii))
     k_vector[i] = exp(logk + logk2)
   }
   weights_vector = k_vector / sum(k_vector)
-  newlist = list("k_vector" = k_vector, "weights_vector" = weights_vector)
-  return(newlist)
+  cum_weights = cumsum(weights_vector)
+  
+  return(list("xi" = xi, "mu_xi" = mu_xi, "k_vector" = k_vector, 
+              "weights_vector" = weights_vector, "cum_weights" = cum_weights))
 }
 
 # Kind of unsure what better description to give here?
