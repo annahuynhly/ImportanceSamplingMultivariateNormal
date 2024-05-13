@@ -2,6 +2,8 @@
 # MAIN FUNCTIONS                                               #
 ################################################################
 
+# Formatting ###################################################
+
 important_post_reformat = function(N, p, post_mu, post_xi, weights){
   #' Reformats the data for the user to download.
   #' @param N represents the Monte Carlo sample size.
@@ -87,8 +89,6 @@ SIR_sample_reformat = function(Npostsamp, p, mu_matrix, xi_matrices, Sigma_matri
   return(result)
 }
 
-# getting information for Y
-
 Y_metrics = function(Y, p){
   #' Given the observed sample (Y) and the number of dimensions (p), 
   #' computes Ybar (the row means of the observed sample) and S.
@@ -110,7 +110,7 @@ Y_metrics = function(Y, p){
   return(newlist)
 }
 
-# some computations - will probably need an overhaul of reformatting...
+# Computations #################################################
 
 importance_sampler_computations = function(Npostimp, n, Ybar, S, p, mu0, lambda0, alpha01, alpha02){
   #' This generates a sample of Npostimp from the importance sampler on (mu, xi) from theorem 4 of the paper.
@@ -171,15 +171,20 @@ SIR_algorithm = function(Npostsamp, cum_weights, p, mu_xi, xi, Sigma){
 }
 
 psifn = function(muval, xival, Sigmaval){
-  # muval is a vector of means
+  #' check these later?? I think below is incorrect.
+  #' muval is a vector of means
   # xival is a precision matrix associated with variance matrix Sigmaval
   # the code here depends on the psi function we wish to make inference about
   psi=muval[1]
   return(psi)
 }
 
+# Plots for Psi ################################################
+
 prior_psi = function(Nprior, mu_prior, Sigma_prior, xi_prior){
-  # obtaining the prior density of psi.
+  #' Strictly obtains the prior density of psi.
+  #' @param Nprior the size of the sample for mu_prior, Sigma_prior, and xi_prior.
+  #' @param mu_prior a matrix that contains 
   # (ideally use the data generated from the sample)
   
   # compute prior sample of psi values 
@@ -294,6 +299,8 @@ rbr_psi = function(numcells = 100, prior_psi_dens_smoothed, post_psi_dens_smooth
   return(RB_psi)
 }
 
+# Estimations for Psi ##########################################
+
 plausible_region_est = function(prior_psi_mids, RB_psi, post_psi_dens_smoothed,
                                 delta_psi){
   # estimating plausible region
@@ -349,8 +356,6 @@ psi_hypothesis_test = function(psi_0 = -2, prior_psi_mids, RB_psi, post_psi_dens
   return(newlist)
 }
 
-
-
 ################################################################
 # GRAPH FUNCTIONS                                              #
 ################################################################
@@ -358,8 +363,16 @@ psi_hypothesis_test = function(psi_0 = -2, prior_psi_mids, RB_psi, post_psi_dens
 psi_cust_plot = function(grid, density, colour_choice = "red",
                         lty_type = 2, transparency = 0.4, plot_title = "Prior",
                         xlim_min = -10, xlim_max = 10){
-  # todo: implement col_num (column number) later.
-  # may also want to implement x-limits for the graph
+  # TODO: implement col_num (column number) later.
+  #' Creates a density plot, used for the prior, posterior, and relative belief ratio for psi.
+  #' @param grid vector containing the x-axis values which corresponds to the density.
+  #' @param density vector containing the density values.
+  #' @param colour_choice the colour used for the line.
+  #' @param lty_type the line type used for the plot (same values as base R plotting).
+  #' @param transparency transparency percentage for the area of the density plot. 
+  #'                     Set to 0 if you don't want the area highlighted.
+  #' @param xlim_min smaller x-axis cutoff of the plot.
+  #' @param xlim_max larger x-axis cutoff of the plot.
   
   if(xlim_min > min(grid) & xlim_max < max(grid)){
       xlim_interval = c(xlim_min, xlim_max)
@@ -378,6 +391,19 @@ psi_cust_plot = function(grid, density, colour_choice = "red",
 psi_priorpost_plot = function(grid, prior_density, post_density, 
                               colour_choice = c("red", "blue"), lty_type = c(2, 2),
                               transparency = 0.4, xlim_min = -10, xlim_max = 10){
+  # TODO: implement col_num (column number) later.
+  #' Creates a density plot, used for the prior, posterior, and relative belief ratio for psi.
+  #' @param grid vector containing the x-axis values which corresponds to the density.
+  #' @param prior_density vector containing prior density values.
+  #' @param post_density vector containing the posterior density values.
+  #' @param colour_choice vector containing colour for the density plot line.
+  #'        The first value is for the prior, and the second is for the posterior.
+  #' @param lty_type vector containing line type (same values as base R plotting).
+  #'        The first value is for the prior, and the second is for the posterior.
+  #' @param transparency transparency percentage for the area of the density plot. 
+  #'                     Set to 0 if you don't want the area highlighted.
+  #' @param xlim_min smaller x-axis cutoff of the plot.
+  #' @param xlim_max larger x-axis cutoff of the plot.
   
   if(xlim_min > min(grid) & xlim_max < max(grid)){
     xlim_interval = c(xlim_min, xlim_max)
@@ -407,61 +433,4 @@ psi_priorpost_plot = function(grid, prior_density, post_density,
   
   legend("topleft", legend=c("Prior", "Posterior"),
          col = colour_choice, lty = lty_type, cex=0.8)
-}
-
-
-
-
-comparison_content_density_plot = function(prior_density, post_density, col_num, 
-                                           prior_grid, post_grid,
-                                           min_xlim = -10, max_xlim = 10,
-                                           smooth_num = c(1, 1), 
-                                           colour_choice = c("red", "blue"),
-                                           lty_type = c(2, 2), transparency = 0.4){
-  #' Creates a density plot for the prior/posterior content.
-  #' @param prior_density vector containing prior density values.
-  #' @param post_density vector containing the posterior density values.
-  #' @param col_num column number of interest.
-  #' @param prior_grid plotted x-values for the prior.
-  #' @param post_grid plotted x-values for the posterior.
-  #' @param min_xlim smaller cutoff of the plot.
-  #' @param max_xlim larger cutoff of the plot.
-  #' @param smooth_num vector containing the number of points to average out the density plot.
-  #'        The first value is for the prior, and the second is for the posterior.
-  #' @param colour_choice vector containing colour for the density plot line.
-  #'        The first value is for the prior, and the second is for the posterior.
-  #' @param lty_type vector containing line type (same values as base R plotting).
-  #'        The first value is for the prior, and the second is for the posterior.
-  #' @param transparency transparency percentage for the area of the density plot. 
-  #'                     Set to 0 if you don't want the area highlighted.
-  prior_col_rgb = col2rgb(colour_choice[1])
-  post_col_rgb = col2rgb(colour_choice[2])
-  
-  prior_area_col = rgb(prior_col_rgb[1]/255, prior_col_rgb[2]/255, prior_col_rgb[3]/255, 
-                       alpha = transparency)
-  post_area_col = rgb(post_col_rgb[1]/255, post_col_rgb[2]/255, post_col_rgb[3]/255, 
-                      alpha = transparency)
-  
-  prior_density_vals = average_vector_values(prior_density[,col_num], smooth_num[1])
-  post_density_vals = average_vector_values(post_density[,col_num], smooth_num[2])
-  
-  max_ylim = max(c(max(prior_density_vals), max(post_density_vals)))
-  
-  plot(prior_grid[,col_num], prior_density_vals,
-       xlim = c(min_xlim, max_xlim), 
-       ylim = c(0, max_ylim),
-       col = colour_choice[1],
-       main = TeX(paste("Prior & Posterior Density Histogram of $\\mu_{", col_num, "}$")),
-       xlab = TeX(paste("Value of $\\mu_{", col_num, "}$")),
-       ylab = "Density",
-       type = "l", lty = lty_type[1], lwd = 2)
-  
-  lines(post_grid[,col_num], post_density_vals, 
-        lty = lty_type[2], lwd = 2, col = colour_choice[2])
-  
-  polygon(prior_grid[, col_num], prior_density_vals, col = prior_area_col, border = NA)
-  polygon(post_grid[, col_num], post_density_vals, col = post_area_col, border = NA)
-  
-  legend("topleft", legend=c("Prior", "Posterior"),
-         col= colour_choice, lty=lty_type, cex=0.8)
 }

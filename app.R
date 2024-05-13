@@ -8,6 +8,7 @@
 # 4. deploy
 # 5. contact claire and make sure the newest version is working
 # 6. options for downloading the plot
+# 7. add column support
 
 ################################################################
 # LIBRARIES                                                    #
@@ -110,7 +111,7 @@ server = function(input, output, session) {
   source(file.path("server", "ServerPriorSampling.R"),  local = TRUE)$value
   source(file.path("server", "ServerPosteriorComputations1.R"),  local = TRUE)$value
   source(file.path("server", "ServerPosteriorComputations2.R"),  local = TRUE)$value
-  source(file.path("server", "ServerPosteriorComputations3.R"),  local = TRUE)$value
+  #source(file.path("server", "ServerPosteriorComputations3.R"),  local = TRUE)$value
   
   observe(addHoverAnim(session, 'AnnaImg', 'rubberBand'))
   observe(addHoverAnim(session, 'MikeImg', 'tada'))

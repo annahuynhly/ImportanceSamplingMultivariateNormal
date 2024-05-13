@@ -191,7 +191,7 @@ page_SIR_algorithm = div(
 ################################################################
 
 page_rbr_comparison = div(
-  titlePanel("Relative Belief Ratio of Psi"), # placeholder title
+  titlePanel("Relative Belief Ratio of $\\psi$"), # placeholder title
   
   sidebarLayout(
     sidebarPanel(
@@ -315,7 +315,7 @@ page_rbr_comparison = div(
 ################################################################
 
 page_psi_hypo_test = div(
-  titlePanel("Hypothesis Testing for Psi"), # placeholder title
+  titlePanel("Hypothesis Testing for $\\psi$"), # placeholder title
   
   sidebarLayout(
     sidebarPanel(

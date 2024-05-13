@@ -1,20 +1,3 @@
-
-closed_bracket_grid = function(delta){
-  #' Creates a sequence of values from 0 to 1 (inclusive) based on 
-  #' the distance between two points.
-  #' @param delta represents the distance between two points.
-  grid = seq(0, 1, length= (1/delta)+1)
-  return(grid)
-}
-
-open_bracket_grid = function(delta){
-  #' Creates a grid of values from 0 to 1 (not inclusive) based on 
-  #' the distance between two points.
-  #' @param delta represents the distance between two points.
-  grid = seq(delta/2, 1 - delta/2, length=(1/delta))
-  return(grid)
-}
-
 convert_to_hex = function(hex_colour){
   #' Given a hex colour code, converts it into an interpretable format.
   #' @param hex_colour represents the hex colour code.
@@ -97,44 +80,6 @@ create_necessary_vector = function(x){
   }
 }
 
-average_vector_values = function(vector, num_average_pts = 3) {
-  #' Generates a new vector by averaging the values of a given vector based on the proximity 
-  #' of each element to its neighbors.
-  #' @param vector The input vector to be smoothed.
-  #' @param num_average_pts The number of neighboring points to consider when calculating 
-  #' the average for each element. Only the odd case is implemented.
-  if (num_average_pts %% 2 == 0) {
-    return("Error: num_average_pts must be an odd number.")
-  }
-  
-  if (num_average_pts == 1) {return(vector)} 
-  
-  num_neighbours = floor(num_average_pts / 2)
-  new_vector = numeric(length(vector))
-  
-  for (i in 1:length(vector)) {
-    lower_index = max(1, i - num_neighbours)
-    upper_index = min(length(vector), i + num_neighbours)
-    new_vector[i] = mean(vector[lower_index:upper_index])
-  }
-  
-  return(new_vector)
-}
-
-seq_alt = function(values, delta){
-  #' Generate an alternative sequence of values based on the input vector and the distance between
-  #' two points. If the maximum value is not already present in the sequence, it is added to the end.
-  #' @param values represents the numerical vector for which an alternative sequence is generated.
-  #' @param delta represents the distance between two points.
-  min = floor(min(values))
-  max = ceiling(max(values))
-  grid = seq(min, max, by = delta)
-  if(!(max %in% grid) == TRUE){
-    grid = c(grid, max)
-  }
-  return(grid)
-}
-
 find_inverse_alt = function(matrix){
   #' Computes the inverse of a matrix using an alternative method that 
   #' preserves positive-definiteness.
@@ -145,35 +90,4 @@ find_inverse_alt = function(matrix){
   B = Q%*%sqrt(V_inv)
   inverse_matrix = B%*%t(B)
   return(inverse_matrix)
-}
-
-division_alt = function(num, denom) {
-  #' An alternative method for division. When a denominator is zero, the 
-  #' corresponding result is set to NaN instead of raising an error.
-  #' @param num the numerator.
-  #' @param denom the denominator.
-  #' @details
-  #' The function assumes that the length of 'num' is equal to the length of 'denom'.
-  if (any(denom == 0)) {
-    warning("Some denominators are zero. Returning NaN for those cases.")
-  }
-  x = num / denom
-  x[denom == 0] = NA
-  return(x)
-}
-
-force_bounds_0 = function(v){
-  #' Regardless of the first and last value of a vector, replaces it with zero.
-  #' This is mostly for creating polygons in graphs.
-  #' @param represents the vector.
-  v = v[2:(length(v)-1)]
-  v = c(0, v, 0)
-  return(v)
-}
-
-compute_area = function(x, y){
-  #' Given two vectors, computes the area via the method of rectangles.
-  #' @param x represents the vector along the x-axis.
-  #' @param y represents the vector along the y-axis.
-  sum(diff(x) * (head(y, -1) + tail(y, -1)) / 2)
 }
