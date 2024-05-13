@@ -355,6 +355,63 @@ psi_hypothesis_test = function(psi_0 = -2, prior_psi_mids, RB_psi, post_psi_dens
 # GRAPH FUNCTIONS                                              #
 ################################################################
 
+psi_cust_plot = function(grid, density, colour_choice = "red",
+                        lty_type = 2, transparency = 0.4, plot_title = "Prior",
+                        xlim_min = -10, xlim_max = 10){
+  # todo: implement col_num (column number) later.
+  # may also want to implement x-limits for the graph
+  
+  if(xlim_min > min(grid) & xlim_max < max(grid)){
+      xlim_interval = c(xlim_min, xlim_max)
+  } else {xlim_interval = c(min(grid), max(grid))}
+  
+  col_rgb = col2rgb(colour_choice)
+  area_col = rgb(col_rgb[1]/255, col_rgb[2]/255, col_rgb[3]/255, 
+                 alpha = transparency)
+  plot(grid, density, type = "l", lty = lty_type, 
+       xlab = TeX("$\\psi$"), ylab = "Density", col = colour_choice, 
+       main= TeX(paste("The", plot_title, "of $\\psi$")),
+       xlim = xlim_interval)
+  polygon(grid, density, col = area_col, border = NA)
+}
+
+psi_priorpost_plot = function(grid, prior_density, post_density, 
+                              colour_choice = c("red", "blue"), lty_type = c(2, 2),
+                              transparency = 0.4, xlim_min = -10, xlim_max = 10){
+  
+  if(xlim_min > min(grid) & xlim_max < max(grid)){
+    xlim_interval = c(xlim_min, xlim_max)
+  } else {xlim_interval = c(min(grid), max(grid))}
+  
+  prior_col_rgb = col2rgb(colour_choice[1])
+  post_col_rgb = col2rgb(colour_choice[2])
+  
+  prior_area_col = rgb(prior_col_rgb[1]/255, prior_col_rgb[2]/255, prior_col_rgb[3]/255, 
+                       alpha = transparency)
+  post_area_col = rgb(post_col_rgb[1]/255, post_col_rgb[2]/255, post_col_rgb[3]/255, 
+                      alpha = transparency)
+  
+  max_val = plyr::round_any(max(c(prior_density, post_density)), 
+                            accuracy = 0.1, f = ceiling)
+  ylim_vals = c(0, max_val)
+  
+  plot(grid, prior_density, type = "l", lty = lty_type[1], col = colour_choice[1], 
+       xlab = TeX("$\\psi$"), ylab = "Density", 
+       main = TeX("The Prior and Posterior Density of $\\psi$"), 
+       ylim = ylim_vals, xlim = xlim_interval)
+  
+  lines(grid, post_density, lty = lty_type[2], col = colour_choice[2])
+  
+  polygon(grid, prior_density, col = prior_area_col, border = NA)
+  polygon(grid, post_density, col = post_area_col, border = NA)
+  
+  legend("topleft", legend=c("Prior", "Posterior"),
+         col = colour_choice, lty = lty_type, cex=0.8)
+}
+
+
+
+
 comparison_content_density_plot = function(prior_density, post_density, col_num, 
                                            prior_grid, post_grid,
                                            min_xlim = -10, max_xlim = 10,

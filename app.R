@@ -2,6 +2,13 @@
 # TODO LIST                                                    #
 ################################################################
 
+# 1. re-write some documentation for the new functions
+# 2. re-check that all of the "download" options are working
+# 3. delete all old code
+# 4. deploy
+# 5. contact claire and make sure the newest version is working
+# 6. options for downloading the plot
+
 ################################################################
 # LIBRARIES                                                    #
 ################################################################

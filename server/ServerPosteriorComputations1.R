@@ -156,41 +156,49 @@ rbr_psi_values = reactive({
 # plotting (in between)
 
 prior_psi_plot_DOWNLOAD = function(){
-  plot(prior_psi_values()$prior_psi_mids, 
-       prior_psi_values()$prior_psi_dens_smoothed, 
-       type = "l", xlab = "psi", ylab = "density", col = "red", 
-       main="The prior density of psi")
+  psi_cust_plot(grid = prior_psi_values()$prior_psi_mids, 
+                density = prior_psi_values()$prior_psi_dens_smoothed, 
+                colour_choice = input$comparison_prior_col,
+                lty_type = as.numeric(input$comparison_prior_lty), 
+                transparency = input$comparison_transparency, 
+                plot_title = "Prior Density",
+                xlim_min = as.numeric(input$psi_plot_xmin),
+                xlim_max = as.numeric(input$psi_plot_xmax))
 }
 
 post_psi_plot_DOWNLOAD = function(){
-  plot(prior_psi_values()$prior_psi_mids, 
-       post_psi_values(), 
-       type = "l", xlab = "psi", ylab = "density", col = "blue", 
-       main="The posterior density of psi" )
+  psi_cust_plot(grid = prior_psi_values()$prior_psi_mids, 
+                density = post_psi_values(), 
+                colour_choice = input$comparison_post_col,
+                lty_type = as.numeric(input$comparison_post_lty), 
+                transparency = input$comparison_transparency, 
+                plot_title = "Posterior Density",
+                xlim_min = as.numeric(input$psi_plot_xmin),
+                xlim_max = as.numeric(input$psi_plot_xmax))
 }
 
 priorpost_psi_plot_DOWNLOAD = function(){
-  max_val = plyr::round_any(max(c(prior_psi_values()$prior_psi_dens_smoothed, 
-                                  post_psi_values())), 
-                            accuracy = 0.1, f = ceiling)
-  ylim_vals = c(0, max_val)
-  
-  plot(prior_psi_values()$prior_psi_mids, 
-       prior_psi_values()$prior_psi_dens_smoothed, 
-       type = "l", xlab = "psi", ylab = "density", col = "red", 
-       main="The prior density of psi", ylim = ylim_vals)
-  lines(prior_psi_values()$prior_psi_mids, 
-        post_psi_values(), 
-        type = "l", 
-        xlab = "psi", ylab = "density", col = "blue", 
-        main="The posterior density of psi")
+  psi_priorpost_plot(grid = prior_psi_values()$prior_psi_mids,
+                     prior_density = prior_psi_values()$prior_psi_dens_smoothed, 
+                     post_density = post_psi_values(), 
+                     colour_choice = c(input$comparison_prior_col, 
+                                       input$comparison_post_col), 
+                     lty_type = c(as.numeric(input$comparison_prior_lty), 
+                                  as.numeric(input$comparison_post_lty)),
+                     transparency = input$comparison_transparency,
+                     xlim_min = as.numeric(input$psi_plot_xmin),
+                     xlim_max = as.numeric(input$psi_plot_xmax))
 }
 
 rbr_psi_plot_DOWNLOAD = function(){
-  plot(prior_psi_values()$prior_psi_mids, 
-       rbr_psi_values(), 
-       type = "l", xlab = "psi", ylab = "RBR", col = "green", 
-       main="The relative belief ratio of psi")
+  psi_cust_plot(grid = prior_psi_values()$prior_psi_mids, 
+                density = rbr_psi_values(), 
+                colour_choice = input$comparison_rbr_col,
+                lty_type = as.numeric(input$comparison_rbr_lty), 
+                transparency = input$comparison_transparency, 
+                plot_title = "Relative Belief Ratio",
+                xlim_min = as.numeric(input$psi_plot_xmin),
+                xlim_max = as.numeric(input$psi_plot_xmax))
 }
 
 

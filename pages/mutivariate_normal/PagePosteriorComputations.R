@@ -201,19 +201,54 @@ page_rbr_comparison = div(
                    label = 'Insert the number of subintervals for the density histogram',
                    value = 100),
       
-      numericInput(inputId = "rbr_mprior",
-                   label = '# of average points for the prior sample (smoother)',
-                   value = 7),
+      p("Below is the # of average points for the samples (smoother)"),
       
-      numericInput(inputId = "rbr_mpost",
-                   label = '# of average points for the post sample (smoother)',
-                   value = 5),
+      fluidRow(box(width = 12,
+        splitLayout(
+          numericInput(inputId = "rbr_mprior", label = 'Prior', value = 7),
+          numericInput(inputId = "rbr_mpost", label = 'Posterior', value = 5),
+      ))),
       
-      selectInput(inputId = "rbr_graph_layout", 
-                  label = 'What graph layout would you prefer?', 
-                  choices = list("Prior and posterior on different plots" = 1,
-                                 "Prior and posterior on the same plot" = 2), 
-                  selected = 1),
+      selectInput(inputId = "comparison_modify_which",
+                  label = 'Select line to modify',
+                  choices = list("Prior" = 'prior', "Posterior" = 'post',
+                                 "Relative belief ratio" = 'rbr'),
+                  selected = 'prior'), 
+      
+      conditionalPanel(
+        condition = "input.comparison_modify_which == 'prior'",
+        
+        colourInput(inputId = "comparison_prior_col",
+                    label = 'Input colour of the prior',
+                    value = "FF6666"),
+        selectInput(inputId = "comparison_prior_lty", 
+                    label = 'Select line type of the prior', 
+                    choices = list("0" = 0, "1" = 1, "2" = 2, 
+                                   "3" = 3, "4" = 4, "5" = 5, "6" = 6),
+                    selected = 2),
+      ),
+      conditionalPanel(
+        condition = "input.comparison_modify_which == 'post'",
+        colourInput(inputId = "comparison_post_col",
+                    label = 'Input colour of the posterior',
+                    value = "6699FF"), 
+        selectInput(inputId = "comparison_post_lty", 
+                    label = 'Select line type of the posterior', 
+                    choices = list("0" = 0, "1" = 1, "2" = 2, 
+                                   "3" = 3, "4" = 4, "5" = 5, "6" = 6),
+                    selected = 2),
+      ),
+      conditionalPanel(
+        condition = "input.comparison_modify_which == 'rbr'",
+        colourInput(inputId = "comparison_rbr_col",
+                    label = 'Input colour of the relative belief ratio',
+                    value = "05DEB2"), 
+        selectInput(inputId = "comparison_rbr_lty", 
+                    label = 'Select line type of the relative belief ratio', 
+                    choices = list("0" = 0, "1" = 1, "2" = 2, 
+                                   "3" = 3, "4" = 4, "5" = 5, "6" = 6),
+                    selected = 2),
+      ),
       
     ), # end of sidebarPanel
     mainPanel(
@@ -245,8 +280,30 @@ page_rbr_comparison = div(
             )
           ),
         ), 
-      ), # end conditional Panel
+      ), # end conditionalPanel
 
+      fluidRow(
+        column(4,
+               selectInput(inputId = "rbr_graph_layout", 
+                           label = 'What graph layout would you prefer?', 
+                           choices = list("Prior and posterior on different plots" = 1,
+                                          "Prior and posterior on the same plot" = 2), 
+                           selected = 1),
+        ),
+        column(4, 
+               fluidRow(box(width = 12,
+                splitLayout(
+                  numericInput(inputId = "psi_plot_xmin", label = 'Min x-axis', value = -10),
+                  numericInput(inputId = "psi_plot_xmax", label = 'Max x-axis', value = 10),
+                ))),
+        ),
+        column(4, 
+               sliderInput(inputId = "comparison_transparency", 
+                           label = "Scale for colour transparency",
+                           min = 0, max = 1, value = 0.2), 
+        )
+      ), # end fluidRow
+      
     ) # end of mainPanel
     
   )
@@ -278,145 +335,6 @@ page_psi_hypo_test = div(
     ) # end of mainPanel
     
   )
-)
-
-
-#(OLD)
-################################################################
-# PORTION FOR GRAPH BUILDING                                   #
-################################################################
-
-page_comparison_graphs = div(
-  titlePanel("Plots for $\\mu$"), 
-  sidebarLayout(
-    sidebarPanel(
-      width = 3,
-    
-      p("Note: will not work unless the user inputs the data from the previous section."),
-      
-      actionButton(inputId = "submit_prior_eff_range", #"submit_sample_prior", 
-                   label = "Submit Data"),
-      
-      numericInput(inputId = "prior_eff_range_m", #"prior_sample_m",
-                   label = 'Insert the number of desired subintervals for the effective range',
-                   value = 35),
-      
-      p("Below is for denoting the smaller and larger quantiles for 
-        computing the effective range."),
-      
-      # NEW
-      selectInput(inputId = "post_interval_use", 
-                  label = 'What interval would you like to use?', 
-                  choices = list("Effective Range from the True Prior" = 1,
-                                 "Input values" = 2), 
-                  selected = 1),
-      
-      conditionalPanel(
-        condition = "input.post_interval_use == 2",
-        fluidRow(box(width = 12,
-          splitLayout(
-            numericInput(inputId = "post_graph_lwr_bd", 
-                         label = "Lower Bound", value = -10),
-            numericInput(inputId = "post_graph_upp_bd", 
-                         label = "Upper Bound", value = 10),
-            # Previously let the user denote the effective range - but this was strictly
-            # for the prior.
-            #numericInput(inputId = "prior_eff_range_small_quantile", 
-            #             label = "Small Quantile", value = 0.005),
-            #numericInput(inputId = "prior_eff_range_large_quantile", 
-            #             label = "Large Quantile", value = 0.995),
-          )
-        )),
-      ),
-      
-      selectInput(inputId = "comparison_modify_which",
-                  label = 'Select line to modify',
-                  choices = list("Prior" = 'prior', "Posterior" = 'post',
-                                 "Relative belief ratio" = 'rbr'),
-                  selected = 'prior'), 
-      
-      conditionalPanel(
-        condition = "input.comparison_modify_which == 'prior'",
-        
-        colourInput(inputId = "comparison_prior_col",
-                    label = 'Input colour of the prior',
-                    value = "FF6666"),
-        # NOTE: lty type not added yet.
-        selectInput(inputId = "comparison_prior_lty", 
-                    label = 'Select line type of the prior', 
-                    choices = list("0" = 0, "1" = 1, "2" = 2, 
-                                   "3" = 3, "4" = 4, "5" = 5, "6" = 6),
-                    selected = 2),
-      ),
-      conditionalPanel(
-        condition = "input.comparison_modify_which == 'post'",
-        colourInput(inputId = "comparison_post_col",
-                    label = 'Input colour of the posterior',
-                    value = "6699FF"), 
-        selectInput(inputId = "comparison_post_lty", 
-                    label = 'Select line type of the posterior', 
-                    choices = list("0" = 0, "1" = 1, "2" = 2, 
-                                   "3" = 3, "4" = 4, "5" = 5, "6" = 6),
-                    selected = 2),
-      ),
-      conditionalPanel(
-        condition = "input.comparison_modify_which == 'rbr'",
-        colourInput(inputId = "comparison_rbr_col",
-                    label = 'Input colour of the relative belief ratio',
-                    value = "05DEB2"), 
-        selectInput(inputId = "comparison_rbr_lty", 
-                    label = 'Select line type of the relative belief ratio', 
-                    choices = list("0" = 0, "1" = 1, "2" = 2, 
-                                   "3" = 3, "4" = 4, "5" = 5, "6" = 6),
-                    selected = 2),
-      ),
-      
-    ),
-    mainPanel(
-      downloadButton(outputId = 'comparison_download_plot', 
-                     label = 'Prior/Posterior Plot'),
-      
-      downloadButton(outputId = 'rbr_download_plot', 
-                     label = 'RBR Plot'),
-      
-      tabPanel("Plots",
-        fluidRow(
-          splitLayout(
-            cellWidths = c("50%", "50%"), 
-            #withSpinner(verbatimTextOutput(outputId = "testing_post_graph")),
-            withSpinner(plotOutput("sample_priorpost_graph")), 
-            withSpinner(plotOutput("sample_rbr_graph"))
-          )
-        ),
-      ),
-      
-      tabPanel("effective range display",
-        fluidRow(
-          column(7, align="center",h3("Values for the Effective Range:")),
-          column(4, withSpinner(tableOutput(outputId = "prior_eff_range_delta_table1")))
-        )
-      ),
-      
-      fluidRow(
-        column(4,
-               numericInput(inputId = "comparison_mu_col", 
-                            label = 'Which $\\mu_{i}$ for the graph?',
-                            value = 1),
-        ),
-        column(4, 
-               sliderInput(inputId = "comparison_smoother", 
-                           label = "# of Average Points (Smoother)", 
-                           min = 1, max = 15, value = 3, step = 2),
-        ),
-        column(4, 
-               sliderInput(inputId = "comparison_transparency", 
-                           label = "Scale for colour transparency",
-                           min = 0, max = 1, value = 0.2), 
-        )
-      ), # end fluidRow
-      
-    ), # end mainPanel
-  ),
 )
 
 ################################################################

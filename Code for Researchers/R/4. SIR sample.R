@@ -33,7 +33,6 @@ mu_postsamp = post_SIR_sample$sample_mu_xi
 xi_postsamp = post_SIR_sample$sample_xi
 Sigma_postsamp = post_SIR_sample$sample_Sigma
 
-Sigma_postsamp[[1]][indices[order(indices[,1]),]]
 
 SIR_sample_reformat = function(Npostsamp, p, mu_matrix, xi_matrices, Sigma_matrices){
   #' Reformats the data for the user to download.
