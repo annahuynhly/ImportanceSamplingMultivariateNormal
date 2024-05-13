@@ -1,0 +1,68 @@
+#############################################################################
+# Part 3: Sampling from the Importance Sampler for Posterior Calculations   #
+#############################################################################
+# April 30, 2024
+
+# Npostimp = size of the sample form the importance sampler
+Npostimp = 10000
+
+# Functions ######################################
+
+
+importance_sampler_computations = function(Npostimp, Ybar, S, p, mu0, lambda0, alpha01, alpha02){
+  #' This generates a sample of Npostimp from the importance sampler on (mu, xi) from theorem 4 of the paper.
+  #' It also computes the weights and the cumulative weights.
+  #' @param Npostimp represents the Monte Carlo sample size.
+  #' @param Y represents the row means of the observed sample.
+  #' @param S represents the covariance matrix of the observed sample.
+  #' @param p represents the number of dimensions.
+
+  lambda0sq = max(lambda0)^2
+  Lambda0 = diag(lambda0)
+  inv_L0 = diag(1/lambda0)
+
+ 
+  # generate xi matrices and corresponding Sigma = xi^{-1} matrices
+  Sigma = vector("list", Npostimp)
+  Sigma_Y = find_inverse_alt((S + n/(1 + n * lambda0sq) * (Ybar - mu0) %*% t(Ybar - mu0)))
+  xi = rWishart(Npostimp, df = (n - p - 1), Sigma = Sigma_Y)
+  for (i in 1:Npostimp){
+    Sigma[[i]] = find_inverse_alt(xi[,,i])
+    }
+  
+  # generate the mu values given the corresponding xi and also compute the importance sampling weights
+  mu_Y = ((n + 1/lambda0sq)^-1) * (mu0/lambda0sq + n * Ybar)
+  mu_xi = matrix(NA, nrow = Npostimp, ncol = p)
+  k_vector = numeric(Npostimp)
+
+  for(i in 1:Npostimp){
+    mu_Sigma = ((n + 1/lambda0sq)^-1) * Sigma[[i]]
+    mu_xi[i,] = mvrnorm(n = 1, mu = mu_Y, Sigma = mu_Sigma) # See Eq 13 (mu conditional on xi)
+    # computing the k function
+    sigma_ii = diag(Sigma[[i]]) 
+    logk = -(1/2) * t(mu_xi[i,] - mu0) %*% (inv_L0 %*% xi[,,i] %*% inv_L0 - (1/lambda0sq)*xi[,,i]) %*% (mu_xi[i,] - mu0)
+    logk2 = sum(-(alpha01 + (p+1)/2) * log(sigma_ii) - (alpha02/sigma_ii))
+    k_vector[i] = exp(logk + logk2)
+  }
+  weights_vector = k_vector / sum(k_vector)
+  cum_weights = cumsum(weights_vector)
+   
+  return(list("xi" = xi, "mu_xi" = mu_xi, "Sigma" = Sigma, "weights_vector" = weights_vector, 
+              "cum_weights" = cum_weights))
+}
+
+
+# Values #########################################
+
+imp_vals = importance_sampler_computations(Npostimp = Npostimp, Ybar = Ybar, S = S, p = p, 
+                                     mu0 = mu0, lambda0 = lambda0,
+                                     alpha01 = alpha01, alpha02 = alpha02)
+
+imp_xi = imp_vals$xi
+imp_Sigma=imp_vals$Sigma
+imp_mu = imp_vals$mu_xi
+imp_weights = imp_vals$weights_vector
+imp_cdf = imp_vals$cum_weights
+
+
+

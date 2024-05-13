@@ -2,12 +2,6 @@
 # HELPER FUNCTIONS                                             #
 ################################################################
 
-vnorm = function(x, t){
-  #' Computes the norm of the matrix x of type t.
-  #' This is a helper function for the onion method.
-  norm(matrix(x, ncol=1), t)
-}
-
 onion = function(dimension){
   #' Generating using the onion method from the uniform distribution
   #' on the set of all pxp correlation matrices.
@@ -22,7 +16,7 @@ onion = function(dimension){
     
     # sample a unit vector theta uniformly from the unit ball surface B^(k-1)
     v = matrix(rnorm((k-1)), nrow=1)
-    theta = v/vnorm(v, '1')
+    theta = v/norm(v, 'F')
     
     w = r %*% theta # set w = r theta
     
@@ -47,50 +41,81 @@ onion = function(dimension){
 # MAIN FUNCTIONS                                               #
 ################################################################
 
-sample_prior = function(N, p, alpha01, alpha02, mu0, lambda0){
-  #' This generates a sample of N from the prior on (mu, sigma).
+sample_prior = function(Nprior, p, alpha01, alpha02, mu0, lambda0){
+  #' This generates a sample of Nprior from the prior on (mu, Sigma).
   #' 1/sigmaii ~ gamma(alpha01, alpha02)
   #' R is a correlation matrix, R ~ uniform(pxp correlation matrices)
   #' Sigma = diag(sigmaii^1/2) x R x diag(sigmaii^1/2)
   #' mu|Sigma = multivariate_norm(mu0, diag(lambda0) x Sigma x diag(lambda0))
-  #' @param N represents the Monte Carlo sample size.
+  #' @param Nprior represents the Monte Carlo sample size.
   #' @param p represents the number of dimensions.
   
-  mu_mat = matrix(NA, nrow = N, ncol = p)
-  sigma_ii_mat = matrix(NA, nrow = N, ncol = p)
-  sigma_mat = vector("list", length = N)
-  covariance_mat = vector("list", length = N)
-  correlation_mat = vector("list", length = N)
+  mu_mat = matrix(NA, nrow = Nprior, ncol = p)
+  sigma_ii_mat = matrix(NA, nrow = Nprior, ncol = p)
+  Sigma_mat = vector("list", length = Nprior)
+  xi_mat = vector("list", length = Nprior)
   
-  for(i in 1:N){
+  for(i in 1:Nprior){
     sigma_ii = 1/rgamma(p, alpha01, alpha02)
     D = diag(sqrt(sigma_ii)) 
     R = onion(p) # the correlation matrix
     Lambda = diag(lambda0)
-    SIGMA = D %*% R %*% D
-    var_mat = Lambda %*% SIGMA %*% Lambda
+    Sigma = D %*% R %*% D
+    xi=find_inverse_alt(Sigma)
+    var_mat = Lambda %*% Sigma %*% Lambda
     
-    MU = mvrnorm(n = 1, mu = mu0, Sigma = var_mat)
+    MU = mvrnorm(1, mu = mu0, Sigma = var_mat)
     
     # Store results in preallocated matrices/lists
     mu_mat[i,] = MU
     sigma_ii_mat[i,] = sigma_ii
-    sigma_mat[[i]] = SIGMA
-    covariance_mat[[i]] = var_mat
-    correlation_mat[[i]] = R
+    Sigma_mat[[i]] = Sigma
+    xi_mat[[i]] = xi
+    
   }
   
-  return(list("mu_matrix" = mu_mat, "sigma_ii" = sigma_ii_mat,
-              "sigma_matrix" = sigma_mat,
-              "covariance_matrix" = covariance_mat, 
-              "correlation_matrix" = correlation_mat))
+  return(list("mu_matrix" = mu_mat, "sigma_ii_mat" = sigma_ii_mat, 
+              "Sigma_mat" = Sigma_mat, "xi_mat" = xi_mat))
 }
 
+# MAY REMOVE THE FUNCTION BELOW.
 psi = function(mu, xi){
   #' A function the user is supposed to specify, but for now it 
   #' just gives you mu.
   return(mu)
 }
+
+sample_prior_data_cleaning = function(N, p, mu_matrix, 
+                                      sigma_ii_matrix,
+                                      correlation_matrix) {
+  #' Mike requested a specific file format, and this cleans it accordingly.
+  sigma_names = paste("1/sigma_", 1:p, "^2", sep = "")
+  mu_names = paste("mu_", 1:p, sep = "")
+  rho_names = combn(p, 2, FUN = function(x) paste("rho_", x[1], x[2], sep = ""), simplify = TRUE)
+  
+  # FIRST: cleaning 1/sigma^2
+  sigma_ii_data = as.data.frame(1/sigma_ii_matrix)
+  names(sigma_ii_data) = sigma_names
+  
+  # SECOND: cleaning rhos from the correlation matrix
+  rho_matrix = matrix(nrow = N, ncol = length(rho_names))
+  for(k in 1:N){
+    rho_matrix[k,] = as.vector(correlation_matrix[[k]][lower.tri(correlation_matrix[[k]])])
+  }
+  
+  rho_data = as.data.frame(rho_matrix)
+  names(rho_data) = rho_names
+  
+  # THIRD: cleaning mus from the mu matrix
+  mu_data = as.data.frame(mu_matrix)
+  names(mu_data) = mu_names
+  
+  return(cbind(mu_data, sigma_ii_data, rho_data))
+}
+
+################################################################
+# OLD FUNCTIONS                                                #
+################################################################
 
 true_prior_density = function(p, alpha01, alpha02, lambda0, mu0){
   #' Plots the true prior.
@@ -153,34 +178,6 @@ find_effective_range = function(p, m, x_vector_matrix, y_vector_matrix,
   return(newlist)
 }
 
-sample_prior_data_cleaning = function(N, p, mu_matrix, 
-                                       sigma_ii_matrix,
-                                       correlation_matrix) {
-  #' Mike requested a specific file format, and this cleans it accordingly.
-  sigma_names = paste("1/sigma_", 1:p, "^2", sep = "")
-  mu_names = paste("mu_", 1:p, sep = "")
-  rho_names = combn(p, 2, FUN = function(x) paste("rho_", x[1], x[2], sep = ""), simplify = TRUE)
-  
-  # FIRST: cleaning 1/sigma^2
-  sigma_ii_data = as.data.frame(1/sigma_ii_matrix)
-  names(sigma_ii_data) = sigma_names
-  
-  # SECOND: cleaning rhos from the correlation matrix
-  rho_matrix = matrix(nrow = N, ncol = length(rho_names))
-  for(k in 1:N){
-    rho_matrix[k,] = as.vector(correlation_matrix[[k]][lower.tri(correlation_matrix[[k]])])
-  }
-  
-  rho_data = as.data.frame(rho_matrix)
-  names(rho_data) = rho_names
-  
-  # THIRD: cleaning mus from the mu matrix
-  mu_data = as.data.frame(mu_matrix)
-  names(mu_data) = mu_names
-  
-  return(cbind(mu_data, sigma_ii_data, rho_data))
-}
-
 content_density_plot = function(density, col_num, grid, type = "Prior",
                                 min_xlim = -10, max_xlim = 10,
                                 smooth_num = 1, colour_choice = "blue",
@@ -212,10 +209,6 @@ content_density_plot = function(density, col_num, grid, type = "Prior",
   
   polygon(grid[, col_num], density_vals, col = area_col, border = NA)
 }
-
-################################################################
-# OLD FUNCTIONS                                                #
-################################################################
 
 prior_content = function(N, p, m, mu, xi, 
                          small_quantile = 0.005, large_quantile = 0.995){

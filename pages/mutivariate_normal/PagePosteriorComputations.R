@@ -112,13 +112,22 @@ page_posteriorcomputations = div(
                      label = 'Insert the number of dimensions, $p$.',
                      min = 1, max = 10000000, step = 1, value = 3),
         
+        # should probably change the following values lol
         textInput(inputId = "mu0_post",
                   label = "$\\mu_{01}, ..., \\mu_{0p}$",
-                  value = "0, 0, 0"),
+                  value = "-2.5, -1, 0, 1, 2.5"),
         
         textInput(inputId = "lambda0_post",
                   label = "$\\lambda_{021}, ..., \\lambda_{02p}$",
-                  value = "1, 1, 1"),
+                  value = "0.82, 1.21, 1.97, 1.21, 0.82"),
+        
+        textInput(inputId = "alpha01_post",
+                  label = "$\\alpha_{011}, ..., \\alpha_{01p}$",
+                  value = "2.32, 2.09, 1.41, 2.09, 2.32"),
+        
+        textInput(inputId = "alpha02_post",
+                  label = "$\\alpha_{021}, ..., \\alpha_{02p}$",
+                  value = "1.21, 0.29, 0.04, 0.29, 1.21"),
       ),
       
     ),
@@ -137,6 +146,129 @@ page_posteriorcomputations = div(
   )
 )
 
+################################################################
+# SIR ALGORITHM                                                #
+################################################################
+
+page_SIR_algorithm = div(
+  titlePanel("SIR Algorithm"), # placeholder title
+  
+  sidebarLayout(
+    sidebarPanel(
+      width = 3,
+      
+      # hope the below name isn't a repeat.
+      numericInput(inputId = "post_sample_N",
+                   label = 'Insert the Monte Carlo sample size',
+                   value = 20000),
+      
+      
+    ), # end sidebarPanel
+    mainPanel(
+      
+      withSpinner(verbatimTextOutput(outputId = "SIR_algorithm_output")),
+      
+    ), # end mainPanel
+  ),
+  
+)
+
+################################################################
+# RBR                                                          #
+################################################################
+
+page_rbr_comparison = div(
+  titlePanel("Relative Belief Ratio of Psi"), # placeholder title
+  
+  sidebarLayout(
+    sidebarPanel(
+      width = 3,
+      
+      numericInput(inputId = "rbr_numcells",
+                   label = 'Insert the number of subintervals for the density histogram',
+                   value = 100),
+      
+      numericInput(inputId = "rbr_mprior",
+                   label = '# of average points for the prior sample (smoother)',
+                   value = 7),
+      
+      numericInput(inputId = "rbr_mpost",
+                   label = '# of average points for the post sample (smoother)',
+                   value = 5),
+      
+      selectInput(inputId = "rbr_graph_layout", 
+                  label = 'What graph layout would you prefer?', 
+                  choices = list("Prior and posterior on different plots" = 1,
+                                 "Prior and posterior on the same plot" = 2), 
+                  selected = 1),
+      
+    ), # end of sidebarPanel
+    mainPanel(
+      
+      conditionalPanel(
+        # layout where prior and posterior are on different plots
+        condition = "input.rbr_graph_layout == 1",
+        tabPanel("Plots",
+          fluidRow(
+            splitLayout(
+              cellWidths = c("33%", "33%", "33%"), 
+                withSpinner(plotOutput("prior_psi_plot")), 
+                withSpinner(plotOutput("post_psi_plot")),
+                withSpinner(plotOutput("rbr_psi_plot"))
+            )
+          ),
+        ), 
+      ), # end conditional Panel
+      
+      conditionalPanel(
+        # layout where prior and posterior are on the same plot
+        condition = "input.rbr_graph_layout == 2",
+        tabPanel("Plots",
+          fluidRow(
+            splitLayout(
+              cellWidths = c("50%", "50%"), 
+              withSpinner(plotOutput("priorpost_psi_plot")), 
+              withSpinner(plotOutput("rbr_psi_plot_duplicate"))
+            )
+          ),
+        ), 
+      ), # end conditional Panel
+
+    ) # end of mainPanel
+    
+  )
+)
+
+
+################################################################
+# HYPOTHESIS TESTING                                           #
+################################################################
+
+page_psi_hypo_test = div(
+  titlePanel("Hypothesis Testing for Psi"), # placeholder title
+  
+  sidebarLayout(
+    sidebarPanel(
+      width = 3,
+      
+      p("Below is for accessing the hypothesis $H_{0} : \\psi = \\psi_{0}$"),
+      
+      numericInput(inputId = "psi0",
+                   label = 'Insert the value of $\\psi_{0}$',
+                   value = -2),
+      
+    ), # end of sidebarPanel
+    mainPanel(
+      
+      withSpinner(verbatimTextOutput(outputId = "psi_hypo_test_output")),
+      
+    ) # end of mainPanel
+    
+  )
+)
+
+
+#(OLD)
 ################################################################
 # PORTION FOR GRAPH BUILDING                                   #
 ################################################################
@@ -283,7 +415,10 @@ page_sampling = div(
   tabsetPanel(type = "tabs",
               tabPanel("Description", page_post_comp_description),
               tabPanel("Integrating with Respect to the Posterior", page_posteriorcomputations),
-              tabPanel("Comparison Plots for Mu", page_comparison_graphs),
+              tabPanel("SIR Algorithm", page_SIR_algorithm), # will probably re-name
+              tabPanel("Relative Belief Ratio of Psi", page_rbr_comparison),
+              tabPanel("Hypothesis Testing for Psi", page_psi_hypo_test)
+              #tabPanel("Comparison Plots for Mu", page_comparison_graphs),
   )
 )
 

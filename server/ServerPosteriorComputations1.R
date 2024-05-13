@@ -46,62 +46,191 @@ post_Y_metrics = reactive({
   Y_metrics(Y = input_Y_values(), p = post_sample_p_val())
 })
 
-post_sample_values = reactive({
+important_sample_values = reactive({
   set.seed(post_integ_seed())
   if(input$post_comp_use == 1){ # default option - use from the prior elicitation
-    sample_post_computations(N = input$post_bigN,
-                             n = post_Y_metrics()$n,
-                             Ybar = post_Y_metrics()$Ybar, 
-                             S = post_Y_metrics()$S,
-                             p = post_sample_p_val(),
-                             mu0 = prior_elicitation_mu_values()$mu0,
-                             lambda0 = prior_elicitation_mu_values()$lambda0
+    importance_sampler_computations(Npostimp = as.numeric(input$post_bigN), 
+                                    n = nrow(input_Y_values()),
+                                    Ybar = post_Y_metrics()$Ybar, 
+                                    S = post_Y_metrics()$S,
+                                    p = post_sample_p_val(), 
+                                    mu0 = prior_elicitation_mu_values()$mu0,
+                                    lambda0 = prior_elicitation_mu_values()$lambda0,
+                                    alpha01 = prior_elicitation_sigma_values()$alpha01,
+                                    alpha02 = prior_elicitation_sigma_values()$alpha02
     )
   } else if (input$post_comp_use == 2){ # use what is manually inserted
-    sample_post_computations(N = input$post_bigN, 
-                             n = post_Y_metrics()$n,
-                             Ybar = post_Y_metrics()$Ybar, 
-                             S = post_Y_metrics()$S,
-                             p = post_sample_p_val(),
-                             mu0 = create_necessary_vector(input$mu0_post),
-                             lambda0 = create_necessary_vector(input$lambda0_post)
+    importance_sampler_computations(Npostimp = as.numeric(input$post_bigN), 
+                                    n = nrow(input_Y_values()),
+                                    Ybar = post_Y_metrics()$Ybar, 
+                                    S = post_Y_metrics()$S,
+                                    p = post_sample_p_val(), 
+                                    mu0 = create_necessary_vector(input$mu0_post),
+                                    lambda0 = create_necessary_vector(input$lambda0_post),
+                                    alpha01 = create_necessary_vector(input$alpha01_post),
+                                    alpha02 = create_necessary_vector(input$alpha02_post)
     )
   }
 })
 
-post_sample_weights = reactive({
-  if(input$post_comp_use == 1){ # use from the prior elicitation
-    k(N = input$post_bigN, 
-      p = post_sample_p_val(), 
-      mu = post_sample_values()$mu_xi, 
-      xi = post_sample_values()$xi, 
-      mu0 = prior_elicitation_mu_values()$mu0,
-      lambda0 = prior_elicitation_mu_values()$lambda0,
-      alpha01 = prior_elicitation_sigma_values()$alpha01,
-      alpha02 = prior_elicitation_sigma_values()$alpha02)
-  } else if (input$post_comp_use == 2){
-    k(N = input$post_bigN, 
-      p = post_sample_p_val(), 
-      mu = post_sample_values()$mu_xi, 
-      xi = post_sample_values()$xi, 
-      mu0 = create_necessary_vector(input$mu0_post),
-      lambda0 = create_necessary_vector(input$lambda0_post),
-      alpha01 = prior_elicitation_sigma_values()$alpha01,
-      alpha02 = prior_elicitation_sigma_values()$alpha02)
-  }
+important_values_reformatted = reactive({
+  important_post_reformat(N = input$post_bigN, 
+                       p = post_sample_p_val(), 
+                       post_mu = important_sample_values()$mu_xi,
+                       post_xi = important_sample_values()$xi, 
+                       weights = important_sample_values()$weights_vector)
 })
 
-#0utput$testing_post = renderPrint({
+#output$testing_post = renderPrint({
+  #list("Npostimp" = input$post_bigN, 
+  #     "Ybar" = post_Y_metrics()$Ybar, 
+  #     "S" = post_Y_metrics()$S,
+  #     "p" = post_sample_p_val(), 
+  #     "mu0" = prior_elicitation_mu_values()$mu0,
+  #     "lambda0" = prior_elicitation_mu_values()$lambda0,
+  #     "alpha01" = prior_elicitation_sigma_values()$alpha01,
+  #     "alpha02" = prior_elicitation_sigma_values()$alpha02)
+  #important_sample_values()
+ # important_values_reformatted()
 #})
 
-sample_post_values_reformatted = reactive({
-  sample_post_reformat(N = input$post_bigN, 
-                       p = post_sample_p_val(), 
-                       post_mu = post_sample_values()$mu_xi,
-                       post_xi = post_sample_values()$xi, 
-                       weights = post_sample_weights()$weights_vector)
+important_values_reformatted_round = eventReactive(input$submit_sample_post, {
+  round(important_values_reformatted(), 10)
 })
 
-sample_post_values_reformatted_round = eventReactive(input$submit_sample_post, {
-  round(sample_post_values_reformatted(), 10)
+## adding new things (lots of things will need to be revised here...)
+
+post_SIR_calculations = reactive({
+  # the user may need to input
+  SIR_algorithm(Npostsamp = input$post_sample_N, 
+                cum_weights = important_sample_values()$cum_weights, 
+                p = post_sample_p_val(), 
+                mu_xi = important_sample_values()$mu_xi, 
+                xi = important_sample_values()$xi, 
+                Sigma = important_sample_values()$Sigma)
+})
+
+output$SIR_algorithm_output = renderPrint(
+  # may need to have a limited print. will look into it later.
+  list("mu_postsamp" = head(post_SIR_calculations()$sample_mu_xi, 5),
+       "xi_postsamp" = post_SIR_calculations()$sample_xi,
+       "Sigma_postsamp" = post_SIR_calculations()$sample_Sigma)
+)
+
+prior_psi_values = reactive({
+  prior_psi_plot_vals(numcells = input$rbr_numcells, 
+                      Nprior = input$prior_sample_bigN, 
+                      mprior = input$rbr_mprior,
+                      mu_prior = sample_prior_values()$mu_matrix, 
+                      Sigma_prior = sample_prior_values()$Sigma_mat[], 
+                      xi_prior = sample_prior_values()$xi_mat)
+})
+
+post_psi_values = reactive({
+  post_psi_plot_vals(Npostimp = input$post_bigN, # may need to make user input 
+                     numcells = input$rbr_numcells,
+                     mpost = input$rbr_mpost, 
+                     imp_mu = important_sample_values()$mu_xi, 
+                     imp_Sigma = important_sample_values()$Sigma, 
+                     imp_xi = important_sample_values()$xi, 
+                     imp_weights = important_sample_values()$weights_vector, 
+                     breaks = prior_psi_values()$psi_breaks,
+                     delta_psi = prior_psi_values()$delta_psi)
+})
+
+rbr_psi_values = reactive({
+  rbr_psi(numcells = input$rbr_numcells, 
+          prior_psi_dens_smoothed = prior_psi_values()$prior_psi_dens_smoothed, 
+          post_psi_dens_smoothed = post_psi_values())
+})
+
+##########################################################
+# plotting (in between)
+
+prior_psi_plot_DOWNLOAD = function(){
+  plot(prior_psi_values()$prior_psi_mids, 
+       prior_psi_values()$prior_psi_dens_smoothed, 
+       type = "l", xlab = "psi", ylab = "density", col = "red", 
+       main="The prior density of psi")
+}
+
+post_psi_plot_DOWNLOAD = function(){
+  plot(prior_psi_values()$prior_psi_mids, 
+       post_psi_values(), 
+       type = "l", xlab = "psi", ylab = "density", col = "blue", 
+       main="The posterior density of psi" )
+}
+
+priorpost_psi_plot_DOWNLOAD = function(){
+  max_val = plyr::round_any(max(c(prior_psi_values()$prior_psi_dens_smoothed, 
+                                  post_psi_values())), 
+                            accuracy = 0.1, f = ceiling)
+  ylim_vals = c(0, max_val)
+  
+  plot(prior_psi_values()$prior_psi_mids, 
+       prior_psi_values()$prior_psi_dens_smoothed, 
+       type = "l", xlab = "psi", ylab = "density", col = "red", 
+       main="The prior density of psi", ylim = ylim_vals)
+  lines(prior_psi_values()$prior_psi_mids, 
+        post_psi_values(), 
+        type = "l", 
+        xlab = "psi", ylab = "density", col = "blue", 
+        main="The posterior density of psi")
+}
+
+rbr_psi_plot_DOWNLOAD = function(){
+  plot(prior_psi_values()$prior_psi_mids, 
+       rbr_psi_values(), 
+       type = "l", xlab = "psi", ylab = "RBR", col = "green", 
+       main="The relative belief ratio of psi")
+}
+
+
+output$prior_psi_plot = renderPlot({
+  prior_psi_plot_DOWNLOAD()
+})
+
+output$post_psi_plot = renderPlot({
+  post_psi_plot_DOWNLOAD()
+})
+
+output$priorpost_psi_plot = renderPlot({
+  priorpost_psi_plot_DOWNLOAD()
+})
+
+output$rbr_psi_plot = renderPlot({
+  rbr_psi_plot_DOWNLOAD()
+})
+
+output$rbr_psi_plot_duplicate = renderPlot({
+  rbr_psi_plot_DOWNLOAD()
+})
+
+# end of plot; inferences are shown below
+
+RBest_value = reactive({
+  prior_psi_values()$prior_psi_mids[which.max(rbr_psi_values())]
+})
+
+plausible_region_estimation = reactive({
+  plausible_region_est(prior_psi_mids = prior_psi_values()$prior_psi_mids, 
+                       RB_psi = rbr_psi_values(), 
+                       post_psi_dens_smoothed = post_psi_values(),
+                       delta_psi = prior_psi_values()$delta_psi)
+})
+
+psi_hypothesis_testing = reactive({
+  psi_hypothesis_test(psi_0 = input$psi0, 
+                      prior_psi_mids = prior_psi_values()$prior_psi_mids, 
+                      RB_psi = rbr_psi_values(), 
+                      post_psi_dens_smoothed = post_psi_values(),
+                      delta_psi = prior_psi_values()$delta_psi)
+})
+
+output$psi_hypo_test_output = renderPrint({
+  list("Estimate of true value of psi from the relative belief ratio" = RBest_value(),
+       "Plausible region" = plausible_region_estimation()$plaus_interval,
+       "Posterior content of the plausible regiion" = plausible_region_estimation()$plaus_content,
+       "The evidence concerning strength H_0 : psi = psi_0" = psi_hypothesis_testing()$psi_message,
+       "The strength" = psi_hypothesis_testing()$strength_message)
 })

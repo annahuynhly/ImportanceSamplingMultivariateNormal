@@ -1,0 +1,86 @@
+#############################################################
+# Part 0: Data Input and Sufficient Statistics Computations #
+#############################################################
+#May 1, 2024
+
+#If you haven't installed any of the packages yet, comment out below.
+#install.packages("latex2exp")
+#install.packages("MASS")
+#install.packages("pracma")
+#install.packages("dplyr")
+library(latex2exp) # for LaTeXing in the graphs
+library(MASS) # Used for mvrnorm (generating from a multinormal dist)
+library(pracma) # Used for trapz (computing area of histogram)
+library(dplyr) # Used for between
+
+# setting the seed so that computations can be repeated provided all relevant Parts are run consecutively
+set.seed(1)
+
+
+########################################################################################
+#A Here is the code to generate some test data. To input data from a file see B below. #
+ 
+# p = dimension
+p = 5
+
+# generate N_p(mu, sigma_mat) sample of size n
+mu = c(-2, -1, 0, 1, 2) 
+sigma = diag(c(2, 1, 0.5, 1, 2))
+R = 1/2 * diag(5) + 1/2 * c(1, 1, 1, 1, 1) %*%  t(c(1, 1, 1, 1, 1))
+sigma_mat = sigma %*% R %*% sigma
+n = 50 # sample size
+Y = mvrnorm(n = n, mu = mu, Sigma = sigma_mat)
+
+Y_data = as.data.frame(Y)
+colnames(Y_data) = c("Y1", "Y2", "Y3", "Y4", "Y5")
+
+Y_data = as.matrix(Y_data)
+
+#################################################################################
+
+######################################################################################
+#B Here is the code to input data from a file. Use the code at A if using test data. #
+
+# input the data into a_data nxp data matrix Y 
+# the data is in a .csv file stored in a directory specified by the user
+# use setwd to access this directory
+setwd("C:/Users/mevan/Desktop/program/data example")
+Y_data = read.csv("Y_example.csv")
+p=ncol(Y_data)
+Y_data = as.matrix(Y_data)
+#####################################################################################
+
+
+################################################################################
+# Here is the code to compute the statistics (Ybar,S) where Ybar is the sample #
+# mean vector and S is (n-1)x(the sample variance matrix)                      #
+################################################################################
+
+Y_metrics = function(Y, p){
+  #' Given the observed sample (Y) and the number of dimensions (p), 
+  #' computes Ybar (the row means of the observed sample) and S.
+  if(is.numeric(Y) == TRUE){
+    n = nrow(Y)
+    if(n < (2*p)){
+      return("Error: the value of n (size of Y) is too small.")
+    }
+    Yprime = t(Y)
+    Ybar = rowMeans(Yprime) # rowMeans(t(Y))
+    In = matrix(t(rep(1, n))) # identity column
+    Ybar_t = matrix(Ybar, nrow=1, ncol = p) # transpose
+    
+    S = t(Y - In%*%Ybar) %*% (Y - In%*%Ybar) 
+  } else {
+    return("Error: no proper data given.")
+  }
+  newlist = list("Ybar" = Ybar, "S" = S)
+  return(newlist)
+}
+
+Y_suff_stat = Y_metrics(Y = Y_data, p = p)
+
+# minimal sufficient statistics
+S = Y_suff_stat$S
+Ybar = Y_suff_stat$Ybar
+
+

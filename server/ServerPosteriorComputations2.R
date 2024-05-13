@@ -12,7 +12,7 @@ observeEvent(input$submit_sample_post, {
 #show the next five columns 
 observeEvent(input$post_next_five, {
   #stop when the last column is displayed
-  if(post_display_cols$showing[[length(post_display_cols$showing)]] < length(sample_post_values_reformatted_round())) {
+  if(post_display_cols$showing[[length(post_display_cols$showing)]] < length(important_values_reformatted_round())) {
     hideCols(post_proxy, post_display_cols$showing, reset = FALSE) #hide displayed cols
     post_display_cols$showing = post_display_cols$showing + 5
     showCols(post_proxy, post_display_cols$showing, reset = FALSE) #show the next five 
@@ -30,15 +30,16 @@ observeEvent(input$post_prev_five, {
 })
 
 output$post_display_table = renderDT(
-  sample_post_values_reformatted_round(),
+  important_values_reformatted_round(),
   options = list(
     #hide all columns
-    columnDefs = list(list(visible = FALSE, targets = 1:length(sample_post_values_reformatted_round()))), 
+    columnDefs = list(list(visible = FALSE, targets = 1:length(important_values_reformatted_round()))), 
     scrollX = TRUE)  #for when many columns are visible
 )
 
 post_proxy = dataTableProxy('post_display_table')
 
+# (may be old)
 ################################################################
 # CODE FOR COMPUTING THE EFFECTIVE RANGE                       #
 ################################################################

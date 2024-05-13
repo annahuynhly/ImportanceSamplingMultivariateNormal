@@ -1,0 +1,62 @@
+#############################
+#Part 6. Inferences for psi #
+#############################
+#May 1, 2024
+
+##############################################################
+# estimate of true value of psi from the relative belief ratio
+RBest = prior_psi_mids[which.max(RB_psi)]
+cat("RB estimate of psi = ", RBest,"\n")
+
+################################################################
+# estimating plausible region.the values of psi where the RB > 1
+# note that this may not be an interval if RB is multimodal
+
+for (i in 2:(length(prior_psi_mids)-1)){
+if (RB_psi[i] > 1 & RB_psi[i-1] <= 1){
+cat("plausible interval = (", prior_psi_mids[i],", ")
+}
+if (RB_psi[i] > 1 & RB_psi[i+1] <= 1){
+cat(prior_psi_mids[i]," )","\n")
+}
+}
+
+##########################################
+# getting the posterior content of the plausible region
+plaus_content = 0
+for(i in 1:length(prior_psi_mids)){
+    if(RB_psi[i] > 1){
+    plaus_content = plaus_content + post_psi_dens_smoothed[i]
+}
+}
+plaus_content = plaus_content * delta_psi
+plaus_content
+
+#####################################################################################################
+# assess hypothesis H_0 : psi = psi_0
+psi_0 = -2
+psi_0_index = which.min(abs(prior_psi_mids - psi_0))
+
+# evidence for or against psi0
+if (RB_psi[psi_0_index] > 1){
+cat("RB of psi_0 = ",RB_psi[psi_0_index]," so there is evidence in favor of H_0 : psi = ",psi_0,"\n")
+}
+if (RB_psi[psi_0_index] < 1){
+cat("RB of psi_0 = ", RB_psi[psi_0_index]," so there is evidence against H_0 : psi = ",psi_0,"\n")
+}
+if (RB_psi[psi_0_index] == 1){
+cat("RB of psi_0 = ", RB_psi[psi_0_index]," so there is no evidence either in favor of or against H_0 : psi = ",psi_0,"\n")
+}
+
+
+##################################################################################
+# compute the evidence concerning strength H_0 : psi = psi_0
+indices = which(RB_psi <= RB_psi[psi_0_index])
+# Compute the strength
+strength_psi_0 = sum(post_psi_dens_smoothed[indices]) * delta_psi
+cat("Strength of the evidence concerning H_0 : psi= psi_0 = ", strength_psi_0,"\n")
+
+
+
+
+

@@ -138,7 +138,7 @@ output$download_prior_elicit_sigma = downloadHandler(
     png(file)
     elicit_prior_graphs()
     dev.off()
-})
+  })
 
 # Prior Elicitation for mu_{i} #################################
 
@@ -262,6 +262,7 @@ output$download_prior_elicit_mu_plot = downloadHandler(
     prior_elicit_mu_graph_item()
     dev.off()
   })
+
 
 
 

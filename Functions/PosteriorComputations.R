@@ -2,7 +2,7 @@
 # MAIN FUNCTIONS                                               #
 ################################################################
 
-sample_post_reformat = function(N, p, post_mu, post_xi, weights){
+important_post_reformat = function(N, p, post_mu, post_xi, weights){
   #' Reformats the data for the user to download.
   #' @param N represents the Monte Carlo sample size.
   #' @param p represents the number of dimensions.
@@ -63,48 +63,305 @@ Y_metrics = function(Y, p){
   return(newlist)
 }
 
-sample_post_computations = function(N, n, Ybar, S, p, mu0, lambda0){
-  #' This generates a sample of N from the posterior on (mu, xi) from theorem 4 of the paper.
-  #' @param N represents the Monte Carlo sample size.
-  #' @param n represents the number of rows from the observed sample.
+importance_sampler_computations = function(Npostimp, n, Ybar, S, p, mu0, lambda0, alpha01, alpha02){
+  #' This generates a sample of Npostimp from the importance sampler on (mu, xi) from theorem 4 of the paper.
+  #' It also computes the weights and the cumulative weights.
+  #' @param Npostimp represents the Monte Carlo sample size.
+  #' @param n represents the sample size of Y # note: not in the researcher's version...
   #' @param Y represents the row means of the observed sample.
   #' @param S represents the covariance matrix of the observed sample.
   #' @param p represents the number of dimensions.
-  lambda02 = max(lambda0)^2
-  Sigma_Y = find_inverse_alt((S + n/(1 + n * lambda02) * (Ybar - mu0) %*% t(Ybar - mu0)))
-  mu_Y = ((n + 1/lambda02)^-1) * (mu0/lambda02 + n * Ybar)
-  xi = rWishart(n = N, df = (n - p - 1), Sigma = Sigma_Y) # See Eq 13
   
-  mu_xi = matrix(NA, nrow = N, ncol = p)
-  for(k in 1:N){
-    mu_Sigma = ((n + 1/lambda02)^-1) * find_inverse_alt(xi[,,k])
-    mu_xi[k,] = mvrnorm(n = 1, mu = mu_Y, Sigma = mu_Sigma) # See Eq 13 (mu conditional on xi)
-  }
-  
-  return(list("xi" = xi, "mu_xi" = mu_xi))
-}
-
-k = function(N, p, mu, xi, mu0, lambda0, alpha01, alpha02){
-  #' This represents the k function explained in theorem 4. 
-  #' This function also computes the weights.
-  #' @param p represents the number of dimensions.
-  lambda02 = (max(lambda0))**2
+  lambda0sq = max(lambda0)^2
   Lambda0 = diag(lambda0)
   inv_L0 = diag(1/lambda0)
   
-  k_vector = numeric(N)
-  for(i in 1:N){
-    mu_i = mu[i,]
-    xi_i = xi[,,i]
-    sigma_ii = diag(find_inverse_alt(xi_i)) # NEW
-    logk = -(1/2) * t(mu_i - mu0) %*% (inv_L0 %*% xi_i %*% inv_L0 - (1/lambda02)*xi_i) %*% (mu_i - mu0)
+  # generate xi matrices and corresponding Sigma = xi^{-1} matrices
+  Sigma = vector("list", Npostimp)
+  Sigma_Y = find_inverse_alt((S + n/(1 + n * lambda0sq) * (Ybar - mu0) %*% t(Ybar - mu0)))
+  xi = rWishart(Npostimp, df = (n - p - 1), Sigma = Sigma_Y)
+  for (i in 1:Npostimp){
+    Sigma[[i]] = find_inverse_alt(xi[,,i])
+  }
+  
+  # generate the mu values given the corresponding xi and also compute the importance sampling weights
+  mu_Y = ((n + 1/lambda0sq)^-1) * (mu0/lambda0sq + n * Ybar)
+  mu_xi = matrix(NA, nrow = Npostimp, ncol = p)
+  k_vector = numeric(Npostimp)
+  
+  for(i in 1:Npostimp){
+    mu_Sigma = ((n + 1/lambda0sq)^-1) * Sigma[[i]]
+    mu_xi[i,] = mvrnorm(n = 1, mu = mu_Y, Sigma = mu_Sigma) # See Eq 13 (mu conditional on xi)
+    # computing the k function
+    sigma_ii = diag(Sigma[[i]]) 
+    logk = -(1/2) * t(mu_xi[i,] - mu0) %*% (inv_L0 %*% xi[,,i] %*% inv_L0 - (1/lambda0sq)*xi[,,i]) %*% (mu_xi[i,] - mu0)
     logk2 = sum(-(alpha01 + (p+1)/2) * log(sigma_ii) - (alpha02/sigma_ii))
     k_vector[i] = exp(logk + logk2)
   }
   weights_vector = k_vector / sum(k_vector)
-  newlist = list("k_vector" = k_vector, "weights_vector" = weights_vector)
+  cum_weights = cumsum(weights_vector)
+  
+  return(list("xi" = xi, "mu_xi" = mu_xi, "Sigma" = Sigma, "weights_vector" = weights_vector, 
+              "cum_weights" = cum_weights))
+}
+
+SIR_algorithm = function(Npostsamp, cum_weights, p, mu_xi, xi, Sigma){
+  #' Using the SIR algorithm from Rubin, values of i in {1, 2, ..., Npostimp}  
+  #' and corresponding values of mu, xi and Sigma.   
+  #' @param Npostsamp the size of the sample that will be generated.
+  #' @param cum_weights the vector containing the cumulative weights.
+  #' @param mu the mu matrix.
+  #' @param xi the list containing xi's.
+  U = runif(Npostsamp)
+  i = findInterval(U, cum_weights)+1
+  sample_mu_xi = mu_xi[i, ]
+  sample_xi = xi[,,i]
+  sample_Sigma = Sigma[i]
+  newlist = list("sample_mu_xi" = sample_mu_xi, "sample_xi" = sample_xi, "sample_Sigma" = sample_Sigma)
   return(newlist)
 }
+
+psifn = function(muval, xival, Sigmaval){
+  # muval is a vector of means
+  # xival is a precision matrix associated with variance matrix Sigmaval
+  # the code here depends on the psi function we wish to make inference about
+  psi=muval[1]
+  return(psi)
+}
+
+prior_psi = function(Nprior, mu_prior, Sigma_prior, xi_prior){
+  # obtaining the prior density of psi.
+  # (ideally use the data generated from the sample)
+  
+  # compute prior sample of psi values 
+  prior_psi_vals = numeric(Nprior)
+  for (i in 1:Nprior){
+    prior_psi_vals[i] = psifn(mu_prior[i], xi_prior[[i]], Sigma[[i]])
+  }
+  
+  newlist = list("prior_psi_vals" = prior_psi_vals,
+                 "prior_psi_lower_bd" = min(prior_psi_vals),
+                 "prior_psi_upper_bd" = max(prior_psi_vals))
+}
+
+prior_psi_plot_vals = function(numcells = 100, Nprior, mprior = 7, 
+                               mu_prior, Sigma_prior, xi_prior){
+  # getting values from the plot
+  prior_vals = prior_psi(Nprior, mu_prior, Sigma_prior, xi_prior)
+  prior_psi_vals = prior_vals$prior_psi_vals
+  prior_psi_upper_bd = prior_vals$prior_psi_upper_bd
+  prior_psi_lower_bd = prior_vals$prior_psi_lower_bd
+  
+  delta_psi = (prior_psi_upper_bd - prior_psi_lower_bd) /numcells 
+  breaks = seq(prior_psi_lower_bd, prior_psi_upper_bd, by = delta_psi)
+  
+  prior_psi_hist = hist(prior_psi_vals, breaks, freq = F)
+  prior_psi_mids = prior_psi_hist$mids
+  prior_psi_density = prior_psi_hist$density 
+  
+  # smoothed plot of the prior density of psi
+  # if a plot is too rough smooth by averaging
+  # mprior = an odd number of points to average prior density values, (mprior=1,3,5,...) by averaging
+  # the density value, (mprior-1)/2 values to the left and (mprior-1)/2 values to the right
+  prior_psi_dens_smoothed = prior_psi_density
+  halfm = (mprior-1)/2
+  for(i in (1+halfm):(numcells-halfm)){
+    sum = 0
+    for (j in (-halfm):halfm){
+      sum = sum + prior_psi_density[i+j]
+    }
+    prior_psi_dens_smoothed[i]=sum/mprior  
+  }
+  newlist = list("prior_psi_mids" = prior_psi_mids, 
+                 "prior_psi_dens_smoothed" = prior_psi_dens_smoothed,
+                 "psi_breaks" = breaks,
+                 "delta_psi" = delta_psi)
+}
+
+post_psi = function(Npostimp, numcells = 100, imp_mu, imp_Sigma, imp_xi, imp_weights,
+                    breaks){
+  
+  # compute sample of psi values generated by the importance sampler 
+  imp_psi_vals = numeric(Npostimp)
+  for (i in 1:Npostimp){
+    imp_psi_vals[i] = psifn(imp_mu[i],imp_xi[[i]],imp_Sigma[[i]])
+  }
+  
+  # compute the estimate of the posterior cdf of psi
+  nbreaks = numcells+1
+  post_psi_cdf = rep(0, nbreaks)
+  for(i in 2:nbreaks){
+    for(j in 1:Npostimp){
+      if(imp_psi_vals[j] <= breaks[i]){
+        post_psi_cdf[i] = post_psi_cdf[i] + imp_weights[j]
+      }
+    }
+  }
+  
+  # check interval (prior_psi_lower_bd, prior_psi_upper_bd) covers importance sampling values of psi.
+  post_psi_upper_bd = min(imp_psi_vals) - breaks[1] # should be positive
+  post_psi_lower_bd = max(imp_psi_vals) - breaks[nbreaks] # should be negative
+  
+  newlist = list("post_psi_upper_bd" = post_psi_upper_bd, "post_psi_lower_bd" = post_psi_lower_bd,
+                 "post_psi_cdf" = post_psi_cdf)
+  
+  return(newlist)
+}
+
+post_psi_plot_vals = function(Npostimp, numcells = 100, mpost = 5,
+                              imp_mu, imp_Sigma, imp_xi, imp_weights, breaks,
+                              delta_psi){
+  
+  post_psi_vals = post_psi(Npostimp, numcells, imp_mu, imp_Sigma, imp_xi, imp_weights, breaks)
+  post_psi_cdf = post_psi_vals$post_psi_cdf
+  
+  # compute posterior density of psi
+  post_psi_density = diff(post_psi_cdf)/delta_psi
+  
+  # smoothed plot of the posterior density of psi
+  # if a plot is too rough smooth by averaging
+  # mprior = an odd number of points to average prior density values, (mprior=1,3,5,...) by averaging
+  # the density value, (mpost-1)/2 values to the left and (mpost-1)/2 values to the right
+  post_psi_dens_smoothed = post_psi_density
+  halfm = (mpost-1)/2
+  for (i in (1+halfm):(numcells-halfm)){
+    sum = 0
+    for (j in (-halfm):halfm){
+      sum = sum + post_psi_density[i+j]
+    }
+    post_psi_dens_smoothed[i] = sum/mpost  
+  }
+  
+  return("post_psi_dens_smoothed" = post_psi_dens_smoothed)
+}
+
+rbr_psi = function(numcells = 100, prior_psi_dens_smoothed, post_psi_dens_smoothed){
+  # obtain the relative belief ratio of psi
+  RB_psi = rep(0, numcells)
+  for (i in 1:numcells){
+    if (prior_psi_dens_smoothed[i] != 0){
+      RB_psi[i] = post_psi_dens_smoothed[i]/prior_psi_dens_smoothed[i]}
+  }
+  return(RB_psi)
+}
+
+plausible_region_est = function(prior_psi_mids, RB_psi, post_psi_dens_smoothed,
+                                delta_psi){
+  # estimating plausible region
+  plaus_region = ifelse(RB_psi > 1, prior_psi_mids, 0)
+  
+  # getting the interval instead
+  nonzero_values = plaus_region[plaus_region != 0]
+  plaus_interval = c(nonzero_values[1], nonzero_values[length(nonzero_values)])
+  
+  # getting the posterior content of the plausible region
+  plaus_content = 0
+  for(i in 1:length(prior_psi_mids)){
+    if(RB_psi[i] > 1){
+      plaus_content = plaus_content + post_psi_dens_smoothed[i]
+    }
+  }
+  plaus_content = plaus_content * delta_psi
+  
+  newlist = list("plaus_region" = plaus_region,
+                 "plaus_interval" = plaus_interval,
+                 "plaus_content" = plaus_content)
+  return(newlist)
+}
+
+psi_hypothesis_test = function(psi_0 = -2, prior_psi_mids, RB_psi, post_psi_dens_smoothed,
+                               delta_psi){
+  
+  psi_0_index = which.min(abs(prior_psi_mids - psi_0))
+  
+  # evidence for or against psi0
+  if(RB_psi[psi_0_index] > 1){
+    psi_message = paste("RB of psi_0 = ",RB_psi[psi_0_index]," so there is evidence in favor of H_0 : psi = ",
+                        psi_0, sep ="")
+  }
+  else if(RB_psi[psi_0_index] < 1){
+    psi_message = paste("RB of psi_0 = ", RB_psi[psi_0_index]," so there is evidence against H_0 : psi = ",
+                        psi_0, sep = "")
+  }
+  else if(RB_psi[psi_0_index] == 1){
+    psi_message = paste("RB of psi_0 = ", RB_psi[psi_0_index],
+                        " so there is no evidence either in favor of or against H_0 : psi = ",
+                        psi_0, sep = "")
+  }
+  
+  # compute the evidence concerning strength H_0 : psi = psi_0
+  indices = which(RB_psi <= RB_psi[psi_0_index])
+  # Compute the strength
+  strength_psi_0 = sum(post_psi_dens_smoothed[indices]) * delta_psi
+  strength_msg = paste("Strength of the evidence concerning H_0 : psi= psi_0 = ", strength_psi_0, sep = "")
+  
+  newlist = list("psi_message" = psi_message, "indices" = indices, "strength_message" = strength_msg)
+  
+  return(newlist)
+}
+
+
+################################################################
+# GRAPH FUNCTIONS                                              #
+################################################################
+
+comparison_content_density_plot = function(prior_density, post_density, col_num, 
+                                           prior_grid, post_grid,
+                                           min_xlim = -10, max_xlim = 10,
+                                           smooth_num = c(1, 1), 
+                                           colour_choice = c("red", "blue"),
+                                           lty_type = c(2, 2), transparency = 0.4){
+  #' Creates a density plot for the prior/posterior content.
+  #' @param prior_density vector containing prior density values.
+  #' @param post_density vector containing the posterior density values.
+  #' @param col_num column number of interest.
+  #' @param prior_grid plotted x-values for the prior.
+  #' @param post_grid plotted x-values for the posterior.
+  #' @param min_xlim smaller cutoff of the plot.
+  #' @param max_xlim larger cutoff of the plot.
+  #' @param smooth_num vector containing the number of points to average out the density plot.
+  #'        The first value is for the prior, and the second is for the posterior.
+  #' @param colour_choice vector containing colour for the density plot line.
+  #'        The first value is for the prior, and the second is for the posterior.
+  #' @param lty_type vector containing line type (same values as base R plotting).
+  #'        The first value is for the prior, and the second is for the posterior.
+  #' @param transparency transparency percentage for the area of the density plot. 
+  #'                     Set to 0 if you don't want the area highlighted.
+  prior_col_rgb = col2rgb(colour_choice[1])
+  post_col_rgb = col2rgb(colour_choice[2])
+  
+  prior_area_col = rgb(prior_col_rgb[1]/255, prior_col_rgb[2]/255, prior_col_rgb[3]/255, 
+                       alpha = transparency)
+  post_area_col = rgb(post_col_rgb[1]/255, post_col_rgb[2]/255, post_col_rgb[3]/255, 
+                      alpha = transparency)
+  
+  prior_density_vals = average_vector_values(prior_density[,col_num], smooth_num[1])
+  post_density_vals = average_vector_values(post_density[,col_num], smooth_num[2])
+  
+  max_ylim = max(c(max(prior_density_vals), max(post_density_vals)))
+  
+  plot(prior_grid[,col_num], prior_density_vals,
+       xlim = c(min_xlim, max_xlim), 
+       ylim = c(0, max_ylim),
+       col = colour_choice[1],
+       main = TeX(paste("Prior & Posterior Density Histogram of $\\mu_{", col_num, "}$")),
+       xlab = TeX(paste("Value of $\\mu_{", col_num, "}$")),
+       ylab = "Density",
+       type = "l", lty = lty_type[1], lwd = 2)
+  
+  lines(post_grid[,col_num], post_density_vals, 
+        lty = lty_type[2], lwd = 2, col = colour_choice[2])
+  
+  polygon(prior_grid[, col_num], prior_density_vals, col = prior_area_col, border = NA)
+  polygon(post_grid[, col_num], post_density_vals, col = post_area_col, border = NA)
+  
+  legend("topleft", legend=c("Prior", "Posterior"),
+         col= colour_choice, lty=lty_type, cex=0.8)
+}
+
+################################################################
+# OLD FUNCTIONS                                                #
+################################################################
 
 posterior_content = function(N, p, effective_range, mu, xi, weights){
   #' Computes the posterior content from the sample of the posterior.
@@ -176,67 +433,6 @@ relative_belief_ratio = function(p, prior_content, post_content){
   return(newlist)
 }
 
-################################################################
-# GRAPH FUNCTIONS                                              #
-################################################################
-
-comparison_content_density_plot = function(prior_density, post_density, col_num, 
-                                           prior_grid, post_grid,
-                                           min_xlim = -10, max_xlim = 10,
-                                           smooth_num = c(1, 1), 
-                                           colour_choice = c("red", "blue"),
-                                           lty_type = c(2, 2), transparency = 0.4){
-  #' Creates a density plot for the prior/posterior content.
-  #' @param prior_density vector containing prior density values.
-  #' @param post_density vector containing the posterior density values.
-  #' @param col_num column number of interest.
-  #' @param prior_grid plotted x-values for the prior.
-  #' @param post_grid plotted x-values for the posterior.
-  #' @param min_xlim smaller cutoff of the plot.
-  #' @param max_xlim larger cutoff of the plot.
-  #' @param smooth_num vector containing the number of points to average out the density plot.
-  #'        The first value is for the prior, and the second is for the posterior.
-  #' @param colour_choice vector containing colour for the density plot line.
-  #'        The first value is for the prior, and the second is for the posterior.
-  #' @param lty_type vector containing line type (same values as base R plotting).
-  #'        The first value is for the prior, and the second is for the posterior.
-  #' @param transparency transparency percentage for the area of the density plot. 
-  #'                     Set to 0 if you don't want the area highlighted.
-  prior_col_rgb = col2rgb(colour_choice[1])
-  post_col_rgb = col2rgb(colour_choice[2])
-  
-  prior_area_col = rgb(prior_col_rgb[1]/255, prior_col_rgb[2]/255, prior_col_rgb[3]/255, 
-                       alpha = transparency)
-  post_area_col = rgb(post_col_rgb[1]/255, post_col_rgb[2]/255, post_col_rgb[3]/255, 
-                      alpha = transparency)
-  
-  prior_density_vals = average_vector_values(prior_density[,col_num], smooth_num[1])
-  post_density_vals = average_vector_values(post_density[,col_num], smooth_num[2])
-  
-  max_ylim = max(c(max(prior_density_vals), max(post_density_vals)))
-  
-  plot(prior_grid[,col_num], prior_density_vals,
-       xlim = c(min_xlim, max_xlim), 
-       ylim = c(0, max_ylim),
-       col = colour_choice[1],
-       main = TeX(paste("Prior & Posterior Density Histogram of $\\mu_{", col_num, "}$")),
-       xlab = TeX(paste("Value of $\\mu_{", col_num, "}$")),
-       ylab = "Density",
-       type = "l", lty = lty_type[1], lwd = 2)
-  
-  lines(post_grid[,col_num], post_density_vals, 
-        lty = lty_type[2], lwd = 2, col = colour_choice[2])
-  
-  polygon(prior_grid[, col_num], prior_density_vals, col = prior_area_col, border = NA)
-  polygon(post_grid[, col_num], post_density_vals, col = post_area_col, border = NA)
-  
-  legend("topleft", legend=c("Prior", "Posterior"),
-         col= colour_choice, lty=lty_type, cex=0.8)
-}
-
-################################################################
-# OLD FUNCTIONS                                                #
-################################################################
 
 sample_hyperparameters = function(gamma, alpha01, alpha02, m1, m2){
   lambda0 = (m2 - m1)/(2 * sqrt(alpha02/alpha01) * qt((1 + gamma)/2, df = 2 * alpha01))

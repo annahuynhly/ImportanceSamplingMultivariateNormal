@@ -424,6 +424,21 @@ relative_belief_ratio = function(p, prior_content, post_content){
   return(newlist)
 }
 
+SIR_algorithm = function(N, cum_weights, p, mu, xi){
+  #' Using the SIR algorithm from Rubin, generates U ~ Uniform(0, 1) and samples
+  #' a value of mu and xi. (Need a better description?)
+  #' @param N the size that will be generated.
+  #' @param cum_weights the vector containing the cumulative weights.
+  #' @param mu the mu matrix.
+  #' @param xi the list containing xi's.
+  U = runif(N)
+  i = findInterval(U, cum_weights)
+  sample_mu = mu[i, ]
+  sample_xi = xi[,,i]
+  newlist = list("sample_mu" = sample_mu, "sample_xi" = sample_xi)
+  return(newlist)
+}
+
 # Values #########################################
 
 post_vals = sample_post_computations(N = N, Ybar = Ybar, S = S, p = p, 
@@ -432,6 +447,9 @@ post_vals = sample_post_computations(N = N, Ybar = Ybar, S = S, p = p,
 
 post_xi = post_vals$xi
 post_mu = post_vals$mu
+
+post_SIR_sample = SIR_algorithm(N = 1000, cum_weights = post_vals$cum_weights, 
+                                p = p, mu = post_mu, xi = post_xi)
 
 TRU_eff_ran = elicit_prior_effective_range(p, m = m, alpha01, alpha02, mu0, lambda0, 
                                            x_low = -10, quantile_val = c(0.005, 0.995))

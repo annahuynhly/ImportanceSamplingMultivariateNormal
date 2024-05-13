@@ -1,0 +1,19 @@
+Multivariate Nornal Code
+------------------------
+
+Part 0: Data Input and Sufficient Statistics Computations
+Part 1: Elicitation of the Prior 
+        - user needs to provide inputs for the elicitation
+Part 2: Sampling from the prior 
+        - user needs to input Monte Carlo sample size Nprior and program uses output from Part 2 
+Part 3: Sampling from the Importance Sampler for Posterior Calculations 
+        - user needs to input Monte Carlo sample size Npostimp and program uses output from Part 1
+Part 4: SIR Algorithm to Approximately Sample from the Posterior 
+        - user needs to input Monte Carlo sample size Npost and progam uses output from Part 3
+        - this is not essential for any of the other calculations
+Part 5: Calculating the Prior Density, Posterior Density and Relative Belief Ratio for the Parameter of Interest psi 
+        - program uses output from Parts 2 and 3 and user needs to interact with the program
+          to determine the number of cells used for the density estimation (numcells) and the
+          amount of smoothing mprior for the prior and mpost for the posterior
+Part 6. Inferences for psi
+        - uses output from Part 5

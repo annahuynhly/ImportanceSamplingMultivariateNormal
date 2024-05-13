@@ -18,8 +18,8 @@ elicit_prior_sigma_function = function(p, gamma, s1, s2, upper_bd, lower_bd){
   
   gam = (1+gamma)/2
   z0 = qnorm(gam,0,1)
-  lwbdinvsigma2 = (z0/s1)**2 
-  upbdinvsigma2 = (z0/s2)**2 
+  upbdinvsigma2 = (z0/s1)**2 
+  lwbdinvsigma2 = (z0/s2)**2 
   
   alpha01 = numeric(p) 
   alpha02 = numeric(p)
@@ -32,8 +32,8 @@ elicit_prior_sigma_function = function(p, gamma, s1, s2, upper_bd, lower_bd){
     alphaup = upper_bd[j]
     for (i in 1:maxits){
       alpha = (alphalow + alphaup)/2
-      beta = qgamma(gam, alpha, 1)/lwbdinvsigma2[j]
-      test = pgamma(beta*upbdinvsigma2[j], alpha, 1)
+      beta = qgamma(gam, alpha, 1)/upbdinvsigma2[j]
+      test = pgamma(beta*lwbdinvsigma2[j], alpha, 1)
       if (abs(test-(1-gam)) <= eps) { break }
       if (test < 1 - gam) { alphaup = alpha} 
       else if (test > 1 - gam) { alphalow = alpha }
@@ -58,12 +58,14 @@ elicit_prior_mu_function = function(p, gamma, m1, m2, s1, s2, alpha01, alpha02){
     if(length(i) != p){ return("Error: there is a vector that doesn't have length p.") }
   }
   mu0 = (m1 + m2)/2 
-  lambda0 = (m2 - m1)/(2 * sqrt(alpha02/alpha01) * qt((1 + gamma)/2, df = 2 * alpha01))
+  gam = (1+gamma)/2
+  lambda0 = (m2 - m1)/(2 * sqrt(alpha02/alpha01) * qt(gam, df = 2 * alpha01))
   
   newlist = list("mu0" = mu0, "lambda0" = lambda0, "m1" = m1, "m2" = m2)
   return(newlist)
 }
 
+# note: may remove the function shown below.
 elicit_prior_effective_range = function(p, m = 200, alpha01, alpha02, mu0, lambda0, 
                                         x_low, quantile_val = c(0.005, 0.995)){
   #' Computes the effective range from the true prior.

@@ -6,7 +6,7 @@ prior_sampling_seed = reactive(input$prior_seed)
 
 sample_prior_values = eventReactive(input$submit_prior_sampling, {
   set.seed(prior_sampling_seed())
-  sample_prior(N = input$prior_sample_bigN, 
+  sample_prior(Nprior = input$prior_sample_bigN, 
                p = input$num_dimensions, 
                alpha01 = prior_elicitation_sigma_values()$alpha01,
                alpha02 = prior_elicitation_sigma_values()$alpha02,
@@ -18,8 +18,8 @@ sample_prior_values_cleaned = eventReactive(input$submit_prior_sampling, {
   sample_prior_data_cleaning(N = input$prior_sample_bigN, 
                              p = input$num_dimensions, 
                              mu_matrix = sample_prior_values()$mu_matrix, 
-                             sigma_ii_matrix = sample_prior_values()$sigma_ii,
-                             correlation_matrix = sample_prior_values()$correlation_matrix)
+                             sigma_ii_matrix = sample_prior_values()$sigma_ii_mat,
+                             correlation_matrix = sample_prior_values()$Sigma_mat)
 })
 
 sample_prior_values_cleaned_round = eventReactive(input$submit_prior_sampling, {
