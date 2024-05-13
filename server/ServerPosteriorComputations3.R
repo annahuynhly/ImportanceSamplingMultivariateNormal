@@ -79,12 +79,21 @@ output$sample_post_computation = renderPrint({
   sample_post_computations_outputs()
 })
 
-output$post_computation_download = downloadHandler(
-  filename = "posterior_computations.csv",
+output$imp_computation_download = downloadHandler(
+  filename = "importance_sampler.csv",
   content = function(file) {
-    write.csv(sample_post_values_reformatted(), file, row.names = FALSE)
+    write.csv(important_values_reformatted(), file, row.names = FALSE)
   }
 )
+
+output$post_computation_download = downloadHandler(
+  filename = "sample_post_values.csv",
+  content = function(file) {
+    write.csv(post_SIR_calculations_reformat(), file, row.names = FALSE)
+  }
+)
+
+
 
 ################################################################
 # CODE FOR GRAPHING                                            #

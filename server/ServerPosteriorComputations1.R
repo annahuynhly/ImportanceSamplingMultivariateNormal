@@ -94,7 +94,7 @@ important_values_reformatted = reactive({
  # important_values_reformatted()
 #})
 
-important_values_reformatted_round = eventReactive(input$submit_sample_post, {
+important_values_reformatted_round = eventReactive(input$submit_imp_sampler, {
   round(important_values_reformatted(), 10)
 })
 
@@ -110,12 +110,20 @@ post_SIR_calculations = reactive({
                 Sigma = important_sample_values()$Sigma)
 })
 
+post_SIR_calculations_reformat = eventReactive(input$submit_sample_post, {
+  SIR_sample_reformat(Npostsamp = input$post_sample_N, 
+                      p = post_sample_p_val(), 
+                      mu_matrix = post_SIR_calculations()$sample_mu_xi, 
+                      xi_matrices = post_SIR_calculations()$sample_xi, 
+                      Sigma_matrices = post_SIR_calculations()$sample_Sigma)
+})
+
 output$SIR_algorithm_output = renderPrint(
-  # may need to have a limited print. will look into it later.
-  list("mu_postsamp" = head(post_SIR_calculations()$sample_mu_xi, 5),
-       "xi_postsamp" = post_SIR_calculations()$sample_xi,
-       "Sigma_postsamp" = post_SIR_calculations()$sample_Sigma)
+  post_SIR_calculations_reformat()
 )
+
+#####################################
+# relative belief ratio
 
 prior_psi_values = reactive({
   prior_psi_plot_vals(numcells = input$rbr_numcells, 

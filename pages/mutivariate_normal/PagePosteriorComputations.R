@@ -84,7 +84,7 @@ page_posteriorcomputations = div(
       
       p("Note: you will need to resubmit if you make any changes with the inputs below."),
       
-      actionButton(inputId = "submit_sample_post", label = "Submit Data"),
+      actionButton(inputId = "submit_imp_sampler", label = "Submit Data"),
     
       numericInput(inputId = "post_seed",
                    label = "Insert the seed",
@@ -132,14 +132,14 @@ page_posteriorcomputations = div(
       
     ),
     mainPanel(
-      downloadButton(outputId = "post_computation_download", label = "Download Values"),
+      downloadButton(outputId = "imp_computation_download", label = "Download Values"),
       
       p("Below are used to view different columns within the dataframe."),
       
-      actionButton('post_prev_five', 'Previous Cols'),
-      actionButton('post_next_five', 'Next Cols'),
+      actionButton('imp_prev_five', 'Previous Cols'),
+      actionButton('imp_next_five', 'Next Cols'),
       
-      withSpinner(DTOutput(outputId = 'post_display_table')),
+      withSpinner(DTOutput(outputId = 'imp_display_table')),
       #withSpinner(verbatimTextOutput(outputId = "testing_post")),
 
     ),
@@ -157,6 +157,11 @@ page_SIR_algorithm = div(
     sidebarPanel(
       width = 3,
       
+      p("Note: you must press \"submit\" to specify the prior for this page to \
+        load properly."),
+      
+      actionButton(inputId = "submit_sample_post", label = "Submit Data"),
+      
       # hope the below name isn't a repeat.
       numericInput(inputId = "post_sample_N",
                    label = 'Insert the Monte Carlo sample size',
@@ -166,7 +171,15 @@ page_SIR_algorithm = div(
     ), # end sidebarPanel
     mainPanel(
       
-      withSpinner(verbatimTextOutput(outputId = "SIR_algorithm_output")),
+      downloadButton(outputId = "post_computation_download", label = "Download Values"),
+      
+      p("Below are used to view different columns within the dataframe."),
+      
+      actionButton('post_prev_five', 'Previous Cols'),
+      actionButton('post_next_five', 'Next Cols'),
+      
+      withSpinner(DTOutput(outputId = 'post_display_table')),
+      #withSpinner(verbatimTextOutput(outputId = "SIR_algorithm_output")),
       
     ), # end mainPanel
   ),

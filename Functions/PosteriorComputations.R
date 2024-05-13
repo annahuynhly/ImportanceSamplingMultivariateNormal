@@ -42,6 +42,53 @@ important_post_reformat = function(N, p, post_mu, post_xi, weights){
   return(result)
 }
 
+SIR_sample_reformat = function(Npostsamp, p, mu_matrix, xi_matrices, Sigma_matrices){
+  #' Reformats the data for the user to download.
+  #' @param Npostimp represents the Monte Carlo sample size.
+  #' @param p represents the number of dimensions.
+  
+  mu_title = paste("Mu_", 1:p, sep = "")
+  weights_title = "Weights"
+  
+  xi_title = character(p*(p+1)/2)  # Preallocate memory for the vector
+  Sigma_title = character(p*(p+1)/2)
+  k = 1
+  for(i in 1:p){
+    for(j in i:p){
+      xi_title[k] = paste("Xi_", i, j, sep = "")
+      Sigma_title[k] = paste("Sigma_", i, j, sep = "")
+      k = k + 1
+    }
+  }
+  xi_matrix = matrix(NA, nrow = Npostsamp, ncol = length(xi_title))
+  Sigma_matrix = matrix(NA, nrow = Npostsamp, ncol = length(Sigma_title))
+  
+  # indices should be the same every time
+  indices = which(upper.tri(xi_matrices[,,1], diag=TRUE), arr.ind=TRUE)
+  for(i in 1:Npostsamp){ 
+    new_row = xi_matrices[,,i][indices[order(indices[,1]),]]
+    xi_matrix[i,] = as.vector(new_row)
+    
+    new_row = Sigma_matrices[[i]][indices[order(indices[,1]),]]
+    Sigma_matrix[i,] = as.vector(new_row)
+  }
+  
+  mu_data = as.data.frame(mu_matrix)
+  xi_matrix = as.data.frame(xi_matrix)
+  Sigma_matrix = as.data.frame(Sigma_matrix)
+  
+  names(mu_data) = mu_title
+  names(xi_matrix) = xi_title
+  names(Sigma_matrix) = Sigma_title
+  
+  result = cbind(mu_data, xi_matrix, Sigma_matrix)
+  rownames(result) = 1:Npostsamp
+  
+  return(result)
+}
+
+# getting information for Y
+
 Y_metrics = function(Y, p){
   #' Given the observed sample (Y) and the number of dimensions (p), 
   #' computes Ybar (the row means of the observed sample) and S.
@@ -62,6 +109,8 @@ Y_metrics = function(Y, p){
   newlist = list("n" = n, "Ybar" = Ybar, "S" = S)
   return(newlist)
 }
+
+# some computations - will probably need an overhaul of reformatting...
 
 importance_sampler_computations = function(Npostimp, n, Ybar, S, p, mu0, lambda0, alpha01, alpha02){
   #' This generates a sample of Npostimp from the importance sampler on (mu, xi) from theorem 4 of the paper.
@@ -301,6 +350,7 @@ psi_hypothesis_test = function(psi_0 = -2, prior_psi_mids, RB_psi, post_psi_dens
 }
 
 
+
 ################################################################
 # GRAPH FUNCTIONS                                              #
 ################################################################
@@ -357,257 +407,4 @@ comparison_content_density_plot = function(prior_density, post_density, col_num,
   
   legend("topleft", legend=c("Prior", "Posterior"),
          col= colour_choice, lty=lty_type, cex=0.8)
-}
-
-################################################################
-# OLD FUNCTIONS                                                #
-################################################################
-
-posterior_content = function(N, p, effective_range, mu, xi, weights){
-  #' Computes the posterior content from the sample of the posterior.
-  #' @param N represents the Monte Carlo sample size.
-  #' @param p represents the number of dimensions.
-  #' @param effective_range denotes a list of grid points where the density
-  #'        is highly concentrated (this is computed from the sampling of the  prior).'
-  #' @param weights denote the weights given, calculated from the psi.
-  #'        The other parameters match the descriptions in the paper.
-  psi_val = psi(mu, xi)
-  post_content_matrix = matrix(0, nrow = length(effective_range[[1]]) - 1, ncol = p)
-  post_density_matrix = matrix(0, nrow = length(effective_range[[1]]) - 1, ncol = p)
-  
-  for (k in 1:p) {
-    grid = effective_range[[k]]
-    delta = diff(grid)[1]
-    post_content_vec = numeric(length(grid) - 1)
-    
-    for (i in 1:(length(grid) - 1)) {
-      when_true <- psi_val[, k] >= grid[i] & psi_val[, k] < grid[i + 1]
-      post_content_vec[i] = sum(weights[when_true])
-    }
-    
-    post_density = post_content_vec / delta
-    post_content_matrix[, k] = post_content_vec
-    post_density_matrix[, k] = post_density
-  }
-  
-  newlist = list("post_content" = post_content_matrix,
-                 "post_density" = post_density_matrix)
-  return(newlist)
-}
-
-true_prior_comparison = function(p, alpha01, alpha02, mu0, lambda0, grid){
-  #' Given a grid of values (typically where the posterior density is allegedly 
-  #' concentrated), computes the true prior density.
-  #' This is used for graph building and computing the relative belief ratio.
-  #' @param p represents the number of dimensions.
-  #' @param grid represents a list of the grid of values where the posterior is based off of.
-  #' The other parameters match the descriptions from the paper.
-  prior_matrix = matrix(0, nrow = length(grid[[1]]) - 1, ncol = p)
-  midpt_grid_matrix = matrix(0, nrow = length(grid[[1]]) - 1, ncol = p)
-  
-  for (i in 1:p) {
-    midpt_grid = grid[[i]][-length(grid[[i]])] + diff(grid[[i]]) / 2
-    scale = sqrt(alpha02[i] / alpha01[i]) * lambda0[i]
-    reg_x = (midpt_grid - mu0[i]) / scale
-    y = dt(reg_x, 2 * alpha01[i]) / scale
-    
-    prior_matrix[, i] = y
-    midpt_grid_matrix[, i] = midpt_grid
-  }
-  
-  newlist = list("prior_matrix" = prior_matrix,
-                 "midpoint_grid_matrix" = midpt_grid_matrix)
-  return(newlist)
-}
-
-relative_belief_ratio = function(p, prior_content, post_content){
-  #' Computes the relative belief ratio.
-  #' @param p represents the number of dimensions.
-  #' @param prior_content denotes the vector containing the prior.
-  #' @param post_content denotes the vector containing the posterior.
-  
-  rbr_vector = post_content / prior_content
-  rbr_vector_mod = ifelse(is.na(rbr_vector), 0, rbr_vector)
-  
-  newlist = list("RBR" = rbr_vector, "RBR_modified" = rbr_vector_mod)
-  return(newlist)
-}
-
-
-sample_hyperparameters = function(gamma, alpha01, alpha02, m1, m2){
-  lambda0 = (m2 - m1)/(2 * sqrt(alpha02/alpha01) * qt((1 + gamma)/2, df = 2 * alpha01))
-  mu0 = (m2 + m1)/2
-  newlist = list("mu0" = mu0, "lambda0" = lambda0)
-  return(newlist)
-}
-
-prior_true_mu = function(gamma, alpha01, alpha02, m1, m2){
-  # idea: no need to sample since the distribution is actually known.
-  # n represents length here
-  data = sample_hyperparameters(gamma, alpha01, alpha02, m1, m2)
-  mu0 = data$mu0
-  lambda0 = data$lambda0
-  # assuming alphas have the same length
-  n = length(alpha01)
-  mu = rep(0, n)
-  for(i in 1:n){
-    t_val = qt(gamma, df = alpha01[i] * 2)
-    mu[i] = mu0[i] + sqrt(alpha02[i]/alpha01[i]) * lambda0[i] * t_val
-  }
-  return(mu)
-}
-
-# note: below is the old function. It is being replaced.
-compute_rbr = function(gamma, delta, alpha01, alpha02, m1, m2, mu_post, min_xlim, max_xlim){
-  # min_xlim: minimum values for the x-limit
-  # max_xlim: maximum values for the x-limit
-  
-  p = length(alpha01)
-  mu_prior = sample_hyperparameters(gamma, alpha01, alpha02, m1, m2)
-  mu_prior_matrix = c()
-  mu_post_matrix = c()
-  rbr_matrix = c()
-  grid_matrix = c()
-  
-  for(i in 1:p){
-    grid = seq(min_xlim, max_xlim, by = delta)
-    #grid = seq_alt(mu_post[, i], delta)
-    
-    # mostly to obtain the midpoints used for the graph
-    post_plot = hist(mu_post[, i], breaks = grid, plot = FALSE)
-    new_grid = post_plot$mids 
-    grid_matrix = cbind(grid_matrix, new_grid)
-    mu_post_matrix = cbind(mu_post_matrix, post_plot$density)
-    
-    # getting the values from the prior to compare to the posterior
-    x1 = mu_prior$mu0[i]
-    scale = sqrt(alpha02[i]/alpha01[i]) * mu_prior$lambda0[i]
-    t_dist = dt(new_grid, df = 2 * alpha01[i])  #instead of new_grid
-    
-    mu_prior_matrix = cbind(mu_prior_matrix, t_dist/scale)
-    
-    # obtaining the relative belief ratio
-    rbr_matrix = cbind(rbr_matrix, post_plot$density/mu_prior_matrix[,i])
-  }
-  
-  newlist = list("grid" = grid_matrix, "prior_mu" = mu_prior_matrix, 
-                 "post_mu" = mu_post_matrix, "rbr_mu" = rbr_matrix)
-  
-  return(newlist)
-}
-
-# FUNCTIONS FOR GRAPHING!!
-
-# note: this might also work for the posterior as well...
-mu_graph = function(mu, type = "prior", col_num,
-                    delta, smooth_num = 1,
-                    colour_choice = c("blue", "blue"),
-                    lty_type = 2,
-                    transparency = 0.1){
-  # This generates the graph for the prior of the mu, given the number of mu.
-  
-  mu_values = mu[,col_num]
-  # TODO: see latex support later for graphs - was able to for a paper.
-  #title = TeX(paste(r'($\mu$)', "sample text for testing", sep = " "))
-  title = TeX(paste("Graph of the", type, "of $\\mu_{", col_num, "}$"))
-  
-  xlab_title = TeX(paste("$\\mu_{", col_num, "}$", sep = ""))
-  
-  rgb_version = col2rgb(colour_choice[1])
-  
-  hist_col = rgb(rgb_version[1]/255, rgb_version[2]/255, rgb_version[3]/255, 
-                alpha = transparency)
-  
-  # getting the sequence values
-  grid = seq_alt(mu_values, delta)
-  
-  # Plots of the Prior and the Posterior
-  mu_plot = hist(mu_values, breaks = grid,
-                 main = title, ylab = "Densities", xlab = xlab_title, 
-                 col = hist_col, border = "#ffffff", prob = TRUE)
-  
-  if(smooth_num == 1){
-    lines(density(mu_values), lwd = 2, lty = lty_type, col = colour_choice[2])
-  } else {
-    line_plot_vals = average_vector_values(mu_plot$density, smooth_num)
-    lines(mu_plot$mids, line_plot_vals, 
-          lwd = 2, lty = lty_type, col = colour_choice[2])
-  }
-  
-}
-
-mu_graph_comparison = function(grid, mu_prior, mu_post, col_num,
-                               #min_xlim = -10, max_xlim = 10,
-                               smooth_num = 1,
-                               colour_choice = c("blue", "red"),
-                               lty_type = c(2, 2),
-                               transparency = 0.1){
-  # note: temporary name, but grid is referring to the grid of the posterior
-  # grid2 is referring to the grid of the prior
-  # note: assumes that we have the mu_prior and mu_post from the other
-  # function (sample_rbr_new)
-  
-  rgb_prior = col2rgb(colour_choice[1])
-  rgb_post = col2rgb(colour_choice[2])
-  
-  prior_area_col = rgb(rgb_prior[1]/255, rgb_prior[2]/255, rgb_prior[3]/255, 
-                       alpha = transparency)
-  post_area_col = rgb(rgb_post[1]/255, rgb_post[2]/255, rgb_post[3]/255, 
-                      alpha = transparency)
-  
-  # makes a graph that compares the prior and the posterior.
-  max_val = max(c(max(mu_prior[,col_num]), max(mu_post[,col_num])))
-  min_val = min(c(min(mu_prior[,col_num]), min(mu_post[,col_num])))
-  
-  # previous - commented out.
-  # first plotting the prior
-  plot(grid[, col_num], 
-       mu_prior[, col_num],
-       type = "l", 
-       lty = lty_type[1],
-       col = colour_choice[1],
-       ylim = c(min_val, max_val), 
-       #xlim = c(min_xlim, max_xlim),
-       main = TeX(paste("Graph of the Prior and Posterior of $\\mu_{", col_num, "}$")),
-       ylab = "Density",
-       xlab = TeX(paste("Value of $\\mu_{$", col_num, "}$")))
-  # second plotting the posterior
-  lines(grid[, col_num], 
-        average_vector_values(mu_post[, col_num], smooth_num),
-        type = "l", col = colour_choice[2],
-        lty = lty_type[2])
-  
-  # adding the area under the graph plot
-  polygon(grid[, col_num], force_bounds_0(mu_prior[, col_num]), 
-          col = prior_area_col, border = NA)
-  polygon(grid[, col_num], average_vector_values(mu_post[, col_num], smooth_num), 
-          col = post_area_col, border = NA)
-}
-
-# separate function needs to exist based on the type of what rbr is.
-rbr_mu_graph = function(grid, mu, type = "rbr", col_num,
-                        smooth_num = 1,
-                        colour_choice = "darkgreen",
-                        lty_type = 2,
-                        transparency = 0.1){
-  title = TeX(paste("Graph of the", type, "of $\\mu_{", col_num, "}$"))
-  
-  rbr_rgb = col2rgb(colour_choice)
-  
-  rbr_area_col = rgb(rbr_rgb[1]/255, rbr_rgb[2]/255, rbr_rgb[3]/255, 
-                    alpha = transparency)
-  
-  # first plotting the prior
-  plot(grid[, col_num], 
-       average_vector_values(mu[, col_num], smooth_num),
-       type = "l", 
-       lty = lty_type,
-       col = colour_choice,
-       main = title, ylab = "Density",
-       xlab = TeX(paste("Value of $\\mu_{$", col_num, "}$")))
-  
-  # adding the area under the graph plot
-  polygon(grid[, col_num], 
-          average_vector_values(mu[, col_num], smooth_num),
-          col = rbr_area_col, border = NA)
 }
