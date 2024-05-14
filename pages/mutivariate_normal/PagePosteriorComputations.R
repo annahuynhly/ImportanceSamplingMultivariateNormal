@@ -197,6 +197,8 @@ page_rbr_comparison = div(
     sidebarPanel(
       width = 3,
       
+      downloadButton(outputId = "download_psi_plots", label = "Download Plots"),
+      
       numericInput(inputId = "rbr_numcells",
                    label = 'Insert the number of subintervals for the density histogram',
                    value = 100),

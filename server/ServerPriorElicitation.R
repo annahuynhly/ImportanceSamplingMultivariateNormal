@@ -135,7 +135,7 @@ output$elicit_prior_graph = renderPlot({
 output$download_prior_elicit_sigma = downloadHandler(
   filename = "Prior Elicit Sigma Plot.png",
   content = function(file){
-    png(file)
+    png(file, width = 1140, height = 770, units = "px", res = 150)
     elicit_prior_graphs()
     dev.off()
   })
@@ -258,7 +258,7 @@ output$prior_elicit_mu_graph = renderPlot({
 output$download_prior_elicit_mu_plot = downloadHandler(
   filename = "Prior Elicit Mu Plot.png",
   content = function(file){
-    png(file)
+    png(file, width = 1140, height = 770, units = "px", res = 150)
     prior_elicit_mu_graph_item()
     dev.off()
   })

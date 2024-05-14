@@ -152,75 +152,7 @@ rbr_psi_values = reactive({
           post_psi_dens_smoothed = post_psi_values())
 })
 
-##########################################################
-# plotting (in between)
 
-prior_psi_plot_DOWNLOAD = function(){
-  psi_cust_plot(grid = prior_psi_values()$prior_psi_mids, 
-                density = prior_psi_values()$prior_psi_dens_smoothed, 
-                colour_choice = input$comparison_prior_col,
-                lty_type = as.numeric(input$comparison_prior_lty), 
-                transparency = input$comparison_transparency, 
-                plot_title = "Prior Density",
-                xlim_min = as.numeric(input$psi_plot_xmin),
-                xlim_max = as.numeric(input$psi_plot_xmax))
-}
-
-post_psi_plot_DOWNLOAD = function(){
-  psi_cust_plot(grid = prior_psi_values()$prior_psi_mids, 
-                density = post_psi_values(), 
-                colour_choice = input$comparison_post_col,
-                lty_type = as.numeric(input$comparison_post_lty), 
-                transparency = input$comparison_transparency, 
-                plot_title = "Posterior Density",
-                xlim_min = as.numeric(input$psi_plot_xmin),
-                xlim_max = as.numeric(input$psi_plot_xmax))
-}
-
-priorpost_psi_plot_DOWNLOAD = function(){
-  psi_priorpost_plot(grid = prior_psi_values()$prior_psi_mids,
-                     prior_density = prior_psi_values()$prior_psi_dens_smoothed, 
-                     post_density = post_psi_values(), 
-                     colour_choice = c(input$comparison_prior_col, 
-                                       input$comparison_post_col), 
-                     lty_type = c(as.numeric(input$comparison_prior_lty), 
-                                  as.numeric(input$comparison_post_lty)),
-                     transparency = input$comparison_transparency,
-                     xlim_min = as.numeric(input$psi_plot_xmin),
-                     xlim_max = as.numeric(input$psi_plot_xmax))
-}
-
-rbr_psi_plot_DOWNLOAD = function(){
-  psi_cust_plot(grid = prior_psi_values()$prior_psi_mids, 
-                density = rbr_psi_values(), 
-                colour_choice = input$comparison_rbr_col,
-                lty_type = as.numeric(input$comparison_rbr_lty), 
-                transparency = input$comparison_transparency, 
-                plot_title = "Relative Belief Ratio",
-                xlim_min = as.numeric(input$psi_plot_xmin),
-                xlim_max = as.numeric(input$psi_plot_xmax))
-}
-
-
-output$prior_psi_plot = renderPlot({
-  prior_psi_plot_DOWNLOAD()
-})
-
-output$post_psi_plot = renderPlot({
-  post_psi_plot_DOWNLOAD()
-})
-
-output$priorpost_psi_plot = renderPlot({
-  priorpost_psi_plot_DOWNLOAD()
-})
-
-output$rbr_psi_plot = renderPlot({
-  rbr_psi_plot_DOWNLOAD()
-})
-
-output$rbr_psi_plot_duplicate = renderPlot({
-  rbr_psi_plot_DOWNLOAD()
-})
 
 # end of plot; inferences are shown below
 
