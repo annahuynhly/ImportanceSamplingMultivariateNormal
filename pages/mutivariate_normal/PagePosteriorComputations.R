@@ -199,6 +199,10 @@ page_rbr_comparison = div(
       
       downloadButton(outputId = "download_psi_plots", label = "Download Plots"),
       
+      numericInput(inputId = "plot_compare_col_num",
+                   label = "The column of $\\psi$ used for the RBR analysis",
+                   value = 1),
+      
       numericInput(inputId = "rbr_numcells",
                    label = 'Insert the number of subintervals for the density histogram',
                    value = 100),

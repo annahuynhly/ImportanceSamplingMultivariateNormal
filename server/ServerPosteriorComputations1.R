@@ -131,7 +131,8 @@ prior_psi_values = reactive({
                       mprior = input$rbr_mprior,
                       mu_prior = sample_prior_values()$mu_matrix, 
                       Sigma_prior = sample_prior_values()$Sigma_mat[], 
-                      xi_prior = sample_prior_values()$xi_mat)
+                      xi_prior = sample_prior_values()$xi_mat,
+                      col_num = as.numeric(input$plot_compare_col_num))
 })
 
 post_psi_values = reactive({
@@ -143,7 +144,8 @@ post_psi_values = reactive({
                      imp_xi = important_sample_values()$xi, 
                      imp_weights = important_sample_values()$weights_vector, 
                      breaks = prior_psi_values()$psi_breaks,
-                     delta_psi = prior_psi_values()$delta_psi)
+                     delta_psi = prior_psi_values()$delta_psi,
+                     col_num = as.numeric(input$plot_compare_col_num))
 })
 
 rbr_psi_values = reactive({
