@@ -6,7 +6,6 @@
 # 3. delete all old code
 # 4. deploy
 # 5. contact claire and make sure the newest version is working
-# 7. add column support
 
 ################################################################
 # LIBRARIES                                                    #
