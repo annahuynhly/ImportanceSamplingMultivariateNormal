@@ -200,26 +200,16 @@ prior_psi = function(Nprior, mu_prior, Sigma_prior, xi_prior, col_num = 1){
     prior_psi_vals[i] = psifn(mu_prior, xi_prior, Sigma, row_num = i, col_num)
   }
   
-  newlist = list("prior_psi_vals" = prior_psi_vals,
-                 "prior_psi_lower_bd" = min(prior_psi_vals),
-                 "prior_psi_upper_bd" = max(prior_psi_vals))
-  return(newlist)
+  return(prior_psi_vals)
 }
 
-prior_psi_plot_vals = function(numcells = 100, Nprior, mprior = 7, 
-                               mu_prior, Sigma_prior, xi_prior, col_num){
+prior_psi_plot_vals = function(numcells = 100, Nprior, mprior = 7, prior_psi_vals){
   #' Obtains the smoothed plot of the prior density of psi.
   #' @param numcells represents the number of bins for the plot.
   #' @param Nprior represents the Monte Carlo sample size used for the prior.
   #' @param mprior an odd number of points to average prior density values.
-  #' @param mu_prior represents the mu prior matrix to compute psi.
-  #' @param Sigma_prior represents the sigma prior matrix to compute psi.
-  #' @param xi_prior represents the xi prior matrix to compute psi.
-  #' @param col_num the column of interest for the mu prior matrix.
-  prior_vals = prior_psi(Nprior, mu_prior, Sigma_prior, xi_prior, col_num)
-  prior_psi_vals = prior_vals$prior_psi_vals
-  prior_psi_upper_bd = prior_vals$prior_psi_upper_bd
-  prior_psi_lower_bd = prior_vals$prior_psi_lower_bd
+  prior_psi_upper_bd = max(prior_psi_vals)
+  prior_psi_lower_bd = min(prior_psi_vals)
   
   delta_psi = (prior_psi_upper_bd - prior_psi_lower_bd) /numcells 
   breaks = seq(prior_psi_lower_bd, prior_psi_upper_bd, by = delta_psi)
@@ -245,8 +235,7 @@ prior_psi_plot_vals = function(numcells = 100, Nprior, mprior = 7,
   return(newlist)
 }
 
-post_psi = function(Npostimp, numcells = 100, imp_mu, imp_Sigma, imp_xi, imp_weights,
-                    breaks, col_num = 1){
+post_psi = function(Npostimp, numcells = 100, imp_mu, imp_Sigma, imp_xi, col_num = 1){
   # TODO: RENAME THIS SHIT
   #' Obtains the smoothed plot of the prior density of psi.
   #' @param numcells represents the number of bins for the plot.
@@ -257,6 +246,11 @@ post_psi = function(Npostimp, numcells = 100, imp_mu, imp_Sigma, imp_xi, imp_wei
   for (i in 1:Npostimp){
     imp_psi_vals[i] = psifn(imp_mu,imp_xi,imp_Sigma, row_num = i, col_num)
   }
+  
+  return(imp_psi_vals)
+}
+
+post_psi_additional = function(imp_psi_vals, imp_weights, Npostimp, numcells = 100, breaks){
   
   # compute the estimate of the posterior cdf of psi
   nbreaks = numcells+1
@@ -275,17 +269,11 @@ post_psi = function(Npostimp, numcells = 100, imp_mu, imp_Sigma, imp_xi, imp_wei
   
   newlist = list("post_psi_upper_bd" = post_psi_upper_bd, "post_psi_lower_bd" = post_psi_lower_bd,
                  "post_psi_cdf" = post_psi_cdf)
-  
-  return(newlist)
 }
 
 post_psi_plot_vals = function(Npostimp, numcells = 100, mpost = 5,
-                              imp_mu, imp_Sigma, imp_xi, imp_weights, breaks,
-                              delta_psi, col_num){
-  
-  post_psi_vals = post_psi(Npostimp, numcells, imp_mu, imp_Sigma, imp_xi, imp_weights, breaks, col_num)
-  post_psi_cdf = post_psi_vals$post_psi_cdf
-  
+                              post_psi_cdf, delta_psi){
+  #' TODO: give a description later
   # compute posterior density of psi
   post_psi_density = diff(post_psi_cdf)/delta_psi
   

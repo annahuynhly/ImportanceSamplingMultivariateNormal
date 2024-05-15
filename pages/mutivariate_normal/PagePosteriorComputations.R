@@ -187,6 +187,51 @@ page_SIR_algorithm = div(
 )
 
 ################################################################
+# DERVING VALUES OF PSI                                        #
+################################################################
+
+page_user_denote_psi = div(
+  titlePanel("Denoting $\\psi$"),
+  
+  sidebarLayout(
+    sidebarPanel(
+      width = 3,
+      p("Before making relative belief ratio inferences of $\\psi$, it is required for the user to manually 
+        denote what $\\psi$ is."),
+      p("Note that if $\\psi$ happens to be one of the values of $\\mu_{i}$'s, then you may skip this section 
+        and select it in the next page."),
+      downloadButton(outputId = "download_psi_code", 
+                     label = "Download $\\psi$ Code"),
+      p("To use this code, the user must insert the downloaded files in parts X and Y."),
+      p("Then, upload the files below:"),
+      
+      fileInput(inputId = "upload_prior_psi_vals", 
+                label = "Upload prior_psi_vals", multiple = FALSE,
+                accept = c("text/csv", "text/comma-separated-values,text/plain", ".csv")),
+      
+      fileInput(inputId = "upload_imp_psi_vals", 
+                label = "Upload imp_psi_vals", multiple = FALSE,
+                accept = c("text/csv", "text/comma-separated-values,text/plain", ".csv")),
+      
+    ),
+    mainPanel(
+      p("If you can't download the .R file directly, you may copy and paste the code below and use it."),
+      verbatimTextOutput(outputId = "psi_code")
+    )
+  )
+)
+
+################################################################
+# DEBUGGING                                                    #
+################################################################
+
+page_debugging1 = div(
+  p("blank for now!")
+  #verbatimTextOutput(outputId = "debug_debug")
+)
+
+
+################################################################
 # RBR                                                          #
 ################################################################
 
@@ -199,9 +244,19 @@ page_rbr_comparison = div(
       
       downloadButton(outputId = "download_psi_plots", label = "Download Plots"),
       
-      numericInput(inputId = "plot_compare_col_num",
-                   label = "The column of $\\psi$ used for the RBR analysis",
-                   value = 1),
+      # note: will add latex to the select-input later. It was quite difficult last time.
+      selectInput(inputId = "psi_value_type",
+                  label = 'Which value of $\\psi$ is used?',
+                  choices = list("Use one of the mu's" = 1,
+                                 "Use uploaded value from previous section" = 2),
+                  selected = 1),
+      
+      conditionalPanel(
+        condition = "input.psi_value_type == 1",
+        numericInput(inputId = "plot_compare_col_num",
+                     label = "The column of $\\mu$ used for the RBR analysis",
+                     value = 1),
+      ),
       
       numericInput(inputId = "rbr_numcells",
                    label = 'Insert the number of subintervals for the density histogram',
@@ -353,6 +408,7 @@ page_sampling = div(
               tabPanel("Description", page_post_comp_description),
               tabPanel("Integrating with Respect to the Posterior", page_posteriorcomputations),
               tabPanel("SIR Algorithm", page_SIR_algorithm), # will probably re-name
+              tabPanel("Denote Psi", page_user_denote_psi),
               tabPanel("Relative Belief Ratio of Psi", page_rbr_comparison),
               tabPanel("Hypothesis Testing for Psi", page_psi_hypo_test)
               #tabPanel("Comparison Plots for Mu", page_comparison_graphs),

@@ -82,19 +82,6 @@ important_values_reformatted = reactive({
                        weights = important_sample_values()$weights_vector)
 })
 
-#output$testing_post = renderPrint({
-  #list("Npostimp" = input$post_bigN, 
-  #     "Ybar" = post_Y_metrics()$Ybar, 
-  #     "S" = post_Y_metrics()$S,
-  #     "p" = post_sample_p_val(), 
-  #     "mu0" = prior_elicitation_mu_values()$mu0,
-  #     "lambda0" = prior_elicitation_mu_values()$lambda0,
-  #     "alpha01" = prior_elicitation_sigma_values()$alpha01,
-  #     "alpha02" = prior_elicitation_sigma_values()$alpha02)
-  #important_sample_values()
- # important_values_reformatted()
-#})
-
 important_values_reformatted_round = eventReactive(input$submit_imp_sampler, {
   round(important_values_reformatted(), 10)
 })
@@ -123,30 +110,48 @@ output$SIR_algorithm_output = renderPrint(
   post_SIR_calculations_reformat()
 )
 
+
 #####################################
 # relative belief ratio
+
+prior_psi_val1 = reactive({
+  prior_psi(Nprior = input$prior_sample_bigN, 
+            mu_prior = sample_prior_values()$mu_matrix, 
+            Sigma_prior = sample_prior_values()$Sigma_mat[], 
+            xi_prior = sample_prior_values()$xi_mat,
+            col_num = as.numeric(input$plot_compare_col_num))
+})
+
+post_psi_val1 = reactive({
+  post_psi(Npostimp = input$post_bigN, 
+           numcells = input$rbr_numcells,
+           imp_mu = important_sample_values()$mu_xi, 
+           imp_Sigma = important_sample_values()$Sigma, 
+           imp_xi = important_sample_values()$xi, 
+           col_num = as.numeric(input$plot_compare_col_num))
+})
+
+post_psi_val2 = reactive({
+  post_psi_additional(imp_psi_vals = post_psi_val1(), 
+                      imp_weights = important_sample_values()$weights_vector,
+                      Npostimp = input$post_bigN, 
+                      numcells = input$rbr_numcells,
+                      breaks = prior_psi_values()$psi_breaks)
+})
 
 prior_psi_values = reactive({
   prior_psi_plot_vals(numcells = input$rbr_numcells, 
                       Nprior = input$prior_sample_bigN, 
                       mprior = input$rbr_mprior,
-                      mu_prior = sample_prior_values()$mu_matrix, 
-                      Sigma_prior = sample_prior_values()$Sigma_mat[], 
-                      xi_prior = sample_prior_values()$xi_mat,
-                      col_num = as.numeric(input$plot_compare_col_num))
+                      prior_psi_vals = prior_psi_val1())
 })
 
 post_psi_values = reactive({
   post_psi_plot_vals(Npostimp = input$post_bigN, # may need to make user input 
                      numcells = input$rbr_numcells,
                      mpost = input$rbr_mpost, 
-                     imp_mu = important_sample_values()$mu_xi, 
-                     imp_Sigma = important_sample_values()$Sigma, 
-                     imp_xi = important_sample_values()$xi, 
-                     imp_weights = important_sample_values()$weights_vector, 
-                     breaks = prior_psi_values()$psi_breaks,
-                     delta_psi = prior_psi_values()$delta_psi,
-                     col_num = as.numeric(input$plot_compare_col_num))
+                     post_psi_cdf = post_psi_val2()$post_psi_cdf, 
+                     delta_psi = prior_psi_values()$delta_psi)
 })
 
 rbr_psi_values = reactive({
@@ -155,27 +160,105 @@ rbr_psi_values = reactive({
           post_psi_dens_smoothed = post_psi_values())
 })
 
+################################################################
+# UPLOADING NEW DATA!                                          #
+################################################################
 
+prior_psi_vals_uploaded = reactive({
+  tryCatch(
+    {
+      df = read.csv(input$upload_prior_psi_vals$datapath, header = TRUE)
+    },
+    error = function(e) {
+      # return a safeError if a parsing error occurs
+      stop(safeError(e))
+    }
+  )
+  df$x
+})
+
+imp_psi_vals_uploaded = reactive({
+  tryCatch(
+    {
+      df = read.csv(input$upload_imp_psi_vals$datapath, header = TRUE)
+    },
+    error = function(e) {
+      # return a safeError if a parsing error occurs
+      stop(safeError(e))
+    }
+  )
+  df$x
+})
+
+# constructing the alternative values now
+
+prior_psi_values_alt = reactive({
+  prior_psi_plot_vals(numcells = input$rbr_numcells, 
+                      Nprior = input$prior_sample_bigN, 
+                      mprior = input$rbr_mprior,
+                      prior_psi_vals = prior_psi_vals_uploaded())
+})
+
+post_psi_val2_alt = reactive({
+  post_psi_additional(imp_psi_vals = imp_psi_vals_uploaded(), 
+                      imp_weights = important_sample_values()$weights_vector,
+                      Npostimp = input$post_bigN, 
+                      numcells = input$rbr_numcells,
+                      breaks = prior_psi_values()$psi_breaks)
+})
+
+post_psi_values_alt = reactive({
+  post_psi_plot_vals(Npostimp = input$post_bigN, # may need to make user input 
+                     numcells = input$rbr_numcells,
+                     mpost = input$rbr_mpost, 
+                     post_psi_cdf = post_psi_val2_alt()$post_psi_cdf, 
+                     delta_psi = prior_psi_values_alt()$delta_psi)
+})
+
+rbr_psi_values_alt = reactive({
+  rbr_psi(numcells = input$rbr_numcells, 
+          prior_psi_dens_smoothed = prior_psi_values_alt()$prior_psi_dens_smoothed, 
+          post_psi_dens_smoothed = post_psi_values_alt())
+})
 
 # end of plot; inferences are shown below
 
 RBest_value = reactive({
-  prior_psi_values()$prior_psi_mids[which.max(rbr_psi_values())]
+  if(input$psi_value_type == 1){
+    prior_psi_values()$prior_psi_mids[which.max(rbr_psi_values())]
+  } else {
+    prior_psi_values_alt()$prior_psi_mids[which.max(rbr_psi_values_alt())]
+  }
 })
 
 plausible_region_estimation = reactive({
-  plausible_region_est(prior_psi_mids = prior_psi_values()$prior_psi_mids, 
-                       RB_psi = rbr_psi_values(), 
-                       post_psi_dens_smoothed = post_psi_values(),
-                       delta_psi = prior_psi_values()$delta_psi)
+  if(input$psi_value_type == 1){
+    plausible_region_est(prior_psi_mids = prior_psi_values()$prior_psi_mids, 
+                        RB_psi = rbr_psi_values(), 
+                        post_psi_dens_smoothed = post_psi_values(),
+                        delta_psi = prior_psi_values()$delta_psi)
+  } else {
+    plausible_region_est(prior_psi_mids = prior_psi_values_alt()$prior_psi_mids, 
+                         RB_psi = rbr_psi_values_alt(), 
+                         post_psi_dens_smoothed = post_psi_values_alt(),
+                         delta_psi = prior_psi_values_alt()$delta_psi)
+  }
 })
 
 psi_hypothesis_testing = reactive({
-  psi_hypothesis_test(psi_0 = input$psi0, 
+  if(input$psi_value_type == 1){
+    psi_hypothesis_test(psi_0 = input$psi0, 
                       prior_psi_mids = prior_psi_values()$prior_psi_mids, 
                       RB_psi = rbr_psi_values(), 
                       post_psi_dens_smoothed = post_psi_values(),
                       delta_psi = prior_psi_values()$delta_psi)
+  } else {
+    psi_hypothesis_test(psi_0 = input$psi0, 
+                        prior_psi_mids = prior_psi_values_alt()$prior_psi_mids, 
+                        RB_psi = rbr_psi_values_alt(), 
+                        post_psi_dens_smoothed = post_psi_values_alt(),
+                        delta_psi = prior_psi_values_alt()$delta_psi)
+  }
 })
 
 output$psi_hypo_test_output = renderPrint({
@@ -185,3 +268,4 @@ output$psi_hypo_test_output = renderPrint({
        "The evidence concerning strength H_0 : psi = psi_0" = psi_hypothesis_testing()$psi_message,
        "The strength" = psi_hypothesis_testing()$strength_message)
 })
+
