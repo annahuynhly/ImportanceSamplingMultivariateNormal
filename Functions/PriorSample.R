@@ -78,37 +78,29 @@ sample_prior = function(Nprior, p, alpha01, alpha02, mu0, lambda0){
               "Sigma_mat" = Sigma_mat, "xi_mat" = xi_mat))
 }
 
-# MAY REMOVE THE FUNCTION BELOW.
-psi = function(mu, xi){
-  #' A function the user is supposed to specify, but for now it 
-  #' just gives you mu.
-  return(mu)
-}
-
-sample_prior_data_cleaning = function(N, p, mu_matrix, 
-                                      sigma_ii_matrix,
-                                      correlation_matrix) {
-  #' Mike requested a specific file format, and this cleans it accordingly.
-  sigma_names = paste("1/sigma_", 1:p, "^2", sep = "")
+sample_prior_data_cleaning = function(Nprior, p, mu_matrix, Sigma_matrix) {
   mu_names = paste("mu_", 1:p, sep = "")
-  rho_names = combn(p, 2, FUN = function(x) paste("rho_", x[1], x[2], sep = ""), simplify = TRUE)
-  
-  # FIRST: cleaning 1/sigma^2
-  sigma_ii_data = as.data.frame(1/sigma_ii_matrix)
-  names(sigma_ii_data) = sigma_names
-  
-  # SECOND: cleaning rhos from the correlation matrix
-  rho_matrix = matrix(nrow = N, ncol = length(rho_names))
-  for(k in 1:N){
-    rho_matrix[k,] = as.vector(correlation_matrix[[k]][lower.tri(correlation_matrix[[k]])])
-  }
-  
-  rho_data = as.data.frame(rho_matrix)
-  names(rho_data) = rho_names
-  
-  # THIRD: cleaning mus from the mu matrix
-  mu_data = as.data.frame(mu_matrix)
+  mu_data = as.data.frame(matrix(mu_matrix, nrow = Nprior))
   names(mu_data) = mu_names
   
-  return(cbind(mu_data, sigma_ii_data, rho_data))
+  # changed the names here
+  sigmacov_names = character(p * (p + 1) / 2)
+  index = 1
+  for(i in 1:p){
+    for(j in i:p){
+      sigmacov_names[index] = paste("sigma_", i, j, sep = "")
+      index = index + 1
+    }
+  }
+  Sigmacov_matrix = matrix(nrow = Nprior, ncol = length(sigmacov_names))
+  
+  for(k in 1:Nprior){
+    Sigmacov_matrix[k,] = as.vector(Sigma_matrix[[k]][lower.tri(Sigma_matrix[[k]], diag = TRUE)])
+  }
+  
+  sigmacov_data = as.data.frame(Sigmacov_matrix)
+  names(sigmacov_data) = sigmacov_names
+  
+  newmatrix = cbind(mu_data, sigmacov_data)
+  return(newmatrix)
 }

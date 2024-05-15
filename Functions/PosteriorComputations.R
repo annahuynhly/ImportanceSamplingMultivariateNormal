@@ -4,86 +4,78 @@
 
 # Formatting ###################################################
 
-important_post_reformat = function(N, p, post_mu, post_xi, weights){
+important_post_reformat = function(N, p, post_mu, Sigma, weights){
   #' Reformats the data for the user to download.
   #' @param N represents the Monte Carlo sample size.
   #' @param p represents the number of dimensions.
   #' @param post_mu represents the mu from integrating w.r.t. the posterior.
-  #' @param post_xi represents the xi from integrating w.r.t. the posterior.
-  #' @param weights represents the weights calculated from post_mu and post_xi.
+  #' @param Sigma represents the Sigma from integrating w.r.t. the posterior.
+  #' @param weights represents the weights calculated from post_mu and Sigma.
   
   mu_title = paste("Mu_", 1:p, sep = "")
   weights_title = "Weights"
   
-  xi_title = character(p*(p+1)/2)  # Preallocate memory for the vector
+  Sigma_title = character(p*(p+1)/2)  # Preallocate memory for the vector
   k = 1
   for(i in 1:p){
     for(j in i:p){
-      xi_title[k] = paste("Xi_", i, j, sep = "")
+      Sigma_title[k] = paste("Sigma_", i, j, sep = "")
       k = k + 1
     }
   }
-  xi_matrix = matrix(NA, nrow = N, ncol = length(xi_title))
+  Sigma_matrix = matrix(NA, nrow = N, ncol = length(Sigma_title))
   for(i in 1:N){ 
-    indices = which(upper.tri(post_xi[,,i], diag=TRUE), arr.ind=TRUE)
-    new_row = post_xi[,,i][indices[order(indices[,1]),]]
-    xi_matrix[i,] = as.vector(new_row)
+    indices = which(upper.tri(Sigma[[i]], diag=TRUE), arr.ind=TRUE)
+    new_row = Sigma[[i]][indices[order(indices[,1]),]]
+    Sigma_matrix[i,] = as.vector(new_row)
   }
   
   weights_data = as.data.frame(weights)
-  mu_data = as.data.frame(post_mu)
-  xi_matrix = as.data.frame(xi_matrix)
+  mu_data = as.data.frame(matrix(post_mu, nrow = N))
+  Sigma_matrix = as.data.frame(Sigma_matrix)
   
   names(weights_data) = weights_title
   names(mu_data) = mu_title
-  names(xi_matrix) = xi_title
+  names(Sigma_matrix) = Sigma_title
   
-  result = cbind(weights_data, mu_data, xi_matrix)
+  result = cbind(weights_data, mu_data, Sigma_matrix)
   rownames(result) = 1:N
   
   return(result)
 }
 
-SIR_sample_reformat = function(Npostsamp, p, mu_matrix, xi_matrices, Sigma_matrices){
+SIR_sample_reformat = function(Npostsamp, p, mu_matrix, Sigma_matrices){
+  #' TODO: write more of the title
   #' Reformats the data for the user to download.
   #' @param Npostimp represents the Monte Carlo sample size.
   #' @param p represents the number of dimensions.
   
   mu_title = paste("Mu_", 1:p, sep = "")
-  weights_title = "Weights"
   
-  xi_title = character(p*(p+1)/2)  # Preallocate memory for the vector
   Sigma_title = character(p*(p+1)/2)
   k = 1
   for(i in 1:p){
     for(j in i:p){
-      xi_title[k] = paste("Xi_", i, j, sep = "")
       Sigma_title[k] = paste("Sigma_", i, j, sep = "")
       k = k + 1
     }
   }
-  xi_matrix = matrix(NA, nrow = Npostsamp, ncol = length(xi_title))
   Sigma_matrix = matrix(NA, nrow = Npostsamp, ncol = length(Sigma_title))
   
   # indices should be the same every time
-  indices = which(upper.tri(xi_matrices[,,1], diag=TRUE), arr.ind=TRUE)
+  indices = which(upper.tri(Sigma_matrices[[i]], diag=TRUE), arr.ind=TRUE)
   for(i in 1:Npostsamp){ 
-    new_row = xi_matrices[,,i][indices[order(indices[,1]),]]
-    xi_matrix[i,] = as.vector(new_row)
-    
     new_row = Sigma_matrices[[i]][indices[order(indices[,1]),]]
     Sigma_matrix[i,] = as.vector(new_row)
   }
   
-  mu_data = as.data.frame(mu_matrix)
-  xi_matrix = as.data.frame(xi_matrix)
+  mu_data = as.data.frame(matrix(mu_matrix, nrow = Npostsamp))
   Sigma_matrix = as.data.frame(Sigma_matrix)
   
   names(mu_data) = mu_title
-  names(xi_matrix) = xi_title
   names(Sigma_matrix) = Sigma_title
   
-  result = cbind(mu_data, xi_matrix, Sigma_matrix)
+  result = cbind(mu_data, Sigma_matrix)
   rownames(result) = 1:Npostsamp
   
   return(result)
