@@ -77,7 +77,8 @@ important_values_reformatted = reactive({
   important_post_reformat(N = input$post_bigN, 
                        p = post_sample_p_val(), 
                        post_mu = important_sample_values()$mu_xi,
-                       Sigma = important_sample_values()$Sigma, 
+                       post_Sigma = important_sample_values()$Sigma, 
+                       post_xi = important_sample_values()$xi,
                        weights = important_sample_values()$weights_vector)
 })
 
@@ -114,7 +115,8 @@ post_SIR_calculations_reformat = eventReactive(input$submit_sample_post, {
   SIR_sample_reformat(Npostsamp = input$post_sample_N, 
                       p = post_sample_p_val(), 
                       mu_matrix = post_SIR_calculations()$sample_mu_xi, 
-                      Sigma_matrices = post_SIR_calculations()$sample_Sigma)
+                      Sigma_matrices = post_SIR_calculations()$sample_Sigma,
+                      xi_matrices = post_SIR_calculations()$sample_xi)
 })
 
 output$SIR_algorithm_output = renderPrint(

@@ -78,29 +78,36 @@ sample_prior = function(Nprior, p, alpha01, alpha02, mu0, lambda0){
               "Sigma_mat" = Sigma_mat, "xi_mat" = xi_mat))
 }
 
-sample_prior_data_cleaning = function(Nprior, p, mu_matrix, Sigma_matrix) {
+sample_prior_data_cleaning = function(Nprior, p, mu_matrix, Sigma_matrix, xi_matrix) {
   mu_names = paste("mu_", 1:p, sep = "")
   mu_data = as.data.frame(matrix(mu_matrix, nrow = Nprior))
   names(mu_data) = mu_names
   
   # changed the names here
   sigmacov_names = character(p * (p + 1) / 2)
+  xi_names = character(p * (p + 1) / 2)
   index = 1
   for(i in 1:p){
     for(j in i:p){
       sigmacov_names[index] = paste("sigma_", i, j, sep = "")
+      xi_names[index] = paste("xi_", i, j, sep = "")
       index = index + 1
     }
   }
   Sigmacov_matrix = matrix(nrow = Nprior, ncol = length(sigmacov_names))
+  xi_data = matrix(nrow = Nprior, ncol = length(xi_names))
   
   for(k in 1:Nprior){
     Sigmacov_matrix[k,] = as.vector(Sigma_matrix[[k]][lower.tri(Sigma_matrix[[k]], diag = TRUE)])
+    xi_data[k,] = as.vector(xi_matrix[[k]][lower.tri(xi_matrix[[k]], diag = TRUE)])
   }
   
   sigmacov_data = as.data.frame(Sigmacov_matrix)
   names(sigmacov_data) = sigmacov_names
   
-  newmatrix = cbind(mu_data, sigmacov_data)
+  xi_data = as.data.frame(xi_data)
+  names(xi_data) = xi_names
+  
+  newmatrix = cbind(mu_data, sigmacov_data, xi_data)
   return(newmatrix)
 }

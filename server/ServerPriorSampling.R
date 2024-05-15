@@ -18,7 +18,8 @@ sample_prior_values_cleaned = eventReactive(input$submit_prior_sampling, {
   sample_prior_data_cleaning(N = input$prior_sample_bigN, 
                              p = input$num_dimensions, 
                              mu_matrix = sample_prior_values()$mu_matrix, 
-                             Sigma_matrix = sample_prior_values()$Sigma_mat)
+                             Sigma_matrix = sample_prior_values()$Sigma_mat,
+                             xi_matrix = sample_prior_values()$xi_mat)
 })
 
 sample_prior_values_cleaned_round = eventReactive(input$submit_prior_sampling, {

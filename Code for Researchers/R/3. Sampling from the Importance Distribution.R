@@ -1,7 +1,7 @@
 #############################################################################
 # Part 3: Sampling from the Importance Sampler for Posterior Calculations   #
 #############################################################################
-# April 30, 2024
+# May 15 2024 (modiifed by Anna, not approved yet)
 
 # Npostimp = size of the sample form the importance sampler
 Npostimp = 10000
@@ -63,6 +63,59 @@ imp_Sigma=imp_vals$Sigma
 imp_mu = imp_vals$mu_xi
 imp_weights = imp_vals$weights_vector
 imp_cdf = imp_vals$cum_weights
+
+#######################
+
+important_post_reformat = function(N, p, post_mu, Sigma, weights){
+  #' Reformats the data for the user to download.
+  #' @param N represents the Monte Carlo sample size.
+  #' @param p represents the number of dimensions.
+  #' @param post_mu represents the mu from integrating w.r.t. the posterior.
+  #' @param Sigma represents the Sigma from integrating w.r.t. the posterior.
+  #' @param weights represents the weights calculated from post_mu and Sigma.
+  
+  mu_title = paste("Mu_", 1:p, sep = "")
+  weights_title = "Weights"
+  
+  Sigma_title = character(p*(p+1)/2)  # Preallocate memory for the vector
+  k = 1
+  for(i in 1:p){
+    for(j in i:p){
+      Sigma_title[k] = paste("Sigma_", i, j, sep = "")
+      k = k + 1
+    }
+  }
+  Sigma_matrix = matrix(NA, nrow = N, ncol = length(Sigma_title))
+  for(i in 1:N){ 
+    indices = which(upper.tri(Sigma[[i]], diag=TRUE), arr.ind=TRUE)
+    new_row = Sigma[[i]][indices[order(indices[,1]),]]
+    Sigma_matrix[i,] = as.vector(new_row)
+  }
+  
+  weights_data = as.data.frame(weights)
+  mu_data = as.data.frame(post_mu)
+  Sigma_matrix = as.data.frame(Sigma_matrix)
+  
+  names(weights_data) = weights_title
+  names(mu_data) = mu_title
+  names(Sigma_matrix) = Sigma_title
+  
+  result = cbind(weights_data, mu_data, Sigma_matrix)
+  rownames(result) = 1:N
+  
+  return(result)
+}
+
+
+test = important_post_reformat(N = Npostimp, 
+                    p = p, 
+                    post_mu = imp_mu, 
+                    Sigma = imp_Sigma, 
+                    weights = imp_weights)
+
+
+
+
 
 
 
