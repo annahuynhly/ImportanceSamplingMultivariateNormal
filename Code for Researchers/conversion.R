@@ -1,4 +1,4 @@
-# The user is expected to modify values for Parts 0, 2, and 4.
+# The user is expected to modify values for Parts 0, 2, and 4 shown below.
 
 # Part 0: Set the working directory ***
 setwd("/Users/annaly/Downloads") 
@@ -7,9 +7,12 @@ setwd("/Users/annaly/Downloads")
 prior = read.csv("prior_sample.csv")
 imp = read.csv("importance_sample.csv")
 
-# Part 1: Converting the data to be more user-friendly when getting the psi function
+# Part 1: Converting the data to be more user-friendly for defining the psi function
 convert_for_psi = function(csv_data){
-  #' Given a data frame, converts the data to be more usable when computing values for psi.
+  #' Given a data frame that contains values for mu and the correlations from the
+  #' Sigma matrix and xi matrix, reformats the data such that we have appropriate
+  #' matrices for Sigma and xi.
+  #' @param csv_data the csv data being used.
   
   mu_indices = grep("^mu_", names(csv_data), ignore.case = TRUE)
   p = length(mu_indices)
@@ -56,7 +59,7 @@ imp_val = convert_for_psi(imp)
 # Part 2: Modifying the Psi function ***
 psifn = function(muval, Sigmaval, xival){
   #' @param muval is a vector containing a row of mu's from 1 to p
-  #' @param Sigmaval is a singular variance matrix
+  #' @param Sigmaval is a variance matrix 
   #' @param xival is a precision matrix associated with Sigmaval
   #' The user may change the psi function below, depending on what they wish to make inferences about.
   #' Below, commented out values of psi, are some suggestions:
@@ -66,7 +69,7 @@ psifn = function(muval, Sigmaval, xival){
   return(psi)
 }
 
-# Part 3: Computing the psi values to be used for the density
+# Part 3: Computing the psi values from the downloaded samples to be used for the density
 compute_psi_vals = function(mu, Sigma, xi){
   #' Computing the values for psi to be used to make density histograms.
   #' @mu denotes the mu matrix
@@ -83,7 +86,7 @@ compute_psi_vals = function(mu, Sigma, xi){
 prior_psi_vals = compute_psi_vals(prior_val$mu_matrix, prior_val$Sigma_matrix, prior_val$xi_matrix)
 imp_psi_vals = compute_psi_vals(imp_val$mu_matrix, imp_val$Sigma_matrix, imp_val$xi_matrix)
 
-# Part 4: Saving the results in a .csv. This is to be uploaded! ***
+# Part 4: Saving the results in a .csv. This is to be uploaded into the site! ***
 write.csv(prior_psi_vals, "prior_psi_vals.csv")
 write.csv(imp_psi_vals, "imp_psi_vals.csv")
 

@@ -5,12 +5,43 @@
 page_post_comp_description = div(
   titlePanel("Description"),
   p("Please refer to section 3.2 of the paper for this section."),
-  p("currently a placeholder; will add more details later."),
   hr(),
-  h4("How to Submit .txt or .csv files"),
+  
+  h4("How to Submit .txt or .csv files Containing the Data"),
   p("At the moment, this website exclusively accepts .csv or .txt files with a specific structure. 
     Ensure that your file includes a header, where each column corresponds to a distinct variable:"),
   p("$Y = (Y_{1}, Y_{2}, Y_{3}, ..., Y_{P})$"),
+  selectInput(inputId = "post_input_type",
+              label = 'How do you want to upload the data?',
+              choices = list("Use default data" = "default",
+                             "Text file" = "txt",
+                             "CSV file" = "csv"),
+              selected = "default"),
+  
+  conditionalPanel(
+    condition = "input.post_input_type == 'csv'",
+    p("The data is based off of the generated sample detailed in 
+          the description section.")
+  ),
+  
+  conditionalPanel(
+    condition = "input.post_input_type == 'csv'",
+    fileInput(inputId = "sample_post_Y", 
+              label = "Upload File for Y",
+              multiple = FALSE,
+              accept = c("text/csv", "text/comma-separated-values,text/plain", 
+                         ".csv")),
+  ),
+  
+  conditionalPanel(
+    condition = "input.post_input_type == 'txt'",
+    fileInput(inputId = "sample_post_Y_txt", 
+              label = "Upload File for Y",
+              multiple = FALSE,
+              accept = c("text/csv", "text/comma-separated-values,text/plain", 
+                         ".txt")),
+  ),
+  
   hr(),
   p("There is a default example specified to illustrate the implementation of the analysis. 
     We generated a sample of $n = 50$ from a $\\mathcal{N}_{5}(\\mu, \\Sigma)$ distribution
@@ -42,45 +73,16 @@ page_post_comp_description = div(
 
 page_posteriorcomputations = div(
 
-  titlePanel("Integrating with Respect to the Posterior"),
+  titlePanel("Sampling from the Importance Sampler for Posterior Calculations"),
   
   sidebarLayout(
     sidebarPanel(
       width = 3,
       
+      p("See section 3.3 of the paper."),
+      
       p("Note: you must press \"submit\" to specify the prior for this page to \
         load properly."),
-      
-      selectInput(inputId = "post_input_type",
-                  label = 'How do you want to upload the data?',
-                  choices = list("Use default data" = "default",
-                                 "Text file" = "txt",
-                                 "CSV file" = "csv"),
-                  selected = "default"),
-      
-      conditionalPanel(
-        condition = "input.post_input_type == 'csv'",
-        p("The data is based off of the generated sample detailed in 
-          the description section.")
-      ),
-      
-      conditionalPanel(
-        condition = "input.post_input_type == 'csv'",
-        fileInput(inputId = "sample_post_Y", 
-                  label = "Upload File for Y",
-                  multiple = FALSE,
-                  accept = c("text/csv", "text/comma-separated-values,text/plain", 
-                             ".csv")),
-      ),
-      
-      conditionalPanel(
-        condition = "input.post_input_type == 'txt'",
-        fileInput(inputId = "sample_post_Y_txt", 
-                  label = "Upload File for Y",
-                  multiple = FALSE,
-                  accept = c("text/csv", "text/comma-separated-values,text/plain", 
-                             ".txt")),
-      ),
       
       p("Note: you will need to resubmit if you make any changes with the inputs below."),
       
@@ -94,47 +96,10 @@ page_posteriorcomputations = div(
                    label = 'Insert the Monte Carlo sample size',
                    value = 20000),
     
-      selectInput(inputId = "post_comp_use", 
-                  label = 'What values of the hyperparameters do you want to use?', 
-                  choices = list("Same values as elicitation" = 1,
-                                 "Input values" = 2), 
-                  selected = 1),
-      
-      conditionalPanel(
-        condition = "input.post_comp_use == 2",
-        p("Values from the elicitation of the prior will be used!")
-      ),
-      
-      conditionalPanel(
-        condition = "input.post_comp_use == 2",
-        
-        numericInput(inputId = "num_dimensions_post",
-                     label = 'Insert the number of dimensions, $p$.',
-                     min = 1, max = 10000000, step = 1, value = 3),
-        
-        # should probably change the following values lol
-        textInput(inputId = "mu0_post",
-                  label = "$\\mu_{01}, ..., \\mu_{0p}$",
-                  value = "-2.5, -1, 0, 1, 2.5"),
-        
-        textInput(inputId = "lambda0_post",
-                  label = "$\\lambda_{021}, ..., \\lambda_{02p}$",
-                  value = "0.82, 1.21, 1.97, 1.21, 0.82"),
-        
-        textInput(inputId = "alpha01_post",
-                  label = "$\\alpha_{011}, ..., \\alpha_{01p}$",
-                  value = "2.32, 2.09, 1.41, 2.09, 2.32"),
-        
-        textInput(inputId = "alpha02_post",
-                  label = "$\\alpha_{021}, ..., \\alpha_{02p}$",
-                  value = "1.21, 0.29, 0.04, 0.29, 1.21"),
-      ),
       
     ),
     mainPanel(
       downloadButton(outputId = "imp_computation_download", label = "Download Values"),
-      
-      p("Below are used to view different columns within the dataframe."),
       
       actionButton('imp_prev_five', 'Previous Cols'),
       actionButton('imp_next_five', 'Next Cols'),
@@ -156,6 +121,9 @@ page_SIR_algorithm = div(
   sidebarLayout(
     sidebarPanel(
       width = 3,
+      
+      p("The SIR algorithm generates an approximate iid sample from the posterior. 
+        See section 3.4 of the paper."),
       
       p("Note: you must press \"submit\" to specify the prior for this page to \
         load properly."),
@@ -191,52 +159,52 @@ page_SIR_algorithm = div(
 ################################################################
 
 page_user_denote_psi = div(
-  titlePanel("Denoting $\\psi$"),
+  titlePanel("Defining $\\psi$"),
   
   sidebarLayout(
     sidebarPanel(
       width = 3,
-      p("Before making relative belief ratio inferences of $\\psi$, it is required for the user to manually 
+      
+      p("$\\psi$ is a real-valued function of $(\\mu, \\Sigma)$ that we wish to make inference 
+        about and these computations."),
+      p("Before making relative belief inferences of $\\psi$, it is required for the user to manually 
         denote what $\\psi$ is."),
       p("Note that if $\\psi$ happens to be one of the values of $\\mu_{i}$'s, then you may skip this section 
         and select it in the next page."),
       downloadButton(outputId = "download_psi_code", 
                      label = "Download $\\psi$ Code"),
-      p("To use this code, the user must insert the downloaded files in parts X and Y."),
+      p("To use this code, the user must insert the downloaded files from the sample of the prior and the 
+        samples from the importance sampler."),
       p("Then, upload the files below:"),
       
       fileInput(inputId = "upload_prior_psi_vals", 
-                label = "Upload prior_psi_vals", multiple = FALSE,
+                label = "Upload the sample from the prior", multiple = FALSE,
                 accept = c("text/csv", "text/comma-separated-values,text/plain", ".csv")),
       
       fileInput(inputId = "upload_imp_psi_vals", 
-                label = "Upload imp_psi_vals", multiple = FALSE,
+                label = "Upload the sample from the importance sampler", multiple = FALSE,
                 accept = c("text/csv", "text/comma-separated-values,text/plain", ".csv")),
       
     ),
     mainPanel(
       p("If you can't download the .R file directly, you may copy and paste the code below and use it."),
+      p("In part 0, the user is expected to change the working directory and perhaps the name of the files being loaded."),
+      p("The .csv files we provide are formatted by the entries of the matrix rather than the matrix itself. 
+        The function in part 1 is meant to convert entries from the $\\Sigma$ and $\\xi$ matrix into a matrix."),
+      p("In part 2, the user is meant to specify the $\\psi$ they are observing. We have commented out some suggestions."),
+      p("In part 3, the values for $\\psi$ are generated. Finally, in part 4 you may download the results and re-upload them 
+        to the site."),
       verbatimTextOutput(outputId = "psi_code")
     )
   )
 )
 
 ################################################################
-# DEBUGGING                                                    #
-################################################################
-
-page_debugging1 = div(
-  p("blank for now!")
-  #verbatimTextOutput(outputId = "debug_debug")
-)
-
-
-################################################################
 # RBR                                                          #
 ################################################################
 
 page_rbr_comparison = div(
-  titlePanel("Relative Belief Ratio of $\\psi$"), # placeholder title
+  titlePanel("Relative Belief Ratio of $\\psi$"),
   
   sidebarLayout(
     sidebarPanel(
@@ -376,17 +344,27 @@ page_rbr_comparison = div(
 ################################################################
 
 page_psi_hypo_test = div(
-  titlePanel("Hypothesis Testing for $\\psi$"), # placeholder title
+  titlePanel("Relative Belief Inferences for $\\psi$"), # placeholder title
   
   sidebarLayout(
     sidebarPanel(
       width = 3,
       
-      p("Below is for accessing the hypothesis $H_{0} : \\psi = \\psi_{0}$"),
+      selectInput(inputId = "psi_null",
+                  label = 'Would you like to do a hypothesis test for 
+                  $H_{0} : \\psi = \\psi_{0}$?',
+                  choices = list("Yes" = 1,
+                                 "No" = 2),
+                  selected = 2),
       
-      numericInput(inputId = "psi0",
-                   label = 'Insert the value of $\\psi_{0}$',
-                   value = -2),
+      conditionalPanel(
+        condition = "input.psi_null == 1",
+        p("Below is for accessing the hypothesis $H_{0} : \\psi = \\psi_{0}$"),
+        
+        numericInput(inputId = "psi0",
+                     label = 'Insert the value of $\\psi_{0}$',
+                     value = -2),
+      ),
       
     ), # end of sidebarPanel
     mainPanel(
@@ -406,11 +384,11 @@ page_sampling = div(
   titlePanel("Posterior Computations"),
   tabsetPanel(type = "tabs",
               tabPanel("Description", page_post_comp_description),
-              tabPanel("Integrating with Respect to the Posterior", page_posteriorcomputations),
+              tabPanel("Sampling from the Importance Sampler", page_posteriorcomputations),
               tabPanel("SIR Algorithm", page_SIR_algorithm), # will probably re-name
-              tabPanel("Denote Psi", page_user_denote_psi),
+              tabPanel("Defining Psi", page_user_denote_psi),
               tabPanel("Relative Belief Ratio of Psi", page_rbr_comparison),
-              tabPanel("Hypothesis Testing for Psi", page_psi_hypo_test)
+              tabPanel("Relative Belief Inferences for psi", page_psi_hypo_test)
               #tabPanel("Comparison Plots for Mu", page_comparison_graphs),
   )
 )

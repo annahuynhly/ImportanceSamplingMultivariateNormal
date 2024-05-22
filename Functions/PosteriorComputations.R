@@ -14,7 +14,7 @@ important_post_reformat = function(N, p, post_mu, post_Sigma, post_xi, weights){
   #' @param weights represents the weights calculated from post_mu and Sigma.
   
   mu_title = paste("Mu_", 1:p, sep = "")
-  weights_title = "Weights"
+  weights_title = "Importance Weights"
   
   Sigma_title = xi_title = character(p*(p+1)/2)  # Preallocate memory for the vector
   k = 1
@@ -355,7 +355,7 @@ psi_hypothesis_test = function(psi_0 = -2, prior_psi_mids, RB_psi, post_psi_dens
   indices = which(RB_psi <= RB_psi[psi_0_index])
   # Compute the strength
   strength_psi_0 = sum(post_psi_dens_smoothed[indices]) * delta_psi
-  strength_msg = paste("Strength of the evidence concerning H_0 : psi= psi_0 = ", strength_psi_0, sep = "")
+  strength_msg = paste("Strength of the evidence concerning H_0 : psi = psi_0 is given by ", strength_psi_0, sep = "")
   
   newlist = list("psi_message" = psi_message, "indices" = indices, "strength_message" = strength_msg)
   

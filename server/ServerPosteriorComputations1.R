@@ -33,14 +33,6 @@ input_Y_values = reactive({
   #Y_values = Y_values %>% select(contains("Y"))
 })
 
-post_sample_p_val = reactive({
-  # not to be confused with p-values, the evidence against the null.
-  if(input$post_comp_use == 1){ # use from the prior elicitation
-    input$num_dimensions
-  } else if (input$post_comp_use == 2){
-    input$num_dimensions_post
-  }
-})
 
 post_Y_metrics = reactive({
   Y_metrics(Y = input_Y_values(), p = post_sample_p_val())
@@ -262,10 +254,14 @@ psi_hypothesis_testing = reactive({
 })
 
 output$psi_hypo_test_output = renderPrint({
-  list("Estimate of true value of psi from the relative belief ratio" = RBest_value(),
-       "Plausible region" = plausible_region_estimation()$plaus_interval,
-       "Posterior content of the plausible regiion" = plausible_region_estimation()$plaus_content,
-       "The evidence concerning strength H_0 : psi = psi_0" = psi_hypothesis_testing()$psi_message,
-       "The strength" = psi_hypothesis_testing()$strength_message)
+  list1 = list("Estimate of true value of psi from the relative belief ratio" = RBest_value(),
+                    "Plausible region" = plausible_region_estimation()$plaus_interval,
+                    "Posterior content of the plausible region" = plausible_region_estimation()$plaus_content)
+  if(input$psi_null == 1){
+    list2 = list("The evidence concerning strength H_0 : psi = psi_0" = psi_hypothesis_testing()$psi_message,
+                 "The strength" = psi_hypothesis_testing()$strength_message) 
+    list1 = c(list1, list2)
+  }
+  list1
 })
 

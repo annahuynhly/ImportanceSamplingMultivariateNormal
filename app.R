@@ -48,7 +48,6 @@ source("./pages/file_upload.R")
 #source("./pages/sampling/Description.R")
 
 source("./pages/mutivariate_normal/PagePriorElicitations.R")
-source("./pages/mutivariate_normal/PagePriorSampling.R")
 source("./pages/mutivariate_normal/PagePosteriorComputations.R")
 
 #source("./pages/algorithm_description.R")
@@ -79,7 +78,6 @@ ui = navbarPage(
   navbarMenu(
     "Multivariate Normal",
     tabPanel("Prior Elicitation", page_prior_elicit),
-    tabPanel("Sampling from the Prior", page_prior_sample),
     tabPanel("Posterior Computations", page_sampling)
   ),
   navbarMenu(

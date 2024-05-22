@@ -4,14 +4,33 @@
 
 prior_sampling_seed = reactive(input$prior_seed)
 
+post_sample_p_val = reactive({
+  # not to be confused with p-values, the evidence against the null.
+  if(input$post_comp_use == 1){ # use from the prior elicitation
+    input$num_dimensions
+  } else if (input$post_comp_use == 2){
+    input$num_dimensions_post
+  }
+})
+
 sample_prior_values = eventReactive(input$submit_prior_sampling, {
   set.seed(prior_sampling_seed())
-  sample_prior(Nprior = input$prior_sample_bigN, 
-               p = input$num_dimensions, 
-               alpha01 = prior_elicitation_sigma_values()$alpha01,
-               alpha02 = prior_elicitation_sigma_values()$alpha02,
-               mu0 = prior_elicitation_mu_values()$mu0,
-               lambda0 = prior_elicitation_mu_values()$lambda0)
+  
+  if(input$post_comp_use == 1){
+    sample_prior(Nprior = input$prior_sample_bigN, 
+                 p = input$num_dimensions, 
+                 alpha01 = prior_elicitation_sigma_values()$alpha01,
+                 alpha02 = prior_elicitation_sigma_values()$alpha02,
+                 mu0 = prior_elicitation_mu_values()$mu0,
+                 lambda0 = prior_elicitation_mu_values()$lambda0) 
+  } else if (input$post_comp_use == 2){
+    sample_prior(Nprior = input$prior_sample_bigN, 
+                 p = post_sample_p_val(), 
+                 alpha01 = create_necessary_vector(input$alpha01_post),
+                 alpha02 = create_necessary_vector(input$alpha02_post),
+                 mu0 = create_necessary_vector(input$mu0_post),
+                 lambda0 = create_necessary_vector(input$lambda0_post))
+  }
 })
 
 sample_prior_values_cleaned = eventReactive(input$submit_prior_sampling, {

@@ -23,7 +23,7 @@ page_elicitdescription = div(
     </script>')
   ),
   
-  p("See sections 2 and 3 of the paper for descriptions of the parameters necessary for eliciting the priors on the $\\sigma_{i}$ and the $\\mu_{i}$, namely, ($s_{1i}, s_{2i}$) for $\\sigma_{i}$ and ($m_{1i}, m_{2i}$) for $\\mu_{i}$ for $i = 1, ..., p$."),
+  p("See Sections 2 and 3.1 of the paper for descriptions of the parameters necessary for eliciting the priors on the $\\sigma_{i}$ and the $\\mu_{i}$, namely, ($s_{1i}, s_{2i}$) for $\\sigma_{i}$ and ($m_{1i}, m_{2i}$) for $\\mu_{i}$ for $i = 1, ..., p$."),
   p("Also specify the lower and upper bounds for the iterative process that determines the values of ($\\alpha_{01i}, \\alpha_{02i}$), $i= 1, ..., p.$"),
   hr(),
   h4("How to Submit .txt or .csv files"),
@@ -142,6 +142,8 @@ page_elicitsigma = div(
   )
 )
 
+
+
 ################################################################
 # ELICITING FROM THE PRIOR (MU)                                #
 ################################################################
@@ -226,6 +228,101 @@ page_elicitmu = div(
 )
 
 ################################################################
+# SAMPLING FROM THE PRIOR                                      #
+################################################################
+
+page_sample_computation = div(
+  titlePanel("Sampling from the Prior"),
+  sidebarLayout(
+    sidebarPanel(
+      width = 3,
+      
+      p("This generates a sample of values from the prior."),
+      
+      actionButton(inputId = "submit_prior_sampling", 
+                   label = "Submit Data"),
+      
+      numericInput(inputId = "prior_seed",
+                   label = "Insert the seed",
+                   value = 1),
+      
+      numericInput(inputId = "prior_sample_bigN",
+                   label = 'Insert the Monte Carlo sample size',
+                   value = 20000),
+      
+      selectInput(inputId = "post_comp_use", 
+                  label = 'What values of the hyperparameters do you want to use?', 
+                  choices = list("Same values as elicitation" = 1,
+                                 "Input values" = 2), 
+                  selected = 1),
+      
+      conditionalPanel(
+        condition = "input.post_comp_use == 2",
+        p("Values from the elicitation of the prior will be used!")
+      ),
+      
+      conditionalPanel(
+        condition = "input.post_comp_use == 2",
+        
+        numericInput(inputId = "num_dimensions_post",
+                     label = 'Insert the number of dimensions, $p$.',
+                     min = 1, max = 10000000, step = 1, value = 5),
+        
+        textInput(inputId = "mu0_post",
+                  label = "$\\mu_{01}, ..., \\mu_{0p}$",
+                  value = "-2.5, -1, 0, 1, 2.5"),
+        
+        textInput(inputId = "lambda0_post",
+                  label = "$\\lambda_{021}, ..., \\lambda_{02p}$",
+                  value = "0.82, 1.21, 1.97, 1.21, 0.82"),
+        
+        textInput(inputId = "alpha01_post",
+                  label = "$\\alpha_{011}, ..., \\alpha_{01p}$",
+                  value = "2.32, 2.09, 1.41, 2.09, 2.32"),
+        
+        textInput(inputId = "alpha02_post",
+                  label = "$\\alpha_{021}, ..., \\alpha_{02p}$",
+                  value = "1.21, 0.29, 0.04, 0.29, 1.21"),
+      ),
+      
+    ),
+    mainPanel(
+      downloadButton(outputId = 'download_prior_sample', 
+                     label = 'Download Values'),
+      
+      p("The downloaded values above are formatted as follows, where each row in the file 
+        contains:"),
+      p("$\\mu_{1}, \\mu_{2}, ..., \\mu_{p}, 
+        \\rho_{11}, \\rho_{12}, ..., \\rho_{1p}, 
+        \\rho_{22}, \\rho_{23}, ..., \\rho_{2p}, ...,
+        \\rho_{(p-1)(p-1)}, \\rho_{(p-1)p}, \\rho_{pp},
+        \\rho_{11}^{'}, \\rho_{12}^{'}, ..., \\rho_{1p}^{'}, 
+        \\rho_{22}^{'}, \\rho_{23}^{'}, ..., \\rho_{2p}^{'}, ...,
+        \\rho_{(p-1)(p-1)}^{'}, \\rho_{(p-1)p}^{'}, \\rho_{pp}^{'}$"),
+      p("Here, the $\\mu_{i}$ are the means, $\\rho_{ij}$ are the correlations of the 
+        $\\Sigma$ matrix, and $\\rho_{ij}^{'}$ are the entries of the $\\Xi$ matrix."),
+      p("Below are the first few lines of the file and contains the first set of values 
+        generated from the prior."),
+      p("Below are used to view different columns within the dataframe."),
+      actionButton('prior_prev_five', 'Previous Cols'),
+      actionButton('prior_next_five', 'Next Cols'),
+      withSpinner(DTOutput('prior_sample_table'))
+      #verbatimTextOutput(outputId = "debug_debug1")
+    )
+  )
+)
+
+################################################################
+# DEBUGGING                                                    #
+################################################################
+
+page_debugging1 = div(
+  p("blank for now!")
+  #verbatimTextOutput(outputId = "debug_debug")
+)
+
+
+################################################################
 # TAB ORGANIZATION                                             #
 ################################################################
 
@@ -234,7 +331,8 @@ page_prior_elicit = div(
   tabsetPanel(type = "tabs",
               tabPanel("Description", page_elicitdescription),
               tabPanel("Sigma", page_elicitsigma),
-              tabPanel("Mu", page_elicitmu)
+              tabPanel("Mu", page_elicitmu),
+              tabPanel("Sampling from the Prior", page_sample_computation)
   )
 )
 

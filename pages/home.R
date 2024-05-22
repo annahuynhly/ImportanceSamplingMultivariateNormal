@@ -8,7 +8,8 @@ page_home = div(
            "Prior Elicitation and Relative Belief Inferences for Linear Models"),
   ),
   br(),
-  p("Note: currently the link does not work; it will be updated once the paper is finished."),
+  p("Note: to navigate the site, use the tags at the top of the page. Using the back button on 
+    the browser takes you out of the site and you will have to start again."),
   
   disconnectMessage(
     text = "Your session timed out, reload the application.",
