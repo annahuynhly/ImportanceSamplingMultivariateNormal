@@ -111,7 +111,7 @@ elicit_prior_graphs = function(){
     dens3 = 2*(x^(3/2))*dgamma(x,alpha,beta)
     plot(x3,dens3,
          main = TeX(paste("Prior Density of $\\sigma_{", graph_num, "}$")),
-         xlab = TeX(paste("$\\sigma_{", graph_num, "}$")),
+         xlab = TeX(paste("Value of $\\sigma_{", graph_num, "}$")),
          ylab = "Prior Density",
          type = "l")
   } else if (input$elicit_sigma_graph_type == 2){
@@ -246,7 +246,7 @@ prior_elicit_mu_graph_item = function(){
   
   plot(xnew, ynew, lwd = 1, type="l", 
        xlab = TeX(paste("Value of $\\mu_{", col, "}$")),
-       ylab = "Density", 
+       ylab = "Prior Density", 
        main = TeX(paste("Prior Density of $\\mu_{", col, "}$")))
 }
 

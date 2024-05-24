@@ -81,10 +81,8 @@ page_posteriorcomputations = div(
       
       p("See section 3.3 of the paper."),
       
-      p("Note: you must press \"submit\" to specify the prior for this page to \
-        load properly."),
-      
-      p("Note: you will need to resubmit if you make any changes with the inputs below."),
+      p("Note: you must press \"submit\" for determining the priors on $\\sigma_{i}^{2}$
+        and $\\mu_{i}$ from the previous section for this page to work."),
       
       actionButton(inputId = "submit_imp_sampler", label = "Submit Data"),
     
@@ -125,8 +123,8 @@ page_SIR_algorithm = div(
       p("The SIR algorithm generates an approximate iid sample from the posterior. 
         See section 3.4 of the paper."),
       
-      p("Note: you must press \"submit\" to specify the prior for this page to \
-        load properly."),
+      p("Note: you must press \"submit\" from the \"Sampling from the Importance 
+        Sampler\" for this page to work properly."),
       
       actionButton(inputId = "submit_sample_post", label = "Submit Data"),
       
@@ -166,9 +164,10 @@ page_user_denote_psi = div(
       width = 3,
       
       p("$\\psi$ is a real-valued function of $(\\mu, \\Sigma)$ that we wish to make inference 
-        about and these computations."),
-      p("Before making relative belief inferences of $\\psi$, it is required for the user to manually 
-        denote what $\\psi$ is."),
+        about."),
+      p("Before making relative belief inferences of $\\psi$, it is required for the user to 
+        compute values of $\\psi$ from the sample from the prior and the sample from the 
+        importance sample and then upload these values."),
       p("Note that if $\\psi$ happens to be one of the values of $\\mu_{i}$'s, then you may skip this section 
         and select it in the next page."),
       downloadButton(outputId = "download_psi_code", 
@@ -178,11 +177,11 @@ page_user_denote_psi = div(
       p("Then, upload the files below:"),
       
       fileInput(inputId = "upload_prior_psi_vals", 
-                label = "Upload the sample from the prior", multiple = FALSE,
+                label = "Upload the sample from the prior on $\\psi$", multiple = FALSE,
                 accept = c("text/csv", "text/comma-separated-values,text/plain", ".csv")),
       
       fileInput(inputId = "upload_imp_psi_vals", 
-                label = "Upload the sample from the importance sampler", multiple = FALSE,
+                label = "Upload the sample from the importance sampler on $\\psi$", multiple = FALSE,
                 accept = c("text/csv", "text/comma-separated-values,text/plain", ".csv")),
       
     ),
@@ -351,7 +350,7 @@ page_psi_hypo_test = div(
       width = 3,
       
       selectInput(inputId = "psi_null",
-                  label = 'Would you like to do a hypothesis test for 
+                  label = 'Would you like to access the evidence for a hypothesis for 
                   $H_{0} : \\psi = \\psi_{0}$?',
                   choices = list("Yes" = 1,
                                  "No" = 2),
@@ -388,7 +387,7 @@ page_sampling = div(
               tabPanel("SIR Algorithm", page_SIR_algorithm), # will probably re-name
               tabPanel("Defining Psi", page_user_denote_psi),
               tabPanel("Relative Belief Ratio of Psi", page_rbr_comparison),
-              tabPanel("Relative Belief Inferences for psi", page_psi_hypo_test)
+              tabPanel("Relative Belief Inferences for Psi", page_psi_hypo_test)
               #tabPanel("Comparison Plots for Mu", page_comparison_graphs),
   )
 )

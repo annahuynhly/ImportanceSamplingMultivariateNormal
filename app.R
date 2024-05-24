@@ -77,7 +77,7 @@ ui = navbarPage(
   tabPanel("Home", page_home),
   navbarMenu(
     "Multivariate Normal",
-    tabPanel("Prior Elicitation", page_prior_elicit),
+    tabPanel("Prior Elicitation and Sampling from the Prior", page_prior_elicit),
     tabPanel("Posterior Computations", page_sampling)
   ),
   navbarMenu(

@@ -293,14 +293,14 @@ page_sample_computation = div(
       p("The downloaded values above are formatted as follows, where each row in the file 
         contains:"),
       p("$\\mu_{1}, \\mu_{2}, ..., \\mu_{p}, 
-        \\rho_{11}, \\rho_{12}, ..., \\rho_{1p}, 
-        \\rho_{22}, \\rho_{23}, ..., \\rho_{2p}, ...,
-        \\rho_{(p-1)(p-1)}, \\rho_{(p-1)p}, \\rho_{pp},
-        \\rho_{11}^{'}, \\rho_{12}^{'}, ..., \\rho_{1p}^{'}, 
-        \\rho_{22}^{'}, \\rho_{23}^{'}, ..., \\rho_{2p}^{'}, ...,
-        \\rho_{(p-1)(p-1)}^{'}, \\rho_{(p-1)p}^{'}, \\rho_{pp}^{'}$"),
-      p("Here, the $\\mu_{i}$ are the means, $\\rho_{ij}$ are the correlations of the 
-        $\\Sigma$ matrix, and $\\rho_{ij}^{'}$ are the entries of the $\\Xi$ matrix."),
+        \\sigma_{11}, \\sigma_{12}, ..., \\sigma_{1p}, 
+        \\sigma_{22}, \\sigma_{23}, ..., \\sigma_{2p}, ...,
+        \\sigma_{(p-1)(p-1)}, \\sigma_{(p-1)p}, \\sigma_{pp},
+        \\sigma_{11}^{'}, \\sigma_{12}^{'}, ..., \\sigma_{1p}^{'}, 
+        \\sigma_{22}^{'}, \\sigma_{23}^{'}, ..., \\sigma_{2p}^{'}, ...,
+        \\sigma_{(p-1)(p-1)}^{'}, \\sigma_{(p-1)p}^{'}, \\sigma_{pp}^{'}$"),
+      p("Here, the $\\mu_{i}$ are the means, $\\sigma_{ij}$ are the correlations of the 
+        $\\Sigma$ matrix, and $\\sigma_{ij}^{'}$ are the entries of the $\\Xi$ matrix."),
       p("Below are the first few lines of the file and contains the first set of values 
         generated from the prior."),
       p("Below are used to view different columns within the dataframe."),
@@ -327,7 +327,7 @@ page_debugging1 = div(
 ################################################################
 
 page_prior_elicit = div(
-  titlePanel("Prior Elicitation"),
+  titlePanel("Prior Elicitation and Sampling from the Prior"),
   tabsetPanel(type = "tabs",
               tabPanel("Description", page_elicitdescription),
               tabPanel("Sigma", page_elicitsigma),

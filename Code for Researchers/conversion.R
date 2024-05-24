@@ -60,16 +60,16 @@ imp_val = convert_for_psi(imp)
 psifn = function(muval, Sigmaval, xival){
   #' @param muval is a vector containing a row of mu's from 1 to p
   #' @param Sigmaval is a variance matrix 
-  #' @param xival is a precision matrix associated with Sigmaval
+  #' @param xival is the precision matrix associated with Sigmaval
   #' The user may change the psi function below, depending on what they wish to make inferences about.
   #' Below, commented out values of psi, are some suggestions:
   #psi = muval[1] # making inference for the first mu value
-  #psi = Sigmaval[2, 2] # making inferences for the 2nd row, 2nd column of Sigmaval
+  #psi = Sigmaval[2, 2] # making inferences for the variance of Y_2
   psi = xival[1,1] # making inference for the ijth value of the matrix xi
   return(psi)
 }
 
-# Part 3: Computing the psi values from the downloaded samples to be used for the density
+# Part 3: Computing the psi values from the downloaded samples
 compute_psi_vals = function(mu, Sigma, xi){
   #' Computing the values for psi to be used to make density histograms.
   #' @mu denotes the mu matrix
