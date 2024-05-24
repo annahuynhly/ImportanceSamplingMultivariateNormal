@@ -126,9 +126,34 @@ elicit_prior_graphs = function(){
 }
 
 output$elicit_prior_graph = renderPlot({
-  # clean up the rest later - this is a placeholder. Will turn it into a function to
-  # make it easier to read in the future.
-  elicit_prior_graphs()
+  # this is slightly different than elicit_prior_graphs; the latex doesn't render
+  # due to a bug on the UofT server.
+  graph_num = input$prior_elicit_sigma_graphnum
+  alpha = prior_elicitation_sigma_values()$alpha01[graph_num]
+  beta = prior_elicitation_sigma_values()$alpha02[graph_num]
+  low = prior_elicitation_sigma_values()$lwbdinvsigma2[graph_num]
+  up = prior_elicitation_sigma_values()$upbdinvsigma2[graph_num]
+  z0 = prior_elicitation_sigma_values()$z0
+  x = low+(up-low)*c(0:1000)/1000
+  prob_z = round(pnorm(z0), 4)
+  
+  if(input$elicit_sigma_graph_type == 1){
+    x3 = sqrt(1/x)
+    dens3 = 2*(x^(3/2))*dgamma(x,alpha,beta)
+    plot(x3,dens3,
+         main = TeX(paste("Prior Density of $\\sigma$ ", graph_num, sep = "")),
+         xlab = TeX(paste("Value of $\\sigma$ ", graph_num, sep = "")),
+         ylab = "Prior Density",
+         type = "l")
+  } else if (input$elicit_sigma_graph_type == 2){
+    x3 = z0*sqrt(1/x)
+    dens3 = (2/z0)*(x^(3/2))*dgamma(x, alpha, beta)
+    plot(x3, dens3,
+         main = TeX(paste("Prior Density of $\\sigma_{", graph_num, '}\\cdot z_{0}$')),
+         xlab = TeX(paste('$\\sigma_{', graph_num, '} \\cdot z_{0}$')),
+         ylab = "Prior Density",
+         type = "l")
+  }
 })
 
 # The plot for it to be saved
@@ -251,7 +276,23 @@ prior_elicit_mu_graph_item = function(){
 }
 
 output$prior_elicit_mu_graph = renderPlot({
-  prior_elicit_mu_graph_item()
+  # since latex does not render properly
+  alpha01 = prior_elicitation_sigma_values()$alpha01 
+  alpha02 = prior_elicitation_sigma_values()$alpha02
+  lambda0 = prior_elicitation_mu_values()$lambda0
+  mu0 = prior_elicitation_mu_values()$mu0
+  
+  col = input$prior_elicit_mu_graphnum
+  x = -10+20*c(0:1000)/1000
+  y = dt(x,2*alpha01[col])
+  scale = sqrt(alpha02[col]/alpha01[col])*lambda0[col]
+  xnew = mu0[col] + scale*x
+  ynew = y/scale
+  
+  plot(xnew, ynew, lwd = 1, type="l", 
+       xlab = TeX(paste("Value of $\\mu$", col)),
+       ylab = "Prior Density", 
+       main = TeX(paste("Prior Density of $\\mu$", col)))
 })
 
 # The plot for it to be saved
