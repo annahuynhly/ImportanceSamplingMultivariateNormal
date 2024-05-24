@@ -1,11 +1,3 @@
-################################################################
-# TODO LIST                                                    #
-################################################################
-
-# 1. re-write some documentation for the new functions
-# 3. delete all old code
-# 4. deploy
-# 5. contact claire and make sure the newest version is working
 
 ################################################################
 # LIBRARIES                                                    #
