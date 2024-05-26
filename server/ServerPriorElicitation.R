@@ -141,8 +141,8 @@ output$elicit_prior_graph = renderPlot({
     x3 = sqrt(1/x)
     dens3 = 2*(x^(3/2))*dgamma(x,alpha,beta)
     plot(x3,dens3,
-         main = TeX(paste("Prior Density of $\\sigma$ ", graph_num, sep = "")),
-         xlab = TeX(paste("Value of $\\sigma$ ", graph_num, sep = "")),
+         main = TeX(paste("Prior Density of $\\sigma$_", graph_num, sep = "")),
+         xlab = TeX(paste("Value of $\\sigma$_", graph_num, sep = "")),
          ylab = "Prior Density",
          type = "l")
   } else if (input$elicit_sigma_graph_type == 2){
@@ -290,9 +290,9 @@ output$prior_elicit_mu_graph = renderPlot({
   ynew = y/scale
   
   plot(xnew, ynew, lwd = 1, type="l", 
-       xlab = TeX(paste("Value of $\\mu$", col)),
+       xlab = TeX(paste("Value of $\\mu$_", col, sep = "")),
        ylab = "Prior Density", 
-       main = TeX(paste("Prior Density of $\\mu$", col)))
+       main = TeX(paste("Prior Density of $\\mu$_", col, sep = "")))
 })
 
 # The plot for it to be saved

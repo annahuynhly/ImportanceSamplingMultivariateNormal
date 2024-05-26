@@ -350,7 +350,7 @@ page_psi_hypo_test = div(
       width = 3,
       
       selectInput(inputId = "psi_null",
-                  label = 'Would you like to access the evidence for a hypothesis for 
+                  label = 'Would you like to access the evidence for a hypothesis  
                   $H_{0} : \\psi = \\psi_{0}$?',
                   choices = list("Yes" = 1,
                                  "No" = 2),
