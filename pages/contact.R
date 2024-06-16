@@ -8,10 +8,6 @@ page_contact = fluidPage(
   
   #div(id = "title_test", titlePanel("Contact & Credits")),
   titlePanel("Contact & Credits"),
-  p("Page is still under construction!"),
-  tags$div(
-    "The computations are based on the works of <insert source here...>"),
-  p(""),
   tags$div(
     "We constructed this website using ",
     tags$a(href="https://www.r-project.org/about.html", "R."),
@@ -36,11 +32,9 @@ page_contact = fluidPage(
       div(id = "AnnaImg", img(src = "anna_ly.jpg", style = 'border-radius: 50%', width = '120px')),
       div(h3('Anna Ly'),
           h4('Research Assistant @ University of Toronto'),
-          p('Main programmer & maintainer of this website. An undergraduate statistics & 
-            math student at the University of', style = "color:#61646b"),
-          p("Toronto and an experienced teaching assistant for the Department of Mathematical 
-          & Computational Sciences at the Mississauga campus.", 
-            style = "color:#61646b"),
+          p('Main programmer & maintainer of this website. Applied statistics specialist and 
+            mathematical sciences major ', style = "color:#61646b"),
+          p("alumni from the University of Toronto.", style = "color:#61646b"),
           #tags$script(src = "https://kit.fontawesome.com/5e940c3ade.js"),
           tags$div(
             tags$i(class = "fa-brands fa-github"),

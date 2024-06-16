@@ -114,7 +114,7 @@ page_posteriorcomputations = div(
 ################################################################
 
 page_SIR_algorithm = div(
-  titlePanel("SIR Algorithm"), # placeholder title
+  titlePanel("SIR Algorithm"),
   
   sidebarLayout(
     sidebarPanel(
