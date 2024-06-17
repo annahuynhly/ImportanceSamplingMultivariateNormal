@@ -59,7 +59,7 @@ page_contact = fluidPage(
           ),
       ),
       
-      div(id = "LuaiImg", img(src = "luai_labadi.png", style = 'border-radius: 50%', width = '120px')),
+      div(id = "LuaiImg", img(src = "luai_labadi.PNG", style = 'border-radius: 50%', width = '120px')),
       div(h3('Luai Al Labadi'),
           h4('Associate Chair & Assistant Professor @ University of Toronto'),
           p('Assisted with codes and overseeing the website.', 
