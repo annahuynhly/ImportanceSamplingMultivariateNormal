@@ -41,6 +41,7 @@ source("./pages/file_upload.R")
 
 source("./pages/mutivariate_normal/PagePriorElicitations.R")
 source("./pages/mutivariate_normal/PagePosteriorComputations.R")
+source("./pages/linear_regression/PageQualitative.R")
 
 #source("./pages/algorithm_description.R")
 
@@ -74,6 +75,7 @@ ui = navbarPage(
   ),
   navbarMenu(
     "Multivariate Normal Regression",
+    tabPanel("Qualitative Factors Only", page_qualitative_reg),
     tabPanel("placeholder1", page_ph1),
     tabPanel("placeholder2", page_ph2)
   ),
