@@ -167,27 +167,90 @@ prior_beta0_vals = elicit_prior_beta0_function(p, gamma, m1, m2, s1, s2, alpha01
 lambda0 = prior_beta0_vals$lambda0
 beta0 = prior_beta0_vals$beta0
 
+###################################
+# Part 2: Sampling from the prior #
+###################################
+
+# Nprior = size of sample from the prior
+
+Nprior = 10000
+
 sigma_2 = 1/(rgamma(1, alpha01, alpha02))
+beta = rnorm(beta0, lambda0 * sigma_2)
 
-rnorm(beta0, lambda0 * sigma_2)
-
-
-
-##########################################################################
-# IGNORE THE BELOW - KEEPING IT FOR TESTING PURPOSES #####################
-
-test_list = list()
-for(i in 1:N){
-  if(i == 1){
-    dummy = c(rep(1, n[i]), rep(0, (sum(n) - n[i])))
-  } else if (i == N){
-    dummy = c(rep(0, (sum(n) - n[i])), rep(1, n[i]))
-  } else {
-    dummy = c(rep(0, cumsum(n)[i-1]), rep(1, n[i]), rep(0, sum(n)-cumsum(n)[i]))
+qual_sample_prior = function(Nprior, k, alpha01, alpha02, beta0){
+  # k here denotes the number of factors
+  # todo: write more detailed documentation later
+  prior_sigma_2_vector = rep(0, Nprior)
+  prior_beta_matrix = matrix(NA, nrow = Nprior, ncol = k)
+  for(i in 1:Nprior){
+    prior_sigma_2_vector[i] = 1/(rgamma(1, alpha01, alpha02))
+    prior_beta_matrix[i,] = rnorm(beta0, lambda0 * sigma_2)
   }
-  test_list[[i]] = dummy
+  newlist = list("prior_sigma_2_vector" = prior_sigma_2_vector,
+                 "prior_beta_matrix" = prior_beta_matrix)
+  return(newlist)
 }
-do.call(rbind, test_list)
+
+sample_prior_vals = qual_sample_prior(Nprior = Nprior, k = k, alpha01 = alpha01, 
+                                      alpha02 = alpha02, beta0 = beta0)
+
+prior_sigma_2_vector = sample_prior_vals$prior_sigma_2_vector
+prior_beta_matrix = sample_prior_vals$prior_beta_matrix
+
+#######################################
+# Part 3: Sampling from the posterior #
+#######################################
+
+# Npost = size of sample from the posterior
+
+Npost = 10000 # change this later
+
+qual_sample_post = function(Npost, k, alpha01, alpha02, lambda0, beta0, b){
+  # write the description later
+  Lambda0 = diag(lambda0)
+  inv_L0 = diag(1/lambda0)
+  
+  side_eqn = solve(Lambda0 + solve(t(X) %*% X))
+  alpha02_y = alpha02 + s1^2/2 + (t(b - beta0) %*% side_eqn %*% (b - beta0))/2
+  placeholder = 1 # this is bc I don't know the symbol that well lol (looks like n?)
+  
+  beta_y = solve(t(X) %*% X + inv_L0) %*% (t(X) %*% X %*% b + inv_L0 %*% beta0)
+  
+  post_sigma_2_vector = rep(0, Npost)
+  post_beta_matrix = matrix(NA, nrow = Npost, ncol = k)
+  
+  for(i in 1:Npost){
+    post_sigma_2 = 1/rgamma(1, placeholder/2 + lambda0, alpha02_y)
+    post_sigma_2_vector[i] = post_sigma_2
+    post_beta_matrix[i,] = rnorm(beta_y, post_sigma_2 * solve(t(X) %*% X + Lambda0))
+  }
+  newlist = list("post_sigma_2_vector" = post_sigma_2_vector,
+                 "post_beta_matrix" = post_beta_matrix)
+  return(newlist)
+}
+
+sample_post_vals = qual_sample_post(Npost = Npost, k = k, alpha01 = alpha01, 
+                                    alpha02 = alpha02, lambda0 = lambda0, 
+                                    beta0 = beta0, b = b)
+
+post_sigma_2_vector = sample_post_vals$post_sigma_2_vector
+post_beta_matrix = sample_post_vals$post_beta_matrix
+
+#######################################
+# Part 4: Relative Belief Ratio       #
+#######################################
+
+alpha = C[,1] %*% t(post_beta_matrix) #might be a typo here?
+
+# a bit hard to read; will discuss later.
+
+
+
+
+
+
+
 
 
 
