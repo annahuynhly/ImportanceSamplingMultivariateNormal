@@ -39,16 +39,17 @@ source("./pages/contact.R")
 source("./pages/file_upload.R")
 #source("./pages/sampling/Description.R")
 
-source("./pages/mutivariate_normal/PagePriorElicitations.R")
-source("./pages/mutivariate_normal/PagePosteriorComputations.R")
+source("./pages/multivariate_normal/PagePriorElicitations.R")
+source("./pages/multivariate_normal/PagePosteriorComputations.R")
 source("./pages/linear_regression/PageQualitative.R")
 
 #source("./pages/algorithm_description.R")
 
 source("./functions/HelperFunctions.R")
-source("./functions/PriorElicitation.R")
-source("./functions/PriorSample.R")
-source("./functions/PosteriorComputations.R")
+source("./functions/multivariate_normal/PriorElicitation.R")
+source("./functions/multivariate_normal/PriorSample.R")
+source("./functions/multivariate_normal/PosteriorComputations.R")
+source("./functions/linear_regression/QualComputations.R")
 
 ################################################################
 # FRONTEND                                                     #
@@ -96,13 +97,17 @@ server = function(input, output, session) {
     session$close()
   })
   
+  path1 = "server/multivariate_normal"
+  path2 = "server/linear_regression"
+  
   # convert the inputs into vectors to be used for computations
   source(file.path("server", "ServerPriorInstructions.R"),  local = TRUE)$value
-  source(file.path("server", "ServerPriorElicitation.R"),  local = TRUE)$value
-  source(file.path("server", "ServerPriorSampling.R"),  local = TRUE)$value
-  source(file.path("server", "ServerPosteriorComputations1.R"),  local = TRUE)$value
-  source(file.path("server", "ServerPosteriorComputations2.R"),  local = TRUE)$value
-  source(file.path("server", "ServerPosteriorComputations3.R"),  local = TRUE)$value
+  source(file.path(path1, "ServerPriorElicitation.R"),  local = TRUE)$value
+  source(file.path(path1, "ServerPriorSampling.R"),  local = TRUE)$value
+  source(file.path(path1, "ServerPosteriorComputations1.R"),  local = TRUE)$value
+  source(file.path(path1, "ServerPosteriorComputations2.R"),  local = TRUE)$value
+  source(file.path(path1, "ServerPosteriorComputations3.R"),  local = TRUE)$value
+  source(file.path(path2, "ServerQualitative1.R"),  local = TRUE)$value
   
   observe(addHoverAnim(session, 'AnnaImg', 'rubberBand'))
   observe(addHoverAnim(session, 'MikeImg', 'tada'))

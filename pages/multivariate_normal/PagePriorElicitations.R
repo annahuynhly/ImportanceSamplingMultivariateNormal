@@ -127,7 +127,7 @@ page_elicitsigma = div(
     ),
     # want to add two tab panels
     mainPanel(
-      tabPanel("Relative Belief Plot of w0",
+      tabPanel("elicitation of the prior graphs",
         fluidRow(
           splitLayout(
             cellWidths = c("60%", "50%"), 

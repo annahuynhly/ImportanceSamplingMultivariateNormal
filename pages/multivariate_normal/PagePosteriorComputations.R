@@ -19,7 +19,7 @@ page_post_comp_description = div(
               selected = "default"),
   
   conditionalPanel(
-    condition = "input.post_input_type == 'csv'",
+    condition = "input.post_input_type == 'default'",
     p("The data is based off of the generated sample detailed in 
           the description section.")
   ),
