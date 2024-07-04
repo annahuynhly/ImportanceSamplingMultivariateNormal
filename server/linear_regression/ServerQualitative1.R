@@ -30,9 +30,9 @@ sample_Y_qual_data = reactive({
   Y # y should be a vector
 })
 
-output$sample_Y_text_output = renderPrint(
+output$sample_Y_text_output = renderPrint({
   sample_Y_qual_data()
-)
+})
 
 qual_choose_file_Y_type = reactive({
   if(input$qual_input_type == "csv"){
@@ -44,6 +44,10 @@ qual_choose_file_Y_type = reactive({
   } else if (input$post_input_type == "default"){
     sample_Y_qual_data()
   }
+})
+
+output$beta_order_output = renderPrint({
+  create_beta_list_names(levels = create_necessary_vector(input$qual_num_levels))
 })
 
 # getting the sufficient statistic
@@ -58,7 +62,7 @@ qual_sufficient_stat_comp = reactive({
   n = sum(n_vector)
   
   X = qual_generate_X(k, n_vector)
-  results = qual_Y_metrics(X, qual_choose_file_Y_type())
+  results = qual_Y_metrics(X, qual_choose_file_Y_type(), m, l)
   
   newlist = list("X" = X, "b" = results$b, "s_2" = results$s_2, "C" = results$C)
   return(newlist)
@@ -136,25 +140,45 @@ output$qual_download_prior_elicit_sigma = downloadHandler(
     dev.off()
   })
 
-
 # Part 1.2: Elicitation of the Prior (beta_{ji}) #
 
 # Type 1: manual inputs (need to implement other types later)
 qual_prior_elicit_mu_manual = eventReactive(input$qual_submit_prior_elicit_mu, {
-  elicit_prior_beta0_function(p = 1, 
-                              gamma = input$qual_virtual_uncertainty,
-                              m1 = create_necessary_vector(input$qual_m1), 
-                              m2 = create_necessary_vector(input$qual_m2), 
-                              s1 = input$qual_elicit_s1, 
-                              s2 = input$qual_elicit_s2, 
-                              alpha01 = qual_prior_sigma()$alpha01, 
-                              alpha02 = qual_prior_sigma()$alpha02)
+  if(input$qual_prior_mu_input_type == 'manual'){
+    elicit_prior_beta0_function(p = 1, 
+                                gamma = input$qual_virtual_uncertainty,
+                                m1 = create_necessary_vector(input$qual_m1), 
+                                m2 = create_necessary_vector(input$qual_m2), 
+                                s1 = input$qual_elicit_s1, 
+                                s2 = input$qual_elicit_s2, 
+                                alpha01 = qual_prior_sigma()$alpha01, 
+                                alpha02 = qual_prior_sigma()$alpha02)
+  } else if (input$qual_prior_mu_input_type == 'txt'){
+    # NEED TO MODIFY STILL
+    elicit_prior_beta0_function(p = 1, 
+                                gamma = input$qual_virtual_uncertainty,
+                                m1 = create_necessary_vector(input$qual_m1), 
+                                m2 = create_necessary_vector(input$qual_m2), 
+                                s1 = input$qual_elicit_s1, 
+                                s2 = input$qual_elicit_s2, 
+                                alpha01 = qual_prior_sigma()$alpha01, 
+                                alpha02 = qual_prior_sigma()$alpha02)
+  } else if (input$qual_prior_mu_input_type == 'csv'){
+    # NEED TO MODIFY STILL
+    elicit_prior_beta0_function(p = 1, 
+                                gamma = input$qual_virtual_uncertainty,
+                                m1 = create_necessary_vector(input$qual_m1), 
+                                m2 = create_necessary_vector(input$qual_m2), 
+                                s1 = input$qual_elicit_s1, 
+                                s2 = input$qual_elicit_s2, 
+                                alpha01 = qual_prior_sigma()$alpha01, 
+                                alpha02 = qual_prior_sigma()$alpha02)
+  }
 })
 
 output$qual_debugging = renderPrint({
   qual_prior_elicit_mu_manual()
 })
-
 
 # Table
 output$qual_prior_elicit_mu_table = renderTable({

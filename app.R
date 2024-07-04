@@ -108,6 +108,8 @@ server = function(input, output, session) {
   source(file.path(path1, "ServerPosteriorComputations2.R"),  local = TRUE)$value
   source(file.path(path1, "ServerPosteriorComputations3.R"),  local = TRUE)$value
   source(file.path(path2, "ServerQualitative1.R"),  local = TRUE)$value
+  source(file.path(path2, "ServerQualitative2.R"),  local = TRUE)$value
+  source(file.path(path2, "ServerQualitative3.R"),  local = TRUE)$value
   
   observe(addHoverAnim(session, 'AnnaImg', 'rubberBand'))
   observe(addHoverAnim(session, 'MikeImg', 'tada'))

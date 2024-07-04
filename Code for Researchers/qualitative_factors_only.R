@@ -17,6 +17,21 @@ n_vector = c(5, 5, 5, 5, 5, 5) # the size of n should be equal to k (if factors 
 n = sum(n_vector)
 # If not, there's a problem.
 
+# want to create: b11, b12, b13, b21, b22, b23
+beta_name_list = rep(0, k)
+
+create_beta_list_names = function(levels){
+  # Create a list of factors
+  factors = lapply(levels, function(x) 1:x)
+  # Generate all combinations
+  combinations = expand.grid(factors)
+  # Create the names
+  names = apply(combinations, 1, function(row) paste0("b", paste(row, collapse = "")))
+  return(names)
+}
+
+create_beta_list_names(l)
+
 # Generating Y (for testing purposes)
 
 mu = c(2, 4, 6, 8, 10, 12)
@@ -182,7 +197,6 @@ qual_sample_prior = function(Nprior, k, alpha01, alpha02, beta0){
   prior_beta_matrix = matrix(NA, nrow = Nprior, ncol = k)
   for(i in 1:Nprior){
     prior_sigma_2_vector[i] = 1/(rgamma(1, alpha01, alpha02))
-    # is this s^2?
     prior_beta_matrix[i,] = rnorm(beta0, lambda0 * prior_sigma_2_vector[i])
   }
   newlist = list("prior_sigma_2_vector" = prior_sigma_2_vector,
@@ -195,6 +209,9 @@ sample_prior_vals = qual_sample_prior(Nprior = Nprior, k = k, alpha01 = alpha01,
 
 prior_sigma_2_vector = sample_prior_vals$prior_sigma_2_vector
 prior_beta_matrix = sample_prior_vals$prior_beta_matrix
+
+View(prior_beta_matrix)
+
 
 #######################################
 # Part 3: Sampling from the posterior #

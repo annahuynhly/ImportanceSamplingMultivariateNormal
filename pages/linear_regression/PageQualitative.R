@@ -27,7 +27,7 @@ page_qualitativedesc = div(
   fluidRow(
     column(3, numericInput(inputId = "qual_num_factors",
                         label = 'Insert the # of factors. This should the number of inputted 
-                        $l_{i}$.',
+                        $l_{i}$',
                         min = 1, max = 10000000, value = 2),
     ),
     column(3, textInput(inputId = "qual_num_levels", 
@@ -36,12 +36,15 @@ page_qualitativedesc = div(
                         value = "2, 3"),
     ),
     column(3, textInput(inputId = "qual_num_n", 
-                     label = "Insert $n_{j1}, ..., n_{jm}$ which is the sample size at factor $i$
-                     at level $j_{i}$", 
+                     label = "Insert $n_{j1}, ..., n_{jm}$, the sample size. The order 
+                     is shown below after inputting $l_{i}$", 
                      value = "5, 5, 5, 5, 5, 5"),
     )
   ), # end fluidRow
   
+  p("Given the information, the order in which you input values for $\\beta$'s and 
+  $n_{j1}, ..., n_{jm}$ and is the following:"),
+  verbatimTextOutput(outputId = "beta_order_output"),
   
   hr(),
   

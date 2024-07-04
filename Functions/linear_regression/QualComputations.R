@@ -2,6 +2,16 @@
 #TODO: write documentation!!   #
 ################################
 
+create_beta_list_names = function(levels){
+  # Create a list of factors
+  factors = lapply(levels, function(x) 1:x)
+  # Generate all combinations
+  combinations = expand.grid(factors)
+  # Create the names
+  names = apply(combinations, 1, function(row) paste0("b", paste(row, collapse = "")))
+  return(names)
+}
+
 qual_generate_X = function(k, n_vector){
   # TODO: write documentation
   X = matrix(0, nrow = k, ncol = sum(n_vector))
@@ -18,7 +28,7 @@ qual_generate_X = function(k, n_vector){
   return(t(X))
 }
 
-qual_Y_metrics = function(X, Y){
+qual_Y_metrics = function(X, Y, m, l){
   # TODO: write documentation
   b = solve(t(X) %*% X) %*% t(X) %*% Y
   s_2 = t(Y - X %*% b) %*% (Y - X %*% b)
@@ -54,7 +64,8 @@ qual_sample_prior = function(Nprior, k, alpha01, alpha02, beta0){
   prior_beta_matrix = matrix(NA, nrow = Nprior, ncol = k)
   for(i in 1:Nprior){
     prior_sigma_2_vector[i] = 1/(rgamma(1, alpha01, alpha02))
-    prior_beta_matrix[i,] = rnorm(beta0, lambda0 * sigma_2)
+    # is this s^2?
+    prior_beta_matrix[i,] = rnorm(beta0, lambda0 * prior_sigma_2_vector[i])
   }
   newlist = list("prior_sigma_2_vector" = prior_sigma_2_vector,
                  "prior_beta_matrix" = prior_beta_matrix)
