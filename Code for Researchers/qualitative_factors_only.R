@@ -17,6 +17,17 @@ n_vector = c(5, 5, 5, 5, 5, 5) # the size of n should be equal to k (if factors 
 n = sum(n_vector)
 # If not, there's a problem.
 
+# data coming from a .csv file
+data = read.csv("C:\\Users\\AnnaH\\Downloads\\qual_csv_example.csv")
+
+# removing data
+m = data$m[!is.na(data$m)]
+l = data$l[!is.na(data$l)]
+k = prod(l)
+n_vector = data$n[!is.na(data$n)]
+
+
+
 # want to create: b11, b12, b13, b21, b22, b23
 beta_name_list = rep(0, k)
 

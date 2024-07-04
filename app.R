@@ -41,7 +41,8 @@ source("./pages/file_upload.R")
 
 source("./pages/multivariate_normal/PagePriorElicitations.R")
 source("./pages/multivariate_normal/PagePosteriorComputations.R")
-source("./pages/linear_regression/PageQualitative.R")
+source("./pages/linear_regression/PageQualitative1.R")
+source("./pages/linear_regression/PageQualitative2.R")
 
 #source("./pages/algorithm_description.R")
 

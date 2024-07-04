@@ -4,42 +4,10 @@
 
 # Part 0: Data Input and Sufficient Statistics Computations #
 
-# generating a sample for Y 
-generate_Y_qual_seed = reactive(input$qual_default_example_seed)
-
-sample_Y_qual_data = reactive({
-  set.seed(generate_Y_qual_seed())
-  
-  l = create_necessary_vector(input$qual_num_levels) # input the number of levels per factor
-  m = length(l) # the number of factors.
-  k = prod(l) # letting this denote the possible number of combinations between the crossed factors 
-  
-  # the size of n_vector should be equal to k (if factors are crossed)
-  n_vector = create_necessary_vector(input$qual_num_n)
-  n = sum(n_vector)
-  
-  mu = c(2, 4, 6, 8, 10, 12)
-  Y = numeric(n)
-  for(i in 1:k){
-    if(i == 1){
-      Y[1:n[i]] = rnorm(n_vector[i], mean = mu[i], sd = 2)
-    } else {
-      Y[(cumsum(n_vector)[i-1]+1):cumsum(n_vector)[i]] = rnorm(n_vector[i], mean = mu[i], sd = 2)
-    }
-  }
-  Y # y should be a vector
-})
-
-output$sample_Y_text_output = renderPrint({
-  sample_Y_qual_data()
-})
-
 qual_choose_file_Y_type = reactive({
   if(input$qual_input_type == "csv"){
-    # NOT IMPLEMENTED PROPERLY YET
-    read.csv(input$qual_Y_input_csv$datapath, header = TRUE)
+    read.csv(input$qual_Y_input_csv$datapath, header = TRUE)$Y
   } else if (input$post_input_type == "txt"){
-    # NOT IMPLEMENTED PROPERLY YET
     read.csv(input$qual_Y_input_txt$datapath, sep = "\t")
   } else if (input$post_input_type == "default"){
     sample_Y_qual_data()
@@ -50,8 +18,8 @@ output$beta_order_output = renderPrint({
   create_beta_list_names(levels = create_necessary_vector(input$qual_num_levels))
 })
 
-# getting the sufficient statistic
-qual_sufficient_stat_comp = reactive({
+# getting the sufficient statistic (manual)
+qual_sufficient_stat_comp_manual = reactive({
   
   l = create_necessary_vector(input$qual_num_levels) # input the number of levels per factor
   m = length(l) # the number of factors.
@@ -68,27 +36,164 @@ qual_sufficient_stat_comp = reactive({
   return(newlist)
 })
 
-output$qual_X_output = renderPrint(
+qual_sufficient_stat_comp_file_txt = reactive({
+  tryCatch(
+    {
+      df = read.csv(input$qual_initial_input_file_txt$datapath, 
+                    header = TRUE,
+                    sep = "\t")
+    },
+    error = function(e) {
+      # return a safeError if a parsing error occurs
+      stop(safeError(e))
+    }
+  )
+  df
+})
+
+qual_sufficient_stat_comp_file_csv = reactive({
+  tryCatch(
+    {
+      df = read.csv(input$qual_initial_input_file_csv$datapath, header = TRUE)
+    },
+    error = function(e) {
+      # return a safeError if a parsing error occurs
+      stop(safeError(e))
+    }
+  )
+  df
+})
+
+# the input if the user uploads a file
+# need to see if it's the same for .csv and .txt
+qual_sufficient_stat_comp_file = reactive({
+  
+  if(input$qual_initial_input_type == "csv"){
+    data = qual_sufficient_stat_comp_file_csv() 
+  } else if (input$qual_initial_input_type == "txt"){
+    data = qual_sufficient_stat_comp_file_txt() 
+  }
+  
+  l = data$li[!is.na(data$li)] # input the number of levels per factor
+  m = data$m[!is.na(data$m)] # the number of factors.
+  k = prod(l) # letting this denote the possible number of combinations between the crossed factors 
+  
+  # the size of n_vector should be equal to k (if factors are crossed)
+  n_vector = data$n[!is.na(data$n)]
+  n = sum(n_vector)
+  
+  X = qual_generate_X(k, n_vector)
+  results = qual_Y_metrics(X, qual_choose_file_Y_type(), m, l)
+  
+  newlist = list("X" = X, "b" = results$b, "s_2" = results$s_2, "C" = results$C)
+  return(newlist)
+})
+
+qual_sufficient_stat_comp = reactive({
+  if(input$qual_initial_input_type == "manual"){
+    qual_sufficient_stat_comp_manual()
+  } else if (input$qual_initial_input_type != "manual"){
+    qual_sufficient_stat_comp_file()
+  }
+})
+
+output$qual_X_output = renderPrint({
   qual_sufficient_stat_comp()$X
-)
+})
 
-output$qual_sufficient_statistics1 = renderPrint(
+output$qual_sufficient_statistics1 = renderPrint({
   qual_sufficient_stat_comp()[c("b", "s_2")]
-)
+})
 
-output$qual_sufficient_statistics2 = renderPrint(
+output$qual_sufficient_statistics2 = renderPrint({
   qual_sufficient_stat_comp()$C
-)
+})
 
 # Part 1.1: Elicitation of the Prior (Sigma) #
+
+qual_elicit_sigma_txt = reactive({
+  tryCatch(
+    {
+      df = read.csv(input$qual_elicit_sigma_inputs_txt$datapath, 
+                    header = TRUE,
+                    sep = "\t")
+    },
+    error = function(e) {
+      # return a safeError if a parsing error occurs
+      stop(safeError(e))
+    }
+  )
+  df
+})
+
+qual_elicit_sigma_csv = reactive({
+  tryCatch(
+    {
+      df = read.csv(input$qual_elicit_sigma_inputs_csv$datapath, header = TRUE)
+    },
+    error = function(e) {
+      # return a safeError if a parsing error occurs
+      stop(safeError(e))
+    }
+  )
+  df
+})
+
+qual_s1 = reactive({
+  if(input$qual_elicit_sigma_input_type == 'manual'){
+    input$qual_elicit_s1
+  } else if (input$qual_elicit_sigma_input_type == 'txt'){
+    data = qual_elicit_sigma_txt()
+    data$s1[!is.na(data$s1)]
+  } else if (input$qual_elicit_sigma_input_type == 'csv'){
+    data = qual_elicit_sigma_csv()
+    data$s1[!is.na(data$s1)]
+  }
+})
+
+qual_s2 = reactive({
+  if(input$qual_elicit_sigma_input_type == 'manual'){
+    input$qual_elicit_s2
+  } else if (input$qual_elicit_sigma_input_type == 'txt'){
+    data = qual_elicit_sigma_txt()
+    data$s2[!is.na(data$s2)]
+  } else if (input$qual_elicit_sigma_input_type == 'csv'){
+    data = qual_elicit_sigma_csv()
+    data$s2[!is.na(data$s2)]
+  }
+})
+
+qual_upper_bd = reactive({
+  if(input$qual_elicit_sigma_input_type == 'manual'){
+    input$qual_alphaup
+  } else if (input$qual_elicit_sigma_input_type == 'txt'){
+    data = qual_elicit_sigma_txt()
+    data$upper_bd[!is.na(data$upper_bd)]
+  } else if (input$qual_elicit_sigma_input_type == 'csv'){
+    data = qual_elicit_sigma_csv()
+    data$upper_bd[!is.na(data$upper_bd)]
+  }
+})
+
+qual_lower_bd = reactive({
+  if(input$qual_elicit_sigma_input_type == 'manual'){
+    input$qual_alphalow
+  } else if (input$qual_elicit_sigma_input_type == 'txt'){
+    data = qual_elicit_sigma_txt()
+    data$lower_bd[!is.na(data$lower_bd)]
+  } else if (input$qual_elicit_sigma_input_type == 'csv'){
+    data = qual_elicit_sigma_csv()
+    data$lower_bd[!is.na(data$lower_bd)]
+  }
+})
 
 qual_prior_sigma = eventReactive(input$qual_submit_prior_elicit_sigma, {
   elicit_prior_sigma_function(p = 1, 
                               gamma = input$qual_virtual_uncertainty, 
-                              s1 = input$qual_elicit_s1, 
-                              s2 = input$qual_elicit_s2, 
-                              upper_bd = input$qual_alphaup, 
-                              lower_bd = input$qual_alphalow)
+                              s1 = qual_s1(), 
+                              s2 = qual_s2(), 
+                              upper_bd = qual_upper_bd(), 
+                              lower_bd = qual_lower_bd())
 })
 
 # Table
@@ -142,50 +247,79 @@ output$qual_download_prior_elicit_sigma = downloadHandler(
 
 # Part 1.2: Elicitation of the Prior (beta_{ji}) #
 
-# Type 1: manual inputs (need to implement other types later)
-qual_prior_elicit_mu_manual = eventReactive(input$qual_submit_prior_elicit_mu, {
+qual_elicit_mu_txt = reactive({
+  tryCatch(
+    {
+      df = read.csv(input$qual_prior_mu_file_txt$datapath, 
+                    header = TRUE,
+                    sep = "\t")
+    },
+    error = function(e) {
+      # return a safeError if a parsing error occurs
+      stop(safeError(e))
+    }
+  )
+  df
+})
+
+qual_elicit_mu_csv = reactive({
+  tryCatch(
+    {
+      df = read.csv(input$qual_prior_mu_file_csv$datapath, header = TRUE)
+    },
+    error = function(e) {
+      # return a safeError if a parsing error occurs
+      stop(safeError(e))
+    }
+  )
+  df
+})
+
+qual_m1 = reactive({
   if(input$qual_prior_mu_input_type == 'manual'){
-    elicit_prior_beta0_function(p = 1, 
-                                gamma = input$qual_virtual_uncertainty,
-                                m1 = create_necessary_vector(input$qual_m1), 
-                                m2 = create_necessary_vector(input$qual_m2), 
-                                s1 = input$qual_elicit_s1, 
-                                s2 = input$qual_elicit_s2, 
-                                alpha01 = qual_prior_sigma()$alpha01, 
-                                alpha02 = qual_prior_sigma()$alpha02)
+    create_necessary_vector(input$qual_m1)
   } else if (input$qual_prior_mu_input_type == 'txt'){
-    # NEED TO MODIFY STILL
-    elicit_prior_beta0_function(p = 1, 
-                                gamma = input$qual_virtual_uncertainty,
-                                m1 = create_necessary_vector(input$qual_m1), 
-                                m2 = create_necessary_vector(input$qual_m2), 
-                                s1 = input$qual_elicit_s1, 
-                                s2 = input$qual_elicit_s2, 
-                                alpha01 = qual_prior_sigma()$alpha01, 
-                                alpha02 = qual_prior_sigma()$alpha02)
+    data = qual_elicit_mu_txt()
+    data$m1[!is.na(data$m1)]
   } else if (input$qual_prior_mu_input_type == 'csv'){
-    # NEED TO MODIFY STILL
-    elicit_prior_beta0_function(p = 1, 
-                                gamma = input$qual_virtual_uncertainty,
-                                m1 = create_necessary_vector(input$qual_m1), 
-                                m2 = create_necessary_vector(input$qual_m2), 
-                                s1 = input$qual_elicit_s1, 
-                                s2 = input$qual_elicit_s2, 
-                                alpha01 = qual_prior_sigma()$alpha01, 
-                                alpha02 = qual_prior_sigma()$alpha02)
+    data = qual_elicit_mu_csv()
+    data$m1[!is.na(data$m1)]
   }
 })
 
+qual_m2 = reactive({
+  if(input$qual_prior_mu_input_type == 'manual'){
+    create_necessary_vector(input$qual_m2)
+  } else if (input$qual_prior_mu_input_type == 'txt'){
+    data = qual_elicit_mu_txt()
+    data$m2[!is.na(data$m2)]
+  } else if (input$qual_prior_mu_input_type == 'csv'){
+    data = qual_elicit_mu_csv()
+    data$m2[!is.na(data$m2)]
+  }
+})
+
+qual_prior_elicit_mu = eventReactive(input$qual_submit_prior_elicit_mu, {
+  elicit_prior_beta0_function(p = 1, 
+                              gamma = input$qual_virtual_uncertainty,
+                              m1 = qual_m1(), 
+                              m2 = qual_m2(), 
+                              s1 = qual_s1(), 
+                              s2 = qual_s2(), 
+                              alpha01 = qual_prior_sigma()$alpha01, 
+                              alpha02 = qual_prior_sigma()$alpha02)
+})
+
 output$qual_debugging = renderPrint({
-  qual_prior_elicit_mu_manual()
+  qual_prior_elicit_mu()
 })
 
 # Table
 output$qual_prior_elicit_mu_table = renderTable({
   k = prod(create_necessary_vector(input$qual_num_levels))
   data.frame(index  = seq(1, k),
-             beta0 = qual_prior_elicit_mu_manual()$beta0,
-             lambda0 = qual_prior_elicit_mu_manual()$lambda0)
+             beta0 = qual_prior_elicit_mu()$beta0,
+             lambda0 = qual_prior_elicit_mu()$lambda0)
 })
 
 # Graph
@@ -193,8 +327,8 @@ qual_prior_elicit_mu_graph_item = function(){
   
   alpha01 = qual_prior_sigma()$alpha01 
   alpha02 = qual_prior_sigma()$alpha02
-  lambda0 = qual_prior_elicit_mu_manual()$lambda0
-  beta0 = qual_prior_elicit_mu_manual()$beta0
+  lambda0 = qual_prior_elicit_mu()$lambda0
+  beta0 = qual_prior_elicit_mu()$beta0
   
   col = input$qual_prior_elicit_mu_graphnum
   x = -10+20*c(0:1000)/1000
@@ -224,6 +358,10 @@ output$download_prior_elicit_mu_plot = downloadHandler(
   })
 
 
+########### below is generic code for debugging
 
+output$qual_debug = renderPrint({
+  qual_elicit_sigma_txt()
+})
 
 
