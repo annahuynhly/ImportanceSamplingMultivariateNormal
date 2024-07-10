@@ -185,8 +185,6 @@ qual_sample_prior = function(Nprior, k, alpha01, alpha02, beta0){
   prior_beta_matrix = matrix(NA, nrow = Nprior, ncol = k)
   for(i in 1:Nprior){
     prior_sigma_2_vector[i] = 1/(rgamma(1, alpha01, alpha02))
-    # I think during the meeting Mike said it should be sigma not sigma^2 but 
-    # in the pdf it says sigma^2.
     prior_Sigma = diag(lambda0 * prior_sigma_2_vector[i])
     prior_beta_matrix[i,] = mvrnorm(mu = beta0, Sigma = prior_Sigma)
   }
@@ -247,10 +245,10 @@ post_beta_matrix = sample_post_vals$post_beta_matrix
 # SINCE l = c(2, 3) we have the following order:
 # a11, a12, a21, a22, a31, a32
 
-prior_alpha = t(C) %*% t(prior_beta_matrix)
-post_alpha = t(C) %*% t(post_beta_matrix)
-
 col_num = 1
+
+prior_alpha = t(C) %*% t(prior_beta_matrix)[col_num,]
+post_alpha = t(C) %*% t(post_beta_matrix)[col_num, ]
 
 alpha_plot_vals = function(Nmontecarlo, smoother = 7, delta = 0.5, alpha_vals){
   #' Obtains the smoothed plot of the density of alpha (applicable to prior and
@@ -408,3 +406,4 @@ psi_hypothesis_test(psi_0 = 1,
                     RB_psi = rbr_alpha_vals$RB_alpha, 
                     post_psi_dens_smoothed = rbr_alpha_vals$post_alpha_dens_smoothed,
                     delta_psi = 0.5)
+
