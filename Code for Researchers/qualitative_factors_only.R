@@ -269,26 +269,8 @@ post_beta_matrix = sample_post_vals$post_beta_matrix
 # SINCE l = c(2, 3) we have the following order:
 # a11, a12, a21, a22, a31, a32
 
-prior_alpha = matrix(NA, nrow = Nprior, ncol = k)
-post_alpha = matrix(NA, nrow = Nprior, ncol = k)
-
-for(i in 1:Nprior){
-  prior_alpha[i,] =  C[,1] * prior_beta_matrix[i,]
-  #prior_alpha[i,] =  C[,2] * prior_beta_matrix[i,]
-  #prior_alpha[i,] =  C[,3] * prior_beta_matrix[i,]
-  #prior_alpha[i,] =  C[,4] * prior_beta_matrix[i,]
-  #prior_alpha[i,] =  C[,5] * prior_beta_matrix[i,]
-  #prior_alpha[i,] =  C[,6] * prior_beta_matrix[i,]
-}
-
-for(i in 1:Npost){
-  post_alpha[i,] =  C[,1] * post_beta_matrix[i,]
-  #post_alpha[i,] =  C[,2] * post_beta_matrix[i,]
-  #post_alpha[i,] =  C[,3] * post_beta_matrix[i,]
-  #post_alpha[i,] =  C[,4] * post_beta_matrix[i,]
-  #post_alpha[i,] =  C[,5] * post_beta_matrix[i,]
-  #post_alpha[i,] =  C[,6] * post_beta_matrix[i,]
-}
+prior_alpha = t(C) %*% t(prior_beta_matrix)
+post_alpha = t(C) %*% t(post_beta_matrix)
 
 col_num = 1
 

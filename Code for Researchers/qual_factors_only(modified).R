@@ -3,6 +3,9 @@
 # Part 0: Data Input and Sufficient Statistics Computations #
 #############################################################
 
+# libraries
+library(MASS)
+
 # setting the seed so that computations can be repeated provided all relevant Parts are run consecutively
 set.seed(1)
 
@@ -182,8 +185,10 @@ qual_sample_prior = function(Nprior, k, alpha01, alpha02, beta0){
   prior_beta_matrix = matrix(NA, nrow = Nprior, ncol = k)
   for(i in 1:Nprior){
     prior_sigma_2_vector[i] = 1/(rgamma(1, alpha01, alpha02))
-    # is this s^2?
-    prior_beta_matrix[i,] = rnorm(beta0, lambda0 * prior_sigma_2_vector[i])
+    # I think during the meeting Mike said it should be sigma not sigma^2 but 
+    # in the pdf it says sigma^2.
+    prior_Sigma = diag(lambda0 * prior_sigma_2_vector[i])
+    prior_beta_matrix[i,] = mvrnorm(mu = beta0, Sigma = prior_Sigma)
   }
   newlist = list("prior_sigma_2_vector" = prior_sigma_2_vector,
                  "prior_beta_matrix" = prior_beta_matrix)
@@ -212,6 +217,7 @@ qual_sample_post = function(Npost, k, n, alpha01, alpha02, lambda0, beta0, b, s_
   side_eqn = solve(Lambda0 + solve(t(X) %*% X))
   alpha02_y = alpha02 + s_2/2 + (t(b - beta0) %*% side_eqn %*% (b - beta0))/2
   
+  Sigma_y = solve(t(X) %*% X + solve(Lambda0))
   beta_y = solve(t(X) %*% X + inv_L0) %*% (t(X) %*% X %*% b + inv_L0 %*% beta0)
   
   post_sigma_2_vector = rep(0, Npost)
@@ -220,7 +226,7 @@ qual_sample_post = function(Npost, k, n, alpha01, alpha02, lambda0, beta0, b, s_
   for(i in 1:Npost){
     post_sigma_2 = 1/rgamma(1, n/2 + alpha01, alpha02_y)
     post_sigma_2_vector[i] = post_sigma_2
-    post_beta_matrix[i,] = rnorm(beta_y, post_sigma_2 * solve(t(X) %*% X + Lambda0))
+    post_beta_matrix[i,] = mvrnorm(mu = beta_y, Sigma = post_sigma_2 * Sigma_y)
   }
   newlist = list("post_sigma_2_vector" = post_sigma_2_vector,
                  "post_beta_matrix" = post_beta_matrix)
@@ -233,3 +239,172 @@ sample_post_vals = qual_sample_post(Npost = Npost, k = k, n = n, alpha01 = alpha
 
 post_sigma_2_vector = sample_post_vals$post_sigma_2_vector
 post_beta_matrix = sample_post_vals$post_beta_matrix
+
+#######################################
+# Part 4: Relative Belief Ratio       #
+#######################################
+
+# SINCE l = c(2, 3) we have the following order:
+# a11, a12, a21, a22, a31, a32
+
+prior_alpha = t(C) %*% t(prior_beta_matrix)
+post_alpha = t(C) %*% t(post_beta_matrix)
+
+col_num = 1
+
+alpha_plot_vals = function(Nmontecarlo, smoother = 7, delta = 0.5, alpha_vals){
+  #' Obtains the smoothed plot of the density of alpha (applicable to prior and
+  #' posterior)
+  #' @param Nprior represents the Monte Carlo sample size used for the prior.
+  #' @param smoother an odd number of points to average prior density values.
+  #' write more later....
+  vals = abs(alpha_vals)
+  alpha_upper_bd = max(vals)
+  
+  breaks = seq(0, alpha_upper_bd, by = delta)
+  if (tail(breaks, n=1) <= alpha_upper_bd) {
+    breaks = c(breaks, breaks[length(breaks)] + delta)
+  } 
+  
+  alpha_hist = hist(vals, breaks, freq = F)
+  alpha_mids = alpha_hist$mids
+  alpha_density = alpha_hist$density 
+  
+  # making a smoothed plot of the density of alpba
+  alpha_dens_smoothed = alpha_density
+  numcells = length(alpha_hist$counts)
+  halfm = (smoother-1)/2
+  for(i in (1+halfm):(numcells-halfm)){
+    sum = 0
+    for (j in (-halfm):halfm){
+      sum = sum + alpha_density[i+j]
+    }
+    alpha_dens_smoothed[i]=sum/smoother 
+  }
+  
+  newlist = list("alpha_mids" = alpha_mids, 
+                 "alpha_dens" = alpha_density,
+                 "alpha_dens_smoothed" = alpha_dens_smoothed,
+                 "breaks" = breaks)
+  return(newlist)
+}
+
+prior_alpha_vals = alpha_plot_vals(Nmontecarlo = Nprior, smoother = 7, delta = 0.5, 
+                                   alpha_vals = prior_alpha)
+
+post_alpha_vals = alpha_plot_vals(Nmontecarlo = Npost, smoother = 7, delta = 0.5, 
+                                  alpha_vals = post_alpha)
+
+prior_alpha_dens_smoothed = prior_alpha_vals$alpha_dens_smoothed
+prior_alpha_breaks = prior_alpha_vals$breaks
+
+post_alpha_dens_smoothed = post_alpha_vals$alpha_dens_smoothed
+post_alpha_breaks = post_alpha_vals$breaks
+
+
+rbr_alpha = function(prior_alpha_dens_smoothed, prior_alpha_breaks, 
+                     post_alpha_dens_smoothed, post_alpha_breaks){
+  #' Obtain the relative belief ratio of psi based off of the prior and posterior values.
+  #' fix description later
+  
+  # only need to focus on the max value due to endpoints
+  extra = abs(length(prior_alpha_breaks) - length(post_alpha_breaks))
+  if(length(prior_alpha_breaks) > length(post_alpha_breaks)){
+    post_alpha_dens_smoothed = c(post_alpha_dens_smoothed, rep(0, extra))
+    rbr_breaks = prior_alpha_breaks
+  } else {
+    prior_alpha_dens_smoothed = c(prior_alpha_dens_smoothed, rep(0, extra))
+    rbr_breaks = post_alpha_breaks
+  }
+  numcells = length(rbr_breaks)-1
+  RB_alpha = rep(0, numcells)
+  for (i in 1:numcells){
+    if (prior_alpha_dens_smoothed[i] != 0){
+      RB_alpha[i] = post_alpha_dens_smoothed[i]/prior_alpha_dens_smoothed[i]}
+  }
+  # getting the midpoints for rbr
+  comp_delta = diff(rbr_breaks)[1]
+  half_delta = comp_delta/2
+  RB_mids = seq(from = rbr_breaks[1] + half_delta, 
+                to = rbr_breaks[length(rbr_breaks)] - half_delta, 
+                by = comp_delta)
+  
+  newlist = list("RB_breaks" = rbr_breaks, "RB_mids" = RB_mids,
+                 "RB_alpha" = RB_alpha,
+                 "post_alpha_dens_smoothed" = post_alpha_dens_smoothed,
+                 "prior_alpha_dens_smoothed" = prior_alpha_dens_smoothed)
+  return(newlist)
+}
+
+rbr_alpha_vals = rbr_alpha(prior_alpha_dens_smoothed, prior_alpha_breaks, 
+                           post_alpha_dens_smoothed, post_alpha_breaks)
+
+# Estimations for Psi ##########################################
+
+# May need to change the name of the function arguments, but these are the same
+# functions as they were for the other case.
+plausible_region_est = function(prior_psi_mids, RB_psi, post_psi_dens_smoothed,
+                                delta_psi){
+  # estimating plausible region
+  plaus_region = ifelse(RB_psi > 1, prior_psi_mids, 0)
+  
+  # getting the interval instead
+  nonzero_values = plaus_region[plaus_region != 0]
+  plaus_interval = c(nonzero_values[1], nonzero_values[length(nonzero_values)])
+  
+  # getting the posterior content of the plausible region
+  plaus_content = 0
+  for(i in 1:length(prior_psi_mids)){
+    if(RB_psi[i] > 1){
+      plaus_content = plaus_content + post_psi_dens_smoothed[i]
+    }
+  }
+  plaus_content = plaus_content * delta_psi
+  
+  newlist = list("plaus_region" = plaus_region,
+                 "plaus_interval" = plaus_interval,
+                 "plaus_content" = plaus_content)
+  return(newlist)
+}
+
+plausible_region_est(prior_psi_mids = rbr_alpha_vals$RB_mids, 
+                     RB_psi = rbr_alpha_vals$RB_alpha, 
+                     post_psi_dens_smoothed = rbr_alpha_vals$post_alpha_dens_smoothed, 
+                     delta_psi = 0.5)
+
+psi_hypothesis_test = function(psi_0 = -2, prior_psi_mids, RB_psi, post_psi_dens_smoothed,
+                               delta_psi){
+  
+  psi_0_index = which.min(abs(prior_psi_mids - psi_0))
+  
+  # evidence for or against psi0
+  if(RB_psi[psi_0_index] > 1){
+    psi_message = paste("RB of psi_0 = ",RB_psi[psi_0_index]," so there is evidence in favor of H_0 : psi = ",
+                        psi_0, sep ="")
+  }
+  else if(RB_psi[psi_0_index] < 1){
+    psi_message = paste("RB of psi_0 = ", RB_psi[psi_0_index]," so there is evidence against H_0 : psi = ",
+                        psi_0, sep = "")
+  }
+  else if(RB_psi[psi_0_index] == 1){
+    psi_message = paste("RB of psi_0 = ", RB_psi[psi_0_index],
+                        " so there is no evidence either in favor of or against H_0 : psi = ",
+                        psi_0, sep = "")
+  }
+  
+  # compute the evidence concerning strength H_0 : psi = psi_0
+  indices = which(RB_psi <= RB_psi[psi_0_index])
+  # Compute the strength
+  strength_psi_0 = sum(post_psi_dens_smoothed[indices]) * delta_psi
+  strength_msg = paste("Strength of the evidence concerning H_0 : psi = psi_0 is given by ", strength_psi_0, sep = "")
+  
+  newlist = list("psi_message" = psi_message, "indices" = indices, "strength_message" = strength_msg)
+  
+  return(newlist)
+}
+
+psi_hypothesis_test(psi_0 = 1, 
+                    prior_psi_mids = rbr_alpha_vals$RB_mids, 
+                    RB_psi = rbr_alpha_vals$RB_alpha, 
+                    post_psi_dens_smoothed = rbr_alpha_vals$post_alpha_dens_smoothed,
+                    delta_psi = 0.5)
