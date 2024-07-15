@@ -29,7 +29,7 @@ qual_sufficient_stat_comp_manual = reactive({
   n_vector = create_necessary_vector(input$qual_num_n)
   n = sum(n_vector)
   
-  X = qual_generate_X(k, n_vector)
+  X = qual_generate_X(n_vector)
   results = qual_Y_metrics(X, qual_choose_file_Y_type(), m, l)
   
   newlist = list("X" = X, "b" = results$b, "s_2" = results$s_2, "C" = results$C)
@@ -82,7 +82,7 @@ qual_sufficient_stat_comp_file = reactive({
   n_vector = data$n[!is.na(data$n)]
   n = sum(n_vector)
   
-  X = qual_generate_X(k, n_vector)
+  X = qual_generate_X(n_vector)
   results = qual_Y_metrics(X, qual_choose_file_Y_type(), m, l)
   
   newlist = list("X" = X, "b" = results$b, "s_2" = results$s_2, "C" = results$C)

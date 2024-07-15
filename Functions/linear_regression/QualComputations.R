@@ -12,11 +12,23 @@ create_beta_list_names = function(levels){
   return(names)
 }
 
-qual_generate_X = function(k, n_vector){
-  # TODO: write documentation
-  X = matrix(0, nrow = k, ncol = sum(n_vector))
+qual_generate_X = function(n_vector){
+  #' Given the sample size per each combination, generates the X matrix.
+  #' @param n a vector, which is the sample size per combination.
+  #' @examples
+  #' > qual_generate_X(c(1, 2, 1, 4))
+  #'      [,1] [,2] [,3] [,4]
+  #' [1,]    1    0    0    0
+  #' [2,]    0    1    0    0
+  #' [3,]    0    1    0    0
+  #' [4,]    0    0    1    0
+  #' [5,]    0    0    0    1
+  #' [6,]    0    0    0    1
+  #' [7,]    0    0    0    1
+  #' [8,]    0    0    0    1
+  X = matrix(0, nrow = length(n_vector), ncol = sum(n_vector))
   
-  for(i in 1:k) {
+  for(i in 1:length(n_vector)) {
     if(i == 1) {
       X[i, 1:n_vector[i]] = 1
     } else {
@@ -29,12 +41,16 @@ qual_generate_X = function(k, n_vector){
 }
 
 qual_Y_metrics = function(X, Y, m, l){
-  # TODO: write documentation
+  #' Given the values of the Y vector and the X matrix, computes the minimal
+  #' sufficient statistics (b, s^2, and C).
+  #' @param X a matrix.
+  #' @param Y a vector containing the data.
+  #' @param m represents the number of factors.
+  #' @param l a vector that contains the number of levels per factor.
   b = solve(t(X) %*% X) %*% t(X) %*% Y
   s_2 = t(Y - X %*% b) %*% (Y - X %*% b)
   C = 1
   for(i in 1:m){
-    # possibly need to debug
     Ci = cbind(rep(1, l[i]), contr.helmert(l[i])) # dropped the normalization
     C = C %x% Ci # kronecker product
   }
@@ -43,10 +59,13 @@ qual_Y_metrics = function(X, Y, m, l){
 }
 
 elicit_prior_beta0_function = function(p, gamma, m1, m2, s1, s2, alpha01, alpha02){
-  #' We elicit the prior for mu, which is given by:
-  #' mu ~ mu0 + sqrt(alpha02/alpha01) (lambda0) (t_{2*alpha01}) 
+  #' We elicit the prior for beta0 and lambda0.
   #' @param p represents the number of dimensions.
   #' @param gamma represents the virtual certainty.
+  #' @param m1 represents the lower bound for beta0.
+  #' @param m2 represents the upper bound for beta0.
+  #' @param alpha01 a vector generated from sigma, along with alpha02.
+  #' s1 and s2 are added as parameters for convenience.
   vectors_of_interest = list(m1, m2, s1, s2, alpha01, alpha02)
   
   beta0 = (m1 + m2)/2 
@@ -58,8 +77,10 @@ elicit_prior_beta0_function = function(p, gamma, m1, m2, s1, s2, alpha01, alpha0
 }
 
 qual_sample_prior = function(Nprior, k, alpha01, alpha02, beta0){
-  # k here denotes the number of factors
-  # todo: write more detailed documentation later
+  #' This generates a sample of Nprior from the prior on N(mu, Sigma).
+  #' @param Nprior represents the Monte Carlo sample size.
+  #' @param k represents the number of possible combinations between the factors.
+  #' The values of alpha01, alpha02, and beta0 are from the prior elicitation.
   prior_sigma_2_vector = rep(0, Nprior)
   prior_beta_matrix = matrix(NA, nrow = Nprior, ncol = k)
   for(i in 1:Nprior){
@@ -73,7 +94,12 @@ qual_sample_prior = function(Nprior, k, alpha01, alpha02, beta0){
 }
 
 qual_sample_post = function(Npost, k, n, alpha01, alpha02, lambda0, beta0, b, s_2){
-  # write the description later
+  #' This generates a sample of Npost from the posterior on N(mu, Sigma).
+  #' @param Npost represents the Monte Carlo sample size.
+  #' @param k represents the number of possible combinations between the factors.
+  #' @param n represents the total sample size.
+  #' The values of alpha01, alpha02, and beta0 are from the prior elicitation.
+  #' The values of b and s_2 are computed from the minimal sufficient statistic.
   Lambda0 = diag(lambda0)
   inv_L0 = diag(1/lambda0)
   
@@ -135,7 +161,10 @@ alpha_plot_vals = function(Nmontecarlo, smoother = 7, delta = 0.5, alpha_vals){
 rbr_alpha = function(prior_alpha_dens_smoothed, prior_alpha_breaks, 
                      post_alpha_dens_smoothed, post_alpha_breaks){
   #' Obtain the relative belief ratio of psi based off of the prior and posterior values.
-  #' fix description later
+  #' @param prior_alpha_dens_smoothed represents the prior alpha values.
+  #' @param prior_alpha_breaks represents the end points of the grid containing the prior alpha values.
+  #' @param post_alpha_dens_smoothed represents the posterior alpha values.
+  #' @param post_alpha_breaks represents the end points of the grid containing the post alpha values.
   
   # only need to focus on the max value due to endpoints
   extra = abs(length(prior_alpha_breaks) - length(post_alpha_breaks))
@@ -165,3 +194,4 @@ rbr_alpha = function(prior_alpha_dens_smoothed, prior_alpha_breaks,
                  "prior_alpha_dens_smoothed" = prior_alpha_dens_smoothed)
   return(newlist)
 }
+

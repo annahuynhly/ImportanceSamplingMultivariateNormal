@@ -309,7 +309,13 @@ rbr_psi = function(numcells = 100, prior_psi_dens_smoothed, post_psi_dens_smooth
 
 plausible_region_est = function(prior_psi_mids, RB_psi, post_psi_dens_smoothed,
                                 delta_psi){
-  # estimating plausible region
+  #' Estimates the plausible region.
+  #' @param prior_psi_mids a vector containing the midpoints of the bins containing the psi values.
+  #' @param RB_psi a vector containing the relative belief ratio of psi.
+  #' @param post_psi_dens_smoothed a vector containing the psi values of the posterior (used to 
+  #' compute the relative belief ratio.)
+  #' @param delta_psi a number that represents the meaningful difference between the grid points.
+  
   plaus_region = ifelse(RB_psi > 1, prior_psi_mids, 0)
   
   # getting the interval instead
@@ -333,6 +339,13 @@ plausible_region_est = function(prior_psi_mids, RB_psi, post_psi_dens_smoothed,
 
 psi_hypothesis_test = function(psi_0 = -2, prior_psi_mids, RB_psi, post_psi_dens_smoothed,
                                delta_psi){
+  #' Constructs a hypothesis test given the relative belief ratio.
+  #' @param psi_0 the null hypothesis of the psi value.
+  #' @param prior_psi_mids a vector containing the midpoints of the bins containing the psi values.
+  #' @param RB_psi a vector containing the relative belief ratio of psi.
+  #' @param post_psi_dens_smoothed a vector containing the psi values of the posterior (used to 
+  #' compute the relative belief ratio.)
+  #' @param delta_psi a number that represents the meaningful difference between the grid points.
   
   psi_0_index = which.min(abs(prior_psi_mids - psi_0))
   
