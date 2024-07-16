@@ -199,11 +199,11 @@ beta0 = prior_beta0_vals$beta0
 
 Nprior = 10000
 
-qual_sample_prior = function(Nprior, k, alpha01, alpha02, beta0){
+qual_sample_prior = function(Nprior, k, alpha01, alpha02, beta0, lambda0){
   #' This generates a sample of Nprior from the prior on N(mu, Sigma).
   #' @param Nprior represents the Monte Carlo sample size.
   #' @param k represents the number of possible combinations between the factors.
-  #' The values of alpha01, alpha02, and beta0 are from the prior elicitation.
+  #' The values of alpha01, alpha02, beta0, and lambda0 are from the prior elicitation.
   prior_sigma_2_vector = rep(0, Nprior)
   prior_beta_matrix = matrix(NA, nrow = Nprior, ncol = k)
   for(i in 1:Nprior){
@@ -217,7 +217,7 @@ qual_sample_prior = function(Nprior, k, alpha01, alpha02, beta0){
 }
 
 sample_prior_vals = qual_sample_prior(Nprior = Nprior, k = k, alpha01 = alpha01, 
-                                      alpha02 = alpha02, beta0 = beta0)
+                                      alpha02 = alpha02, beta0 = beta0, lambda0 = lambda0)
 
 prior_sigma_2_vector = sample_prior_vals$prior_sigma_2_vector
 prior_beta_matrix = sample_prior_vals$prior_beta_matrix
@@ -230,7 +230,7 @@ prior_beta_matrix = sample_prior_vals$prior_beta_matrix
 
 Npost = 10000 # change this later
 
-qual_sample_post = function(Npost, k, n, alpha01, alpha02, lambda0, beta0, b, s_2){
+qual_sample_post = function(Npost, X, k, n, alpha01, alpha02, lambda0, beta0, b, s_2){
   #' This generates a sample of Npost from the posterior on N(mu, Sigma).
   #' @param Npost represents the Monte Carlo sample size.
   #' @param k represents the number of possible combinations between the factors.
@@ -259,7 +259,7 @@ qual_sample_post = function(Npost, k, n, alpha01, alpha02, lambda0, beta0, b, s_
   return(newlist)
 }
 
-sample_post_vals = qual_sample_post(Npost = Npost, k = k, n = n, alpha01 = alpha01, 
+sample_post_vals = qual_sample_post(Npost = Npost, X = X, k = k, n = n, alpha01 = alpha01, 
                                     alpha02 = alpha02, lambda0 = lambda0, 
                                     beta0 = beta0, b = b, s_2 = s_2)
 
@@ -275,8 +275,8 @@ post_beta_matrix = sample_post_vals$post_beta_matrix
 
 col_num = 1
 
-prior_alpha = t(C) %*% t(prior_beta_matrix)[col_num,]
-post_alpha = t(C) %*% t(post_beta_matrix)[col_num, ]
+prior_alpha = (t(C) %*% t(prior_beta_matrix))[col_num,]
+post_alpha = (t(C) %*% t(post_beta_matrix))[col_num, ]
 
 alpha_plot_vals = function(Nmontecarlo, smoother = 7, delta = 0.5, alpha_vals){
   #' Obtains the smoothed plot of the density of alpha (applicable to prior and
@@ -436,4 +436,113 @@ psi_hypothesis_test(psi_0 = 1,
                     RB_psi = rbr_alpha_vals$RB_alpha, 
                     post_psi_dens_smoothed = rbr_alpha_vals$post_alpha_dens_smoothed,
                     delta_psi = 0.5)
+
+
+rbr_alpha_vals$RB_mids[which.max(rbr_alpha_vals$RB_alpha)]
+
+
+psi_cust_plot = function(grid, density, colour_choice = "red",
+                         lty_type = 2, transparency = 0.4, plot_title = "Prior",
+                         plot_object = "$\\psi$", xlim_min = -10, xlim_max = 10){
+  # TODO: implement col_num (column number) later.
+  #' Creates a density plot, used for the prior, posterior, and relative belief ratio for psi.
+  #' @param grid vector containing the x-axis values which corresponds to the density.
+  #' @param density vector containing the density values.
+  #' @param colour_choice the colour used for the line.
+  #' @param lty_type the line type used for the plot (same values as base R plotting).
+  #' @param transparency transparency percentage for the area of the density plot. 
+  #'                     Set to 0 if you don't want the area highlighted.
+  #' @param xlim_min smaller x-axis cutoff of the plot.
+  #' @param xlim_max larger x-axis cutoff of the plot.
+  
+  if(xlim_min > min(grid) & xlim_max < max(grid)){
+    xlim_interval = c(xlim_min, xlim_max)
+  } else {xlim_interval = c(min(grid), max(grid))}
+  
+  col_rgb = col2rgb(colour_choice)
+  area_col = rgb(col_rgb[1]/255, col_rgb[2]/255, col_rgb[3]/255, 
+                 alpha = transparency)
+  plot(grid, density, type = "l", lty = lty_type, 
+       xlab = TeX("$\\psi$"), ylab = "Density", col = colour_choice, 
+       main= TeX(paste("The", plot_title, "of", plot_object)),
+       xlim = xlim_interval)
+  polygon(grid, density, col = area_col, border = NA)
+}
+
+psi_priorpost_plot = function(grid, prior_density, post_density, plot_object = "$\\psi$",
+                              colour_choice = c("red", "blue"), lty_type = c(2, 2),
+                              transparency = 0.4, xlim_min = -10, xlim_max = 10){
+  # TODO: implement col_num (column number) later.
+  #' Creates a density plot, used for the prior, posterior, and relative belief ratio for psi.
+  #' @param grid vector containing the x-axis values which corresponds to the density.
+  #' @param prior_density vector containing prior density values.
+  #' @param post_density vector containing the posterior density values.
+  #' @param colour_choice vector containing colour for the density plot line.
+  #'        The first value is for the prior, and the second is for the posterior.
+  #' @param lty_type vector containing line type (same values as base R plotting).
+  #'        The first value is for the prior, and the second is for the posterior.
+  #' @param transparency transparency percentage for the area of the density plot. 
+  #'                     Set to 0 if you don't want the area highlighted.
+  #' @param xlim_min smaller x-axis cutoff of the plot.
+  #' @param xlim_max larger x-axis cutoff of the plot.
+  
+  if(xlim_min > min(grid) & xlim_max < max(grid)){
+    xlim_interval = c(xlim_min, xlim_max)
+  } else {xlim_interval = c(min(grid), max(grid))}
+  
+  prior_col_rgb = col2rgb(colour_choice[1])
+  post_col_rgb = col2rgb(colour_choice[2])
+  
+  prior_area_col = rgb(prior_col_rgb[1]/255, prior_col_rgb[2]/255, prior_col_rgb[3]/255, 
+                       alpha = transparency)
+  post_area_col = rgb(post_col_rgb[1]/255, post_col_rgb[2]/255, post_col_rgb[3]/255, 
+                      alpha = transparency)
+  
+  max_val = plyr::round_any(max(c(prior_density, post_density)), 
+                            accuracy = 0.05, f = ceiling)
+  ylim_vals = c(0, max_val)
+  
+  plot(grid, prior_density, type = "l", lty = lty_type[1], col = colour_choice[1], 
+       xlab = TeX(plot_object), ylab = "Density", 
+       main = TeX(paste("The Prior and Posterior Density of", plot_object)), 
+       ylim = ylim_vals, xlim = xlim_interval)
+  
+  lines(grid, post_density, lty = lty_type[2], col = colour_choice[2])
+  
+  polygon(grid, prior_density, col = prior_area_col, border = NA)
+  polygon(grid, post_density, col = post_area_col, border = NA)
+  
+  legend("topleft", legend=c("Prior", "Posterior"),
+         col = colour_choice, lty = lty_type, cex=0.8)
+}
+
+
+psi_priorpost_plot(grid = rbr_alpha_vals$RB_mids, 
+                   prior_density = rbr_alpha_vals$prior_alpha_dens_smoothed, 
+                   post_density = rbr_alpha_vals$post_alpha_dens_smoothed, 
+                   plot_object = "$\\alpha_{0}$",
+                   colour_choice = c("red", "blue"), lty_type = c(2, 2),
+                   transparency = 0.4, xlim_min = 30, xlim_max = 60)
+
+psi_cust_plot(grid = rbr_alpha_vals$RB_mids, 
+              density = rbr_alpha_vals$prior_alpha_dens_smoothed, 
+              colour_choice = "red", lty_type = 2, transparency = 0.4, 
+              plot_title = "Prior", plot_object = "$\\alpha_{0}$",
+              xlim_min = 30, xlim_max = 60)
+
+psi_cust_plot(grid = rbr_alpha_vals$RB_mids, 
+              density = rbr_alpha_vals$post_alpha_dens_smoothed, 
+              colour_choice = "blue", lty_type = 2, transparency = 0.4, 
+              plot_title = "Posterior",
+              xlim_min = 30, xlim_max = 60)
+
+psi_cust_plot(grid = rbr_alpha_vals$RB_mids, 
+              density = rbr_alpha_vals$RB_alpha, 
+              colour_choice = "green", lty_type = 2, transparency = 0.4, 
+              plot_title = "Relative Belief Ratio",
+              xlim_min = 30, xlim_max = 60)
+
+
+
+
 

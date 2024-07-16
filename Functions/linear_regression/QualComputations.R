@@ -76,11 +76,11 @@ elicit_prior_beta0_function = function(p, gamma, m1, m2, s1, s2, alpha01, alpha0
   return(newlist)
 }
 
-qual_sample_prior = function(Nprior, k, alpha01, alpha02, beta0){
+qual_sample_prior = function(Nprior, k, alpha01, alpha02, beta0, lambda0){
   #' This generates a sample of Nprior from the prior on N(mu, Sigma).
   #' @param Nprior represents the Monte Carlo sample size.
   #' @param k represents the number of possible combinations between the factors.
-  #' The values of alpha01, alpha02, and beta0 are from the prior elicitation.
+  #' The values of alpha01, alpha02, beta0, and lambda0 are from the prior elicitation.
   prior_sigma_2_vector = rep(0, Nprior)
   prior_beta_matrix = matrix(NA, nrow = Nprior, ncol = k)
   for(i in 1:Nprior){
@@ -93,7 +93,7 @@ qual_sample_prior = function(Nprior, k, alpha01, alpha02, beta0){
   return(newlist)
 }
 
-qual_sample_post = function(Npost, k, n, alpha01, alpha02, lambda0, beta0, b, s_2){
+qual_sample_post = function(Npost, X, k, n, alpha01, alpha02, lambda0, beta0, b, s_2){
   #' This generates a sample of Npost from the posterior on N(mu, Sigma).
   #' @param Npost represents the Monte Carlo sample size.
   #' @param k represents the number of possible combinations between the factors.
@@ -119,6 +119,16 @@ qual_sample_post = function(Npost, k, n, alpha01, alpha02, lambda0, beta0, b, s_
   newlist = list("post_sigma_2_vector" = post_sigma_2_vector,
                  "post_beta_matrix" = post_beta_matrix)
   return(newlist)
+}
+
+qual_sample_prior_reformat = function(levels, sigma_2_vector, beta_matrix){
+  #' Reformats the values to create a dataframe that contains sigma_2 vector and the
+  #' beta matrix.
+  new_names = create_beta_list_names(levels)
+  df = as.data.frame(beta_matrix)
+  colnames(df) = c("b11", "b21", "b12", "b22", "b13", "b23")
+  df$sigma_2 = sigma_2_vector
+  return(df)
 }
 
 alpha_plot_vals = function(Nmontecarlo, smoother = 7, delta = 0.5, alpha_vals){

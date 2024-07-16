@@ -261,7 +261,10 @@ page_qualitative_sampleprior = div(
       p("Below are used to view different columns within the dataframe."),
       actionButton('qual_prior_prev_five', 'Previous Cols'),
       actionButton('qual_prior_next_five', 'Next Cols'),
-      withSpinner(DTOutput('qual_prior_sample_table'))
+      
+      # TEST DEBUGGING BELOW
+      #withSpinner(verbatimTextOutput(outputId = "debuggingpriorqual123")),
+      withSpinner(DTOutput(outputId = 'qual_prior_sample_table'))
       
       
       
@@ -353,19 +356,3 @@ page_qualitative_samplepost = div(
 
 
 
-################################################################
-# TAB ORGANIZATION                                             #
-################################################################
-
-page_qualitative_reg = div(
-  titlePanel("Qualitative Factors Only - Linear Regression"),
-  tabsetPanel(type = "tabs",
-              tabPanel("Description", page_qualitativedesc),
-              tabPanel("Sufficient Statistics", page_qualitativeinputs),
-              tabPanel("Sigma", page_qualitative_elicitsigma),
-              tabPanel("Mu", page_qualitative_elicitmu),
-              # need to check if names should be shortened?
-              tabPanel("Sampling from the Prior", page_qualitative_sampleprior),
-              tabPanel("Sampling from the Posterior", page_qualitative_samplepost)
-  )
-)

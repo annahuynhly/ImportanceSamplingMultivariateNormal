@@ -357,11 +357,8 @@ output$download_prior_elicit_mu_plot = downloadHandler(
     dev.off()
   })
 
-
 ########### below is generic code for debugging
 
 output$qual_debug = renderPrint({
   qual_elicit_sigma_txt()
 })
-
-

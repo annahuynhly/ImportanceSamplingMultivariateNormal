@@ -381,7 +381,7 @@ psi_hypothesis_test = function(psi_0 = -2, prior_psi_mids, RB_psi, post_psi_dens
 
 psi_cust_plot = function(grid, density, colour_choice = "red",
                         lty_type = 2, transparency = 0.4, plot_title = "Prior",
-                        xlim_min = -10, xlim_max = 10){
+                        plot_object = "$\\psi$", xlim_min = -10, xlim_max = 10){
   # TODO: implement col_num (column number) later.
   #' Creates a density plot, used for the prior, posterior, and relative belief ratio for psi.
   #' @param grid vector containing the x-axis values which corresponds to the density.
@@ -402,12 +402,12 @@ psi_cust_plot = function(grid, density, colour_choice = "red",
                  alpha = transparency)
   plot(grid, density, type = "l", lty = lty_type, 
        xlab = TeX("$\\psi$"), ylab = "Density", col = colour_choice, 
-       main= TeX(paste("The", plot_title, "of $\\psi$")),
+       main= TeX(paste("The", plot_title, "of", plot_object)),
        xlim = xlim_interval)
   polygon(grid, density, col = area_col, border = NA)
 }
 
-psi_priorpost_plot = function(grid, prior_density, post_density, 
+psi_priorpost_plot = function(grid, prior_density, post_density, plot_object = "$\\psi$",
                               colour_choice = c("red", "blue"), lty_type = c(2, 2),
                               transparency = 0.4, xlim_min = -10, xlim_max = 10){
   # TODO: implement col_num (column number) later.
@@ -437,12 +437,12 @@ psi_priorpost_plot = function(grid, prior_density, post_density,
                       alpha = transparency)
   
   max_val = plyr::round_any(max(c(prior_density, post_density)), 
-                            accuracy = 0.1, f = ceiling)
+                            accuracy = 0.05, f = ceiling)
   ylim_vals = c(0, max_val)
   
   plot(grid, prior_density, type = "l", lty = lty_type[1], col = colour_choice[1], 
-       xlab = TeX("$\\psi$"), ylab = "Density", 
-       main = TeX("The Prior and Posterior Density of $\\psi$"), 
+       xlab = TeX(plot_object), ylab = "Density", 
+       main = TeX(paste("The Prior and Posterior Density of", plot_object)), 
        ylim = ylim_vals, xlim = xlim_interval)
   
   lines(grid, post_density, lty = lty_type[2], col = colour_choice[2])
