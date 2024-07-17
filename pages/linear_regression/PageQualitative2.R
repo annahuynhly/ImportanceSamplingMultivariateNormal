@@ -175,6 +175,7 @@ page_qualitative_elicitmu = div(
       
     ), # end of sidebarPanel
     mainPanel(
+      #verbatimTextOutput(outputId = "qualdebug123"),
       fluidRow(
         splitLayout(
           cellWidths = c("60%", "50%"), 
@@ -204,7 +205,7 @@ page_qualitative_sampleprior = div(
       
       numericInput(inputId = "qual_prior_sample_bigN",
                    label = 'Insert the Monte Carlo sample size',
-                   value = 20000),
+                   value = 10000),
       
       selectInput(inputId = "qual_prior_comp_use", 
                   label = 'What values of the hyperparameters do you want to use?', 
@@ -289,7 +290,7 @@ page_qualitative_samplepost = div(
       
       numericInput(inputId = "qual_post_sample_bigN",
                    label = 'Insert the Monte Carlo sample size',
-                   value = 20000),
+                   value = 10000),
       
       selectInput(inputId = "qual_post_comp_use", 
                   label = 'What values of the hyperparameters do you want to use?', 

@@ -222,6 +222,14 @@ sample_prior_vals = qual_sample_prior(Nprior = Nprior, k = k, alpha01 = alpha01,
 prior_sigma_2_vector = sample_prior_vals$prior_sigma_2_vector
 prior_beta_matrix = sample_prior_vals$prior_beta_matrix
 
+Nprior
+k
+alpha01
+alpha02
+beta0
+lambda0
+
+
 #######################################
 # Part 3: Sampling from the posterior #
 #######################################
@@ -273,10 +281,17 @@ post_beta_matrix = sample_post_vals$post_beta_matrix
 # SINCE l = c(2, 3) we have the following order:
 # a11, a12, a21, a22, a31, a32
 
+setwd("/Users/annaly/Downloads")
+df1 = read.csv("qual_post_sample.csv")[, 1:6]
+df2 = read.csv("qual_prior_sample.csv")[, 1:6]
+
 col_num = 1
 
 prior_alpha = (t(C) %*% t(prior_beta_matrix))[col_num,]
 post_alpha = (t(C) %*% t(post_beta_matrix))[col_num, ]
+
+prior_alpha = (t(C) %*% t(df1))[col_num, ]
+post_alpha = (t(C) %*% t(df2))[col_num, ]
 
 alpha_plot_vals = function(Nmontecarlo, smoother = 7, delta = 0.5, alpha_vals){
   #' Obtains the smoothed plot of the density of alpha (applicable to prior and
@@ -315,11 +330,19 @@ alpha_plot_vals = function(Nmontecarlo, smoother = 7, delta = 0.5, alpha_vals){
   return(newlist)
 }
 
+
 prior_alpha_vals = alpha_plot_vals(Nmontecarlo = Nprior, smoother = 7, delta = 0.5, 
                                    alpha_vals = prior_alpha)
 
 post_alpha_vals = alpha_plot_vals(Nmontecarlo = Npost, smoother = 7, delta = 0.5, 
                                   alpha_vals = post_alpha)
+
+
+
+
+
+prior_alpha_vals$alpha_dens_smoothed
+post_alpha_vals$alpha_dens_smoothed
 
 prior_alpha_dens_smoothed = prior_alpha_vals$alpha_dens_smoothed
 prior_alpha_breaks = prior_alpha_vals$breaks
@@ -400,6 +423,10 @@ plausible_region_est(prior_psi_mids = rbr_alpha_vals$RB_mids,
                      post_psi_dens_smoothed = rbr_alpha_vals$post_alpha_dens_smoothed, 
                      delta_psi = 0.5)
 
+
+
+
+
 psi_hypothesis_test = function(psi_0 = -2, prior_psi_mids, RB_psi, post_psi_dens_smoothed,
                                delta_psi){
   
@@ -431,7 +458,7 @@ psi_hypothesis_test = function(psi_0 = -2, prior_psi_mids, RB_psi, post_psi_dens
   return(newlist)
 }
 
-psi_hypothesis_test(psi_0 = 1, 
+psi_hypothesis_test(psi_0 = 40, 
                     prior_psi_mids = rbr_alpha_vals$RB_mids, 
                     RB_psi = rbr_alpha_vals$RB_alpha, 
                     post_psi_dens_smoothed = rbr_alpha_vals$post_alpha_dens_smoothed,

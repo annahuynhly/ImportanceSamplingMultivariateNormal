@@ -74,7 +74,7 @@ page_qualitative_rbr = div(
     mainPanel(
       
       # debugging
-      verbatimTextOutput(outputId = "qualdebugging1234"),
+      #verbatimTextOutput(outputId = "qualdebugging1234"),
       
       conditionalPanel(
         # layout where prior and posterior are on different plots
@@ -85,7 +85,7 @@ page_qualitative_rbr = div(
               cellWidths = c("33%", "33%", "33%"), 
               withSpinner(plotOutput("qual_prior_alpha_plot")), 
               withSpinner(plotOutput("qual_post_alpha_plot")),
-              withSpinner(plotOutput("qual_rbr_alpha_plot"))
+              withSpinner(plotOutput("qual_rbr_alpha_plot1"))
             )
           ),
         ), 
@@ -99,7 +99,7 @@ page_qualitative_rbr = div(
             splitLayout(
               cellWidths = c("50%", "50%"), 
               withSpinner(plotOutput("qual_priorpost_alpha_plot")), 
-              withSpinner(plotOutput("qual_rbr_alpha_plot"))
+              withSpinner(plotOutput("qual_rbr_alpha_plot2"))
             )
           ),
         ), 
@@ -116,8 +116,8 @@ page_qualitative_rbr = div(
         column(4, 
                fluidRow(box(width = 12,
                   splitLayout(
-                  numericInput(inputId = "qual_psi_plot_xmin", label = 'Min x-axis', value = -10),
-                  numericInput(inputId = "qual_psi_plot_xmax", label = 'Max x-axis', value = 10),
+                  numericInput(inputId = "qual_psi_plot_xmin", label = 'Min x-axis', value = 35),
+                  numericInput(inputId = "qual_psi_plot_xmax", label = 'Max x-axis', value = 55),
                ))),
         ),
         column(4, 
@@ -157,7 +157,7 @@ page_qualitative_rbr_inf = div(
         
         numericInput(inputId = "qual_alpha0",
                      label = 'Insert the value of $\\alpha_{0}$',
-                     value = -2),
+                     value = 40),
       ),
       
     ), # end of sidebarPanel

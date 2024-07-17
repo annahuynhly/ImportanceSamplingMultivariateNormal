@@ -401,7 +401,7 @@ psi_cust_plot = function(grid, density, colour_choice = "red",
   area_col = rgb(col_rgb[1]/255, col_rgb[2]/255, col_rgb[3]/255, 
                  alpha = transparency)
   plot(grid, density, type = "l", lty = lty_type, 
-       xlab = TeX("$\\psi$"), ylab = "Density", col = colour_choice, 
+       xlab = TeX(plot_object), ylab = "Density", col = colour_choice, 
        main= TeX(paste("The", plot_title, "of", plot_object)),
        xlim = xlim_interval)
   polygon(grid, density, col = area_col, border = NA)
