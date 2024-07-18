@@ -162,7 +162,20 @@ page_qualitative_rbr_inf = div(
       
     ), # end of sidebarPanel
     mainPanel(
-      withSpinner(verbatimTextOutput(outputId = "qual_psi_hypo_test_output")),
+      p("Estimate of the true value of $\\alpha_{0}$ from the relative belief ratio:"),
+      withSpinner(verbatimTextOutput(outputId = "qual_psi_hypo_test_output1")),
+      p("Plausible region:"),
+      withSpinner(verbatimTextOutput(outputId = "qual_psi_hypo_test_output2")),
+      p("Posterior content of the plausible region:"),
+      withSpinner(verbatimTextOutput(outputId = "qual_psi_hypo_test_output3")),
+      conditionalPanel(
+        condition = "input.qual_alpha_null == 1",
+        p("The evidence concerning strength $H_{0} : \\alpha = \\alpha_{0}$:"),
+        withSpinner(verbatimTextOutput(outputId = "qual_psi_hypo_test_output4")),
+        p("The strength of the evidence concerning $H_{0} : \\alpha = \\alpha_{0}$:"),
+        withSpinner(verbatimTextOutput(outputId = "qual_psi_hypo_test_output5")),
+      )
+      #withSpinner(verbatimTextOutput(outputId = "qual_psi_hypo_test_output")),
     ) # end of mainPanel
   )
 )
@@ -178,7 +191,7 @@ page_qualitative_reg = div(
               tabPanel("Description", page_qualitativedesc),
               tabPanel("Sufficient Statistics", page_qualitativeinputs),
               tabPanel("Sigma", page_qualitative_elicitsigma),
-              tabPanel("Mu", page_qualitative_elicitmu),
+              tabPanel("Beta", page_qualitative_elicitmu),
               # need to check if names should be shortened?
               tabPanel("Sampling from the Prior", page_qualitative_sampleprior),
               tabPanel("Sampling from the Posterior", page_qualitative_samplepost),

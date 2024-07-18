@@ -222,13 +222,6 @@ sample_prior_vals = qual_sample_prior(Nprior = Nprior, k = k, alpha01 = alpha01,
 prior_sigma_2_vector = sample_prior_vals$prior_sigma_2_vector
 prior_beta_matrix = sample_prior_vals$prior_beta_matrix
 
-Nprior
-k
-alpha01
-alpha02
-beta0
-lambda0
-
 
 #######################################
 # Part 3: Sampling from the posterior #
@@ -281,9 +274,9 @@ post_beta_matrix = sample_post_vals$post_beta_matrix
 # SINCE l = c(2, 3) we have the following order:
 # a11, a12, a21, a22, a31, a32
 
-setwd("/Users/annaly/Downloads")
-df1 = read.csv("qual_post_sample.csv")[, 1:6]
-df2 = read.csv("qual_prior_sample.csv")[, 1:6]
+#setwd("/Users/annaly/Downloads") # this was for debugging purposes
+#df1 = read.csv("qual_post_sample.csv")[, 1:6]
+#df2 = read.csv("qual_prior_sample.csv")[, 1:6]
 
 col_num = 1
 

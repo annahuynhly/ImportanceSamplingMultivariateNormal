@@ -71,6 +71,26 @@ output$qual_psi_hypo_test_output = renderPrint({
   list1
 })
 
+output$qual_psi_hypo_test_output1 = renderPrint({
+  qual_RBest_value()
+})
+
+output$qual_psi_hypo_test_output2 = renderPrint({
+  qual_plausible_region_est()$plaus_interval
+})
+
+output$qual_psi_hypo_test_output3 = renderPrint({
+  qual_plausible_region_est()$plaus_content
+})
+
+output$qual_psi_hypo_test_output4 = renderPrint({
+  qual_hypothesis_test()$psi_message
+})
+
+output$qual_psi_hypo_test_output5 = renderPrint({
+  qual_hypothesis_test()$strength_message
+})
+
 ################################################################
 # PLOTS FOR THE RELATIVE BELIEF RATIO                          #
 ################################################################
