@@ -119,8 +119,8 @@ elicit_prior_sigma_function = function(p, gamma, s1, s2, upper_bd, lower_bd){
   #' Using the bisection method.
   #' @param p represents the number of dimensions.
   #' @param gamma represents the virtual certainty.
-  vectors_of_interest = list(s1, s2, upper_bd, lower_bd)
-  for(i in vectors_of_interest){
+  sigmabounds_of_interest = list(s1, s2, upper_bd, lower_bd)
+  for(i in sigmabounds_of_interest){
     if(length(i) != p){return("Error: there is a vector that doesn't have length p.")}
   }
   
@@ -156,15 +156,13 @@ elicit_prior_sigma_function = function(p, gamma, s1, s2, upper_bd, lower_bd){
   return(newlist)
 }
 
-elicit_prior_beta0_function = function(p, gamma, m1, m2, s1, s2, alpha01, alpha02){
+elicit_prior_beta0_function = function(p, gamma, m1, m2, alpha01, alpha02){
   #' We elicit the prior for beta0 and lambda0.
   #' @param p represents the number of dimensions.
   #' @param gamma represents the virtual certainty.
   #' @param m1 represents the lower bound for beta0.
   #' @param m2 represents the upper bound for beta0.
   #' @param alpha01 a vector generated from sigma, along with alpha02.
-  #' s1 and s2 are added as parameters for convenience.
-  vectors_of_interest = list(m1, m2, s1, s2, alpha01, alpha02)
   
   beta0 = (m1 + m2)/2 
   gam = (1+gamma)/2
@@ -186,7 +184,7 @@ z0 = prior_sigma_vals$z0 # this is the (1+gamma)/2 quantile of the standard norm
 lwbdinvsigma2 = prior_sigma_vals$lwbdinvsigma2 # This is (z0/s2)^2
 upbdinvsigma2 = prior_sigma_vals$upbdinvsigma2 # This is (z0/s1)^2
 
-prior_beta0_vals = elicit_prior_beta0_function(p, gamma, m1, m2, s1, s2, alpha01, alpha02)
+prior_beta0_vals = elicit_prior_beta0_function(p, gamma, m1, m2, alpha01, alpha02)
 
 lambda0 = prior_beta0_vals$lambda0
 beta0 = prior_beta0_vals$beta0
