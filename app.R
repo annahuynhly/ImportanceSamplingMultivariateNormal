@@ -1,3 +1,15 @@
+################################################################
+# TODO LIST                                                    #
+################################################################
+
+#1. put in the correct titles for the prior density
+#3. insert the order for sampling from the prior (similar as description)
+#4. insert the order for sampling from the posterior (similar as description)
+#5. Check to if the values of the hyperparameters work for prior & post
+#6. insert the order for the relative belief ratio to use
+#7. for relative belief instances, replace “psi” with “alpha”. perhaps keep the values through text instead of this output?
+#8. OPTIONAL: see if there’s a possible way to keep all headers for the chart of the df
+
 
 ################################################################
 # LIBRARIES                                                    #

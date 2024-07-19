@@ -23,7 +23,7 @@ qual_prior_alpha_vals_comp = reactive({
 
 qual_post_alpha_vals_comp = reactive({
   alpha_plot_vals(Nmontecarlo = input$qual_post_sample_bigN, 
-                  smoother = input$qual_rbr_mprior, 
+                  smoother = input$qual_rbr_mpost, 
                   delta = input$qual_rbr_delta, 
                   alpha_vals = qual_post_alpha_contrasts())
 })
@@ -47,7 +47,7 @@ qual_plausible_region_est = reactive({
 })
 
 qual_hypothesis_test = reactive({
-  psi_hypothesis_test(psi_0 = input$qual_alpha_null, 
+  psi_hypothesis_test(psi_0 = as.numeric(input$qual_alpha_null), 
                       prior_psi_mids = qual_rbr_alpha_vals()$RB_mids, 
                       RB_psi = qual_rbr_alpha_vals()$RB_alpha, 
                       post_psi_dens_smoothed = qual_rbr_alpha_vals()$post_alpha_dens_smoothed, 
@@ -69,6 +69,26 @@ output$qual_psi_hypo_test_output = renderPrint({
     list1 = c(list1, list2)
   }
   list1
+})
+
+output$qual_psi_hypo_test_output1 = renderPrint({
+  qual_RBest_value()
+})
+
+output$qual_psi_hypo_test_output2 = renderPrint({
+  qual_plausible_region_est()$plaus_interval
+})
+
+output$qual_psi_hypo_test_output3 = renderPrint({
+  qual_plausible_region_est()$plaus_content
+})
+
+output$qual_psi_hypo_test_output4 = renderPrint({
+  qual_hypothesis_test()$psi_message
+})
+
+output$qual_psi_hypo_test_output5 = renderPrint({
+  qual_hypothesis_test()$strength_message
 })
 
 ################################################################
@@ -122,12 +142,13 @@ qual_rbr_plot = function(){
                 lty_type = as.numeric(input$qual_comparison_rbr_lty), 
                 transparency = input$qual_comparison_transparency, 
                 plot_title = "Relative Belief Ratio",
+                plot_object = "$\\alpha_{0}$",
                 xlim_min = input$qual_psi_plot_xmin, 
                 xlim_max = input$qual_psi_plot_xmax)
 }
 
 output$qualdebugging1234 = renderPrint({
-  "lalala"
+  "i thought u were my friend. but you are my enemy"
 })
 
 output$qual_prior_alpha_plot = renderPlot({
@@ -138,7 +159,11 @@ output$qual_post_alpha_plot = renderPlot({
   qual_post_only_plot()
 })
 
-output$qual_rbr_alpha_plot = renderPlot({
+output$qual_rbr_alpha_plot1 = renderPlot({
+  qual_rbr_plot()
+})
+
+output$qual_rbr_alpha_plot2 = renderPlot({
   qual_rbr_plot()
 })
 

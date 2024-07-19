@@ -85,8 +85,8 @@ qual_sample_prior = function(Nprior, k, alpha01, alpha02, beta0, lambda0){
   prior_beta_matrix = matrix(NA, nrow = Nprior, ncol = k)
   for(i in 1:Nprior){
     prior_sigma_2_vector[i] = 1/(rgamma(1, alpha01, alpha02))
-    # is this s^2?
-    prior_beta_matrix[i,] = rnorm(beta0, lambda0 * prior_sigma_2_vector[i])
+    prior_Sigma = diag(lambda0 * prior_sigma_2_vector[i])
+    prior_beta_matrix[i,] = mvrnorm(mu = beta0, Sigma = prior_Sigma)
   }
   newlist = list("prior_sigma_2_vector" = prior_sigma_2_vector,
                  "prior_beta_matrix" = prior_beta_matrix)
@@ -106,15 +106,16 @@ qual_sample_post = function(Npost, X, k, n, alpha01, alpha02, lambda0, beta0, b,
   side_eqn = solve(Lambda0 + solve(t(X) %*% X))
   alpha02_y = alpha02 + s_2/2 + (t(b - beta0) %*% side_eqn %*% (b - beta0))/2
   
+  Sigma_y = solve(t(X) %*% X + solve(Lambda0))
   beta_y = solve(t(X) %*% X + inv_L0) %*% (t(X) %*% X %*% b + inv_L0 %*% beta0)
   
   post_sigma_2_vector = rep(0, Npost)
   post_beta_matrix = matrix(NA, nrow = Npost, ncol = k)
   
   for(i in 1:Npost){
-    post_sigma_2 = 1/rgamma(1, n/2 + lambda0, alpha02_y)
+    post_sigma_2 = 1/rgamma(1, n/2 + alpha01, alpha02_y)
     post_sigma_2_vector[i] = post_sigma_2
-    post_beta_matrix[i,] = rnorm(beta_y, post_sigma_2 * solve(t(X) %*% X + Lambda0))
+    post_beta_matrix[i,] = mvrnorm(mu = beta_y, Sigma = post_sigma_2 * Sigma_y)
   }
   newlist = list("post_sigma_2_vector" = post_sigma_2_vector,
                  "post_beta_matrix" = post_beta_matrix)

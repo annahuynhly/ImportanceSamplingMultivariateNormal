@@ -74,7 +74,7 @@ page_qualitative_rbr = div(
     mainPanel(
       
       # debugging
-      verbatimTextOutput(outputId = "qualdebugging1234"),
+      #verbatimTextOutput(outputId = "qualdebugging1234"),
       
       conditionalPanel(
         # layout where prior and posterior are on different plots
@@ -85,7 +85,7 @@ page_qualitative_rbr = div(
               cellWidths = c("33%", "33%", "33%"), 
               withSpinner(plotOutput("qual_prior_alpha_plot")), 
               withSpinner(plotOutput("qual_post_alpha_plot")),
-              withSpinner(plotOutput("qual_rbr_alpha_plot"))
+              withSpinner(plotOutput("qual_rbr_alpha_plot1"))
             )
           ),
         ), 
@@ -99,7 +99,7 @@ page_qualitative_rbr = div(
             splitLayout(
               cellWidths = c("50%", "50%"), 
               withSpinner(plotOutput("qual_priorpost_alpha_plot")), 
-              withSpinner(plotOutput("qual_rbr_alpha_plot"))
+              withSpinner(plotOutput("qual_rbr_alpha_plot2"))
             )
           ),
         ), 
@@ -116,8 +116,8 @@ page_qualitative_rbr = div(
         column(4, 
                fluidRow(box(width = 12,
                   splitLayout(
-                  numericInput(inputId = "qual_psi_plot_xmin", label = 'Min x-axis', value = -10),
-                  numericInput(inputId = "qual_psi_plot_xmax", label = 'Max x-axis', value = 10),
+                  numericInput(inputId = "qual_psi_plot_xmin", label = 'Min x-axis', value = 35),
+                  numericInput(inputId = "qual_psi_plot_xmax", label = 'Max x-axis', value = 55),
                ))),
         ),
         column(4, 
@@ -157,12 +157,25 @@ page_qualitative_rbr_inf = div(
         
         numericInput(inputId = "qual_alpha0",
                      label = 'Insert the value of $\\alpha_{0}$',
-                     value = -2),
+                     value = 40),
       ),
       
     ), # end of sidebarPanel
     mainPanel(
-      withSpinner(verbatimTextOutput(outputId = "qual_psi_hypo_test_output")),
+      p("Estimate of the true value of $\\alpha_{0}$ from the relative belief ratio:"),
+      withSpinner(verbatimTextOutput(outputId = "qual_psi_hypo_test_output1")),
+      p("Plausible region:"),
+      withSpinner(verbatimTextOutput(outputId = "qual_psi_hypo_test_output2")),
+      p("Posterior content of the plausible region:"),
+      withSpinner(verbatimTextOutput(outputId = "qual_psi_hypo_test_output3")),
+      conditionalPanel(
+        condition = "input.qual_alpha_null == 1",
+        p("The evidence concerning strength $H_{0} : \\alpha = \\alpha_{0}$:"),
+        withSpinner(verbatimTextOutput(outputId = "qual_psi_hypo_test_output4")),
+        p("The strength of the evidence concerning $H_{0} : \\alpha = \\alpha_{0}$:"),
+        withSpinner(verbatimTextOutput(outputId = "qual_psi_hypo_test_output5")),
+      )
+      #withSpinner(verbatimTextOutput(outputId = "qual_psi_hypo_test_output")),
     ) # end of mainPanel
   )
 )
@@ -178,7 +191,7 @@ page_qualitative_reg = div(
               tabPanel("Description", page_qualitativedesc),
               tabPanel("Sufficient Statistics", page_qualitativeinputs),
               tabPanel("Sigma", page_qualitative_elicitsigma),
-              tabPanel("Mu", page_qualitative_elicitmu),
+              tabPanel("Beta", page_qualitative_elicitmu),
               # need to check if names should be shortened?
               tabPanel("Sampling from the Prior", page_qualitative_sampleprior),
               tabPanel("Sampling from the Posterior", page_qualitative_samplepost),

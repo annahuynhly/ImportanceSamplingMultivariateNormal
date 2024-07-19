@@ -322,6 +322,7 @@ output$qual_prior_elicit_mu_table = renderTable({
              lambda0 = qual_prior_elicit_mu()$lambda0)
 })
 
+
 # Graph
 qual_prior_elicit_mu_graph_item = function(){
   
@@ -334,8 +335,8 @@ qual_prior_elicit_mu_graph_item = function(){
   x = -10+20*c(0:1000)/1000
   y = dt(x,2*alpha01)
   scale = sqrt(alpha02/alpha01)*lambda0
-  xnew = beta0[col] + scale*x
-  ynew = y/scale
+  xnew = beta0[col] + scale[col]*x
+  ynew = y/scale[col]
   
   plot(xnew, ynew, lwd = 1, type="l", 
        xlab = TeX(paste("Value of $\\beta_{", col, "}$ (TODO: EDIT)")),
