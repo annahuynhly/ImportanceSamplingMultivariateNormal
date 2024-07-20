@@ -4,7 +4,8 @@
 #############################################################
 
 # libraries
-library(MASS)
+library(MASS) # for mvnorm
+library(plyr) # for rounding
 
 # setting the seed so that computations can be repeated provided all relevant Parts are run consecutively
 set.seed(1)
@@ -272,39 +273,26 @@ post_beta_matrix = sample_post_vals$post_beta_matrix
 # SINCE l = c(2, 3) we have the following order:
 # a11, a12, a21, a22, a31, a32
 
-#setwd("/Users/annaly/Downloads") # this was for debugging purposes
-#df1 = read.csv("qual_post_sample.csv")[, 1:6]
-#df2 = read.csv("qual_prior_sample.csv")[, 1:6]
+# Here, if the contrast is going to be from the C matrix generated from the minimal sufficient
+# statistics. 
 
-col_num = 1
+col_num = 2
+contrast = C[,col_num] 
 
-prior_alpha = (t(C) %*% t(prior_beta_matrix))[col_num,]
-post_alpha = (t(C) %*% t(post_beta_matrix))[col_num, ]
+# Here is where you can manually write the contrasts - ensure it is the same size as k.
+#contrast = c(1, 0, 0, 0, 0, 0)
 
-prior_alpha = (t(C) %*% t(df1))[col_num, ]
-post_alpha = (t(C) %*% t(df2))[col_num, ]
+prior_alpha = (t(contrast) %*% t(prior_beta_matrix))
+post_alpha = (t(contrast) %*% t(post_beta_matrix))
 
-alpha_plot_vals = function(Nmontecarlo, smoother = 7, delta = 0.5, alpha_vals){
-  #' Obtains the smoothed plot of the density of alpha (applicable to prior and
-  #' posterior)
-  #' @param Nprior represents the Monte Carlo sample size used for the prior.
+smoother_function = function(alpha_density, counts, smoother){
+  #' A helper function that makes a smoothed plot of the density of alpha.
+  #' @param alpha_density a vector containing the density of the histogram alpha values.
+  #' @param counts the counts associated with the histogram.
   #' @param smoother an odd number of points to average prior density values.
-  #' write more later....
-  vals = abs(alpha_vals)
-  alpha_upper_bd = max(vals)
-  
-  breaks = seq(0, alpha_upper_bd, by = delta)
-  if (tail(breaks, n=1) <= alpha_upper_bd) {
-    breaks = c(breaks, breaks[length(breaks)] + delta)
-  } 
-  
-  alpha_hist = hist(vals, breaks, freq = F)
-  alpha_mids = alpha_hist$mids
-  alpha_density = alpha_hist$density 
-  
-  # making a smoothed plot of the density of alpba
+  #' 
   alpha_dens_smoothed = alpha_density
-  numcells = length(alpha_hist$counts)
+  numcells = length(counts)
   halfm = (smoother-1)/2
   for(i in (1+halfm):(numcells-halfm)){
     sum = 0
@@ -313,73 +301,78 @@ alpha_plot_vals = function(Nmontecarlo, smoother = 7, delta = 0.5, alpha_vals){
     }
     alpha_dens_smoothed[i]=sum/smoother 
   }
+  return(alpha_dens_smoothed)
+}
+
+alpha_plot_vals = function(Nmontecarlo, delta = 0.5, smoother = c(7, 7),
+                           prior_alpha, post_alpha){
+  #' Obtains the smoothed plot of the density of alpha for both the prior and the posterior.
+  #' @param Nprior represents the Monte Carlo sample size used for the prior.
+  #' @param smoother a vector containing an odd number of points to average prior density values.
+  #' The first value is associated for the prior and the second is for the posterior.
+  #' @param prior_alpha the vector containing the prior alpha values.
+  #' @param post_alpha the vector containing the posterior alpha values.
   
-  newlist = list("alpha_mids" = alpha_mids, 
-                 "alpha_dens" = alpha_density,
-                 "alpha_dens_smoothed" = alpha_dens_smoothed,
+  lower_bd = round_any(min(prior_alpha, post_alpha), accuracy = 0.1, f = floor)
+  upper_bd = round_any(max(prior_alpha, post_alpha), accuracy = 0.1, f = ceiling)
+  
+  breaks = seq(lower_bd, upper_bd, by = delta)
+  if(breaks[length(breaks)] <= upper_bd){
+    breaks = c(breaks, breaks[length(breaks)] + delta)
+  }
+  
+  prior_alpha_hist = hist(prior_alpha, breaks, freq = F)
+  alpha_mids = prior_alpha_hist$mids
+  post_alpha_hist = hist(post_alpha, breaks, freq = F)
+  
+  prior_alpha_dens_smoothed = smoother_function(prior_alpha_hist$density, 
+                                                prior_alpha_hist$counts, 
+                                                smoother[1])
+  post_alpha_dens_smoothed = smoother_function(post_alpha_hist$density , 
+                                               post_alpha_hist$counts, 
+                                               smoother[2])
+  
+  newlist = list("alpha_mids" = alpha_mids, "prior_alpha_dens" = prior_alpha_hist$density,
+                 "prior_alpha_dens_smoothed" = prior_alpha_dens_smoothed,
+                 "post_alpha_dens" = post_alpha_hist$density,
+                 "post_alpha_dens_smoothed" = post_alpha_dens_smoothed,
                  "breaks" = breaks)
   return(newlist)
 }
 
+alpha_hist_vals = alpha_plot_vals(Nmontecarlo = Nprior, delta = 0.2, smoother = c(1, 1),
+                       prior_alpha = prior_alpha, post_alpha = post_alpha)
 
-prior_alpha_vals = alpha_plot_vals(Nmontecarlo = Nprior, smoother = 7, delta = 0.5, 
-                                   alpha_vals = prior_alpha)
+prior_alpha_dens_smoothed = alpha_hist_vals$prior_alpha_dens_smoothed
+hist_breaks = alpha_hist_vals$breaks
+post_alpha_dens_smoothed = alpha_hist_vals$post_alpha_dens_smoothed
 
-post_alpha_vals = alpha_plot_vals(Nmontecarlo = Npost, smoother = 7, delta = 0.5, 
-                                  alpha_vals = post_alpha)
-
-
-
-
-
-prior_alpha_vals$alpha_dens_smoothed
-post_alpha_vals$alpha_dens_smoothed
-
-prior_alpha_dens_smoothed = prior_alpha_vals$alpha_dens_smoothed
-prior_alpha_breaks = prior_alpha_vals$breaks
-
-post_alpha_dens_smoothed = post_alpha_vals$alpha_dens_smoothed
-post_alpha_breaks = post_alpha_vals$breaks
-
-rbr_alpha = function(prior_alpha_dens_smoothed, prior_alpha_breaks, 
-                     post_alpha_dens_smoothed, post_alpha_breaks){
+rbr_alpha = function(prior_alpha_dens_smoothed, post_alpha_dens_smoothed, breaks){
   #' Obtain the relative belief ratio of psi based off of the prior and posterior values.
   #' @param prior_alpha_dens_smoothed represents the prior alpha values.
-  #' @param prior_alpha_breaks represents the end points of the grid containing the prior alpha values.
   #' @param post_alpha_dens_smoothed represents the posterior alpha values.
-  #' @param post_alpha_breaks represents the end points of the grid containing the post alpha values.
+  #' @param breaks represents the breaks of the histogram.
   
   # Only need to focus on the max value due to endpoints
-  extra = abs(length(prior_alpha_breaks) - length(post_alpha_breaks))
-  if(length(prior_alpha_breaks) > length(post_alpha_breaks)){
-    post_alpha_dens_smoothed = c(post_alpha_dens_smoothed, rep(0, extra))
-    rbr_breaks = prior_alpha_breaks
-  } else {
-    prior_alpha_dens_smoothed = c(prior_alpha_dens_smoothed, rep(0, extra))
-    rbr_breaks = post_alpha_breaks
-  }
-  numcells = length(rbr_breaks)-1
+  numcells = length(breaks)-1
   RB_alpha = rep(0, numcells)
   for (i in 1:numcells){
     if (prior_alpha_dens_smoothed[i] != 0){
       RB_alpha[i] = post_alpha_dens_smoothed[i]/prior_alpha_dens_smoothed[i]}
   }
   # getting the midpoints for rbr
-  comp_delta = diff(rbr_breaks)[1]
+  comp_delta = diff(breaks)[1]
   half_delta = comp_delta/2
-  RB_mids = seq(from = rbr_breaks[1] + half_delta, 
-                to = rbr_breaks[length(rbr_breaks)] - half_delta, 
+  RB_mids = seq(from = breaks[1] + half_delta, 
+                to = breaks[length(breaks)] - half_delta, 
                 by = comp_delta)
   
-  newlist = list("RB_breaks" = rbr_breaks, "RB_mids" = RB_mids,
-                 "RB_alpha" = RB_alpha,
-                 "post_alpha_dens_smoothed" = post_alpha_dens_smoothed,
-                 "prior_alpha_dens_smoothed" = prior_alpha_dens_smoothed)
+  newlist = list("RB_mids" = RB_mids, "RB_alpha" = RB_alpha)
   return(newlist)
 }
 
-rbr_alpha_vals = rbr_alpha(prior_alpha_dens_smoothed, prior_alpha_breaks, 
-                           post_alpha_dens_smoothed, post_alpha_breaks)
+rbr_alpha_vals = rbr_alpha(prior_alpha_dens_smoothed, post_alpha_dens_smoothed, 
+                           breaks = hist_breaks)
 
 # Estimations for Psi ##########################################
 
@@ -409,14 +402,13 @@ plausible_region_est = function(prior_psi_mids, RB_psi, post_psi_dens_smoothed,
   return(newlist)
 }
 
+RBest = rbr_alpha_vals$RB_mids[which.max(rbr_alpha_vals$RB_alpha)]
+cat("RB estimate of psi = ", RBest,"\n")
+
 plausible_region_est(prior_psi_mids = rbr_alpha_vals$RB_mids, 
                      RB_psi = rbr_alpha_vals$RB_alpha, 
-                     post_psi_dens_smoothed = rbr_alpha_vals$post_alpha_dens_smoothed, 
+                     post_psi_dens_smoothed = post_alpha_dens_smoothed, 
                      delta_psi = 0.5)
-
-
-
-
 
 psi_hypothesis_test = function(psi_0 = -2, prior_psi_mids, RB_psi, post_psi_dens_smoothed,
                                delta_psi){
@@ -449,14 +441,18 @@ psi_hypothesis_test = function(psi_0 = -2, prior_psi_mids, RB_psi, post_psi_dens
   return(newlist)
 }
 
-psi_hypothesis_test(psi_0 = 40, 
+psi_hypothesis_test(psi_0 = 0, 
                     prior_psi_mids = rbr_alpha_vals$RB_mids, 
                     RB_psi = rbr_alpha_vals$RB_alpha, 
-                    post_psi_dens_smoothed = rbr_alpha_vals$post_alpha_dens_smoothed,
+                    post_psi_dens_smoothed = post_alpha_dens_smoothed,
                     delta_psi = 0.5)
 
 
-rbr_alpha_vals$RB_mids[which.max(rbr_alpha_vals$RB_alpha)]
+
+
+
+
+# remove the custom plots below.
 
 
 psi_cust_plot = function(grid, density, colour_choice = "red",
