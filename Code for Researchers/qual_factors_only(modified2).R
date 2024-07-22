@@ -360,15 +360,7 @@ rbr_alpha = function(prior_alpha_dens_smoothed, post_alpha_dens_smoothed, breaks
     if (prior_alpha_dens_smoothed[i] != 0){
       RB_alpha[i] = post_alpha_dens_smoothed[i]/prior_alpha_dens_smoothed[i]}
   }
-  # getting the midpoints for rbr
-  comp_delta = diff(breaks)[1]
-  half_delta = comp_delta/2
-  RB_mids = seq(from = breaks[1] + half_delta, 
-                to = breaks[length(breaks)] - half_delta, 
-                by = comp_delta)
-  
-  newlist = list("RB_mids" = RB_mids, "RB_alpha" = RB_alpha)
-  return(newlist)
+  return(RB_alpha)
 }
 
 rbr_alpha_vals = rbr_alpha(prior_alpha_dens_smoothed, post_alpha_dens_smoothed, 
@@ -402,11 +394,11 @@ plausible_region_est = function(prior_psi_mids, RB_psi, post_psi_dens_smoothed,
   return(newlist)
 }
 
-RBest = rbr_alpha_vals$RB_mids[which.max(rbr_alpha_vals$RB_alpha)]
+RBest = rbr_alpha_vals[which.max(rbr_alpha_vals)]
 cat("RB estimate of psi = ", RBest,"\n")
 
-plausible_region_est(prior_psi_mids = rbr_alpha_vals$RB_mids, 
-                     RB_psi = rbr_alpha_vals$RB_alpha, 
+plausible_region_est(prior_psi_mids = alpha_hist_vals$alpha_mids, 
+                     RB_psi = rbr_alpha_vals, 
                      post_psi_dens_smoothed = post_alpha_dens_smoothed, 
                      delta_psi = 0.5)
 
@@ -442,8 +434,8 @@ psi_hypothesis_test = function(psi_0 = -2, prior_psi_mids, RB_psi, post_psi_dens
 }
 
 psi_hypothesis_test(psi_0 = 0, 
-                    prior_psi_mids = rbr_alpha_vals$RB_mids, 
-                    RB_psi = rbr_alpha_vals$RB_alpha, 
+                    prior_psi_mids = alpha_hist_vals$alpha_mids, 
+                    RB_psi = rbr_alpha_vals, 
                     post_psi_dens_smoothed = post_alpha_dens_smoothed,
                     delta_psi = 0.5)
 

@@ -1,11 +1,13 @@
 #############################################################
 # Part 0: Data Input and Sufficient Statistics Computations #
 #############################################################
-#July 18, 2024
+#July 20, 2024
 
 #If you haven't installed any of the packages yet, comment out below.
 #install.packages("MASS")
+#install.packages("plyr)
 library(MASS) # Used for mvrnorm (generating from a multinormal dist)
+library(plyr) # for rounding
 
 # setting the seed so that computations can be repeated provided all relevant parts are run consecutively
 set.seed(1)
