@@ -40,10 +40,8 @@ smoother_function = function(psi_density, counts, smoother){
   return(psi_dens_smoothed)
 }
 
-psi_plot_vals = function(Nmontecarlo, delta = 0.5, smoother = c(7, 7),
-                           prior_psi, post_psi){
+psi_plot_vals = function(delta = 0.5, smoother = c(7, 7), prior_psi, post_psi){
   #' Obtains the smoothed plot of the density of psi for both the prior and the posterior.
-  #' @param Nprior represents the Monte Carlo sample size used for the prior.
   #' @param smoother a vector containing an odd number of points to average prior density values.
   #' The first value is associated for the prior and the second is for the posterior.
   #' @param prior_psi the vector containing the prior psi values.
@@ -76,8 +74,8 @@ psi_plot_vals = function(Nmontecarlo, delta = 0.5, smoother = c(7, 7),
   return(newlist)
 }
 
-psi_hist_vals = psi_plot_vals(Nmontecarlo = Nprior, delta = 0.2, smoother = c(5, 5),
-                                  prior_psi = prior_psi, post_psi = post_psi)
+psi_hist_vals = psi_plot_vals(delta = 0.2, smoother = c(5, 5), prior_psi = prior_psi, 
+                              post_psi = post_psi)
 
 prior_psi_dens_smoothed = psi_hist_vals$prior_psi_dens_smoothed
 hist_breaks = psi_hist_vals$breaks

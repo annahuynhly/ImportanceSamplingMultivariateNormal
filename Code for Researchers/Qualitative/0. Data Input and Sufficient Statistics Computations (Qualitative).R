@@ -1,7 +1,7 @@
 #############################################################
 # Part 0: Data Input and Sufficient Statistics Computations #
 #############################################################
-#July 20, 2024
+#July 24, 2024
 
 #If you haven't installed any of the packages yet, comment out below.
 #install.packages("MASS")
@@ -108,3 +108,59 @@ results = qual_Y_metrics(X, Y)
 b = results$b
 s_2 = results$s_2
 C = results$C
+
+#####################################################################################
+# The order (indices) of beta 
+
+calculate_indices = function(i, L){
+  # Function to calculate indices for each level
+  indices = numeric(length(L))
+  remaining = i - 1
+  
+  for(j in 1:length(L)) {
+    indices[j] = (remaining %% L[j]) + 1
+    remaining = (remaining %/% L[j])
+  }
+  
+  return(indices)
+}
+
+create_beta_list_names = function(levels){
+  #' Gives a list of the order of the beta matrix.
+  #' @param levels a vector containing the number of levels per factor.
+  #' @examples
+  #' >generate_beta_vector(c(2,3,3))
+  #' [1] "b111" "b112" "b113" "b121" "b122" "b123" "b131" "b132" "b133" "b211" "b212" "b213" "b221"
+  #' [14] "b222" "b223" "b231" "b232" "b233
+  Lprod = prod(levels) # Calculate the product of levels
+  # Generate beta vector using vectorization
+  beta_vector = sapply(1:Lprod, function(i){
+    indices = calculate_indices(i, rev(levels))
+    paste("b", paste(rev(indices), collapse = ""), sep = "")
+  })
+  return(beta_vector)
+}
+
+find_position = function(value, beta_vector){
+  #' Function to find the position of a value in the beta vector
+  #' @param value represents the beta value of interest
+  #' @param beta_vector represents the vector containing the beta values
+  #' @examples 
+  #' > beta_vector = c("b111" "b112" "b113" "b121", "1222")
+  #' > find_position("b113", beta_vector)
+  #' [1] 3
+  
+  position = match(value, beta_vector)
+  return(position)
+}
+
+# Getting the order of the betas in which the information is presented
+beta_list = create_beta_list_names(levels = l)
+
+# tells you the position of each beta value. Below is just an example
+find_position(value = "b13", beta_vector = beta_list)
+
+
+
+
+

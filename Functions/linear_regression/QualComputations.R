@@ -44,9 +44,6 @@ find_position = function(value, beta_vector){
   return(position)
 }
 
-value <- "b113"
-position <- find_position(value, beta_vector)
-
 qual_generate_X = function(n_vector){
   #' Given the sample size per each combination, generates the X matrix.
   #' @param n a vector, which is the sample size per combination.

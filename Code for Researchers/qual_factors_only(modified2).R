@@ -289,7 +289,6 @@ smoother_function = function(psi_density, counts, smoother){
   #' @param psi_density a vector containing the density of the histogram psi values.
   #' @param counts the counts associated with the histogram.
   #' @param smoother an odd number of points to average prior density values.
-  #' 
   psi_dens_smoothed = psi_density
   numcells = length(counts)
   halfm = (smoother-1)/2
@@ -303,14 +302,15 @@ smoother_function = function(psi_density, counts, smoother){
   return(psi_dens_smoothed)
 }
 
-psi_plot_vals = function(Nmontecarlo, delta = 0.5, smoother = c(7, 7),
+# note: this function was altered
+psi_plot_vals = function(delta = 0.5, smoother = c(7, 7),
                          prior_psi, post_psi){
   #' Obtains the smoothed plot of the density of psi for both the prior and the posterior.
-  #' @param Nprior represents the Monte Carlo sample size used for the prior.
   #' @param smoother a vector containing an odd number of points to average prior density values.
   #' The first value is associated for the prior and the second is for the posterior.
   #' @param prior_psi the vector containing the prior psi values.
   #' @param post_psi the vector containing the posterior psi values.
+  #' @param delta is the bin width of the histogram.
   
   lower_bd = round_any(min(prior_psi, post_psi), accuracy = 0.1, f = floor)
   upper_bd = round_any(max(prior_psi, post_psi), accuracy = 0.1, f = ceiling)
@@ -339,7 +339,7 @@ psi_plot_vals = function(Nmontecarlo, delta = 0.5, smoother = c(7, 7),
   return(newlist)
 }
 
-psi_hist_vals = psi_plot_vals(Nmontecarlo = Nprior, delta = 0.2, smoother = c(5, 5),
+psi_hist_vals = psi_plot_vals(delta = 0.2, smoother = c(5, 5), 
                               prior_psi = prior_psi, post_psi = post_psi)
 
 prior_psi_dens_smoothed = psi_hist_vals$prior_psi_dens_smoothed
@@ -461,7 +461,94 @@ hypo_test$strength_message
 prior_alpha = prior_beta_matrix %*% C
 post_alpha = post_beta_matrix %*% C
 
-alpha_vals
+# want: person to write all of the alphas to be tested
+alpha_list = c("alpha12","alpha13","alpha21","alpha22","alpha23") # this is hard coded
+beta_list = create_beta_list_names(levels = l)
+
+convert_alpha_to_beta = function(alpha_list){
+  alpha_list = gsub("alpha", "b", alpha_list)
+  return(alpha_list)
+}
+
+test = convert_alpha_to_beta(alpha_list)
+find_position(test, beta_list)
+
+max_of_contrasts = function(prior_alpha, post_alpha, delta, smoother, psi_0, contrasts = NA, 
+                            levels = NA){
+  #' Does a hypothesis test on the collection of contrasts to see if there's an interaction.
+  #' @param prior_alpha is the result of t(C) %*% beta_prior
+  #' @param post_alpha is the result if t(C) %*% beta_post
+  #' @param delta is the bin width of the histogram.
+  #' @param smoother a vector containing an odd number of points to average prior density values.
+  #' The first value is associated for the prior and the second is for the posterior.
+  #' @param psi_0 is the value of the null hypothesis used to access H_0 : psi = psi_0
+  #' @param contrasts contains the alpha contrasts included in the hypothesis test.
+  #' @param levels a vector containing the number of levels per factor.
+
+  k = ncol(prior_alpha) # assumption is that ncol(prior) = ncol(post)
+  Nprior = nrow(prior_alpha)
+  Npost = nrow(post_alpha)
+  max_alpha_prior = numeric(Nprior)
+  max_alpha_post = numeric(Npost)
+  
+  if(is.na(contrasts[1]) == TRUE){
+    contrast_indices_beta = 2:k
+  } else {
+    beta_version = convert_alpha_to_beta(contrasts)
+    beta_list = create_beta_list_names(levels)
+    contrast_indices_beta = find_position(beta_version, beta_list)
+  }
+  
+  for(i in 1:Nprior){
+    # ignoring the first column of alphas
+    max_alpha_prior[i] = max(abs(prior_alpha[i,][contrast_indices_beta]))
+  }
+  for(j in 1:Npost){
+    max_alpha_post[j] = max(abs(post_alpha[j,][contrast_indices_beta]))
+  }
+  
+  plot_vals = psi_plot_vals(delta, smoother, prior_psi = max_alpha_prior, 
+                            post_psi = max_alpha_post)
+  
+  prior_psi_dens_smoothed = plot_vals$prior_psi_dens_smoothed
+  hist_breaks = plot_vals$breaks
+  post_psi_dens_smoothed = plot_vals$post_psi_dens_smoothed
+  rbr_vals = rbr_psi(prior_psi_dens_smoothed, post_psi_dens_smoothed, hist_breaks)
+  
+  inferences = plausible_region_est(prior_psi_mids = plot_vals$psi_mids, 
+                                    RB_psi = rbr_vals, 
+                                    post_psi_dens_smoothed = post_psi_dens_smoothed, 
+                                    delta_psi = delta)
+  
+  hypo_test = psi_hypothesis_test(psi_0 = psi_0, 
+                                  prior_psi_mids = plot_vals$psi_mids, 
+                                  RB_psi = rbr_vals, 
+                                  post_psi_dens_smoothed = post_psi_dens_smoothed,
+                                  delta_psi = delta)
+  
+  
+  # Estimate of true value of psi from the relative belief ratio
+  RBest = rbr_psi_vals[which.max(rbr_psi_vals)]
+  
+  newlist = list("RBest" = RBest, "Plausible Region" = inferences$plaus_region,
+                 "Posterior Content of the Plausible Region" = inferences$plaus_content,
+                 "Evidence Concerning strength H_0 : psi = psi_0" = hypo_test$psi_message,
+                 "Strength" = hypo_test$strength_message,
+                 "prior_psi_dens_smoothed" = prior_psi_dens_smoothed,
+                 "post_psi_dens_smoothed" = post_psi_dens_smoothed,
+                 "rbr_vals" = rbr_vals,
+                 "plot_mids" = plot_vals$psi_mids)
+  return(newlist)
+}
+
+max_of_contrasts(prior_alpha, post_alpha, delta = 0.5, smoother = c(7, 7), psi_0 = 15)
+
+max_of_contrasts(prior_alpha, post_alpha, delta = 0.5, smoother = c(7, 7), psi_0 = 15, 
+                 levels = c(2, 3), contrasts = c("alpha21","alpha22","alpha23"))
+
+
+
+
  
 
 

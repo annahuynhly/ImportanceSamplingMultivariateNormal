@@ -1,5 +1,5 @@
 #############################
-#Part 6. Inferences for psi #
+#Part 5. Inferences for psi #
 #############################
 # July 23, 2024
 
