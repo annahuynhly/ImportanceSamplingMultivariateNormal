@@ -221,7 +221,6 @@ sample_prior_vals = qual_sample_prior(Nprior = Nprior, k = k, alpha01 = alpha01,
 prior_sigma_2_vector = sample_prior_vals$prior_sigma_2_vector
 prior_beta_matrix = sample_prior_vals$prior_beta_matrix
 
-
 #######################################
 # Part 3: Sampling from the posterior #
 #######################################
@@ -282,94 +281,98 @@ contrast = C[,col_num]
 # Here is where you can manually write the contrasts - ensure it is the same size as k.
 #contrast = c(1, 0, 0, 0, 0, 0)
 
-prior_alpha = (t(contrast) %*% t(prior_beta_matrix))
-post_alpha = (t(contrast) %*% t(post_beta_matrix))
+prior_psi = prior_beta_matrix %*% contrast
+post_psi = post_beta_matrix %*% contrast
 
-smoother_function = function(alpha_density, counts, smoother){
-  #' A helper function that makes a smoothed plot of the density of alpha.
-  #' @param alpha_density a vector containing the density of the histogram alpha values.
+smoother_function = function(psi_density, counts, smoother){
+  #' A helper function that makes a smoothed plot of the density of psi.
+  #' @param psi_density a vector containing the density of the histogram psi values.
   #' @param counts the counts associated with the histogram.
   #' @param smoother an odd number of points to average prior density values.
   #' 
-  alpha_dens_smoothed = alpha_density
+  psi_dens_smoothed = psi_density
   numcells = length(counts)
   halfm = (smoother-1)/2
   for(i in (1+halfm):(numcells-halfm)){
     sum = 0
     for (j in (-halfm):halfm){
-      sum = sum + alpha_density[i+j]
+      sum = sum + psi_density[i+j]
     }
-    alpha_dens_smoothed[i]=sum/smoother 
+    psi_dens_smoothed[i]=sum/smoother 
   }
-  return(alpha_dens_smoothed)
+  return(psi_dens_smoothed)
 }
 
-alpha_plot_vals = function(Nmontecarlo, delta = 0.5, smoother = c(7, 7),
-                           prior_alpha, post_alpha){
-  #' Obtains the smoothed plot of the density of alpha for both the prior and the posterior.
+psi_plot_vals = function(Nmontecarlo, delta = 0.5, smoother = c(7, 7),
+                         prior_psi, post_psi){
+  #' Obtains the smoothed plot of the density of psi for both the prior and the posterior.
   #' @param Nprior represents the Monte Carlo sample size used for the prior.
   #' @param smoother a vector containing an odd number of points to average prior density values.
   #' The first value is associated for the prior and the second is for the posterior.
-  #' @param prior_alpha the vector containing the prior alpha values.
-  #' @param post_alpha the vector containing the posterior alpha values.
+  #' @param prior_psi the vector containing the prior psi values.
+  #' @param post_psi the vector containing the posterior psi values.
   
-  lower_bd = round_any(min(prior_alpha, post_alpha), accuracy = 0.1, f = floor)
-  upper_bd = round_any(max(prior_alpha, post_alpha), accuracy = 0.1, f = ceiling)
+  lower_bd = round_any(min(prior_psi, post_psi), accuracy = 0.1, f = floor)
+  upper_bd = round_any(max(prior_psi, post_psi), accuracy = 0.1, f = ceiling)
   
   breaks = seq(lower_bd, upper_bd, by = delta)
   if(breaks[length(breaks)] <= upper_bd){
     breaks = c(breaks, breaks[length(breaks)] + delta)
   }
   
-  prior_alpha_hist = hist(prior_alpha, breaks, freq = F)
-  alpha_mids = prior_alpha_hist$mids
-  post_alpha_hist = hist(post_alpha, breaks, freq = F)
+  prior_psi_hist = hist(prior_psi, breaks, freq = F)
+  psi_mids = prior_psi_hist$mids
+  post_psi_hist = hist(post_psi, breaks, freq = F)
   
-  prior_alpha_dens_smoothed = smoother_function(prior_alpha_hist$density, 
-                                                prior_alpha_hist$counts, 
-                                                smoother[1])
-  post_alpha_dens_smoothed = smoother_function(post_alpha_hist$density , 
-                                               post_alpha_hist$counts, 
-                                               smoother[2])
+  prior_psi_dens_smoothed = smoother_function(prior_psi_hist$density, 
+                                              prior_psi_hist$counts, 
+                                              smoother[1])
+  post_psi_dens_smoothed = smoother_function(post_psi_hist$density , 
+                                             post_psi_hist$counts, 
+                                             smoother[2])
   
-  newlist = list("alpha_mids" = alpha_mids, "prior_alpha_dens" = prior_alpha_hist$density,
-                 "prior_alpha_dens_smoothed" = prior_alpha_dens_smoothed,
-                 "post_alpha_dens" = post_alpha_hist$density,
-                 "post_alpha_dens_smoothed" = post_alpha_dens_smoothed,
+  newlist = list("psi_mids" = psi_mids, "prior_psi_dens" = prior_psi_hist$density,
+                 "prior_psi_dens_smoothed" = prior_psi_dens_smoothed,
+                 "post_psi_dens" = post_psi_hist$density,
+                 "post_psi_dens_smoothed" = post_psi_dens_smoothed,
                  "breaks" = breaks)
   return(newlist)
 }
 
-alpha_hist_vals = alpha_plot_vals(Nmontecarlo = Nprior, delta = 0.2, smoother = c(1, 1),
-                       prior_alpha = prior_alpha, post_alpha = post_alpha)
+psi_hist_vals = psi_plot_vals(Nmontecarlo = Nprior, delta = 0.2, smoother = c(5, 5),
+                              prior_psi = prior_psi, post_psi = post_psi)
 
-prior_alpha_dens_smoothed = alpha_hist_vals$prior_alpha_dens_smoothed
-hist_breaks = alpha_hist_vals$breaks
-post_alpha_dens_smoothed = alpha_hist_vals$post_alpha_dens_smoothed
+prior_psi_dens_smoothed = psi_hist_vals$prior_psi_dens_smoothed
+hist_breaks = psi_hist_vals$breaks
+post_psi_dens_smoothed = psi_hist_vals$post_psi_dens_smoothed
 
-rbr_alpha = function(prior_alpha_dens_smoothed, post_alpha_dens_smoothed, breaks){
+rbr_psi = function(prior_psi_dens_smoothed, post_psi_dens_smoothed, breaks){
   #' Obtain the relative belief ratio of psi based off of the prior and posterior values.
-  #' @param prior_alpha_dens_smoothed represents the prior alpha values.
-  #' @param post_alpha_dens_smoothed represents the posterior alpha values.
+  #' @param prior_psi_dens_smoothed represents the prior psi values.
+  #' @param post_psi_dens_smoothed represents the posterior psi values.
   #' @param breaks represents the breaks of the histogram.
   
   # Only need to focus on the max value due to endpoints
   numcells = length(breaks)-1
-  RB_alpha = rep(0, numcells)
+  RB_psi = rep(0, numcells)
   for (i in 1:numcells){
-    if (prior_alpha_dens_smoothed[i] != 0){
-      RB_alpha[i] = post_alpha_dens_smoothed[i]/prior_alpha_dens_smoothed[i]}
+    if (prior_psi_dens_smoothed[i] != 0){
+      RB_psi[i] = post_psi_dens_smoothed[i]/prior_psi_dens_smoothed[i]}
   }
-  return(RB_alpha)
+  return(RB_psi)
 }
 
-rbr_alpha_vals = rbr_alpha(prior_alpha_dens_smoothed, post_alpha_dens_smoothed, 
-                           breaks = hist_breaks)
+rbr_psi_vals = rbr_psi(prior_psi_dens_smoothed, post_psi_dens_smoothed, 
+                       breaks = hist_breaks)
 
-# Estimations for Psi ##########################################
+##############################################################
+# Estimate of true value of psi from the relative belief ratio
+RBest = rbr_psi_vals[which.max(rbr_psi_vals)]
+cat("RB estimate of psi = ", RBest,"\n")
 
-# May need to change the name of the function arguments, but these are the same
-# functions as they were for the other case.
+##############################################################
+# Using a function to estimate the rest of the values (will be mentioned below)
+
 plausible_region_est = function(prior_psi_mids, RB_psi, post_psi_dens_smoothed,
                                 delta_psi){
   # estimating plausible region
@@ -393,14 +396,6 @@ plausible_region_est = function(prior_psi_mids, RB_psi, post_psi_dens_smoothed,
                  "plaus_content" = plaus_content)
   return(newlist)
 }
-
-RBest = rbr_alpha_vals[which.max(rbr_alpha_vals)]
-cat("RB estimate of psi = ", RBest,"\n")
-
-plausible_region_est(prior_psi_mids = alpha_hist_vals$alpha_mids, 
-                     RB_psi = rbr_alpha_vals, 
-                     post_psi_dens_smoothed = post_alpha_dens_smoothed, 
-                     delta_psi = 0.5)
 
 psi_hypothesis_test = function(psi_0 = -2, prior_psi_mids, RB_psi, post_psi_dens_smoothed,
                                delta_psi){
@@ -433,122 +428,40 @@ psi_hypothesis_test = function(psi_0 = -2, prior_psi_mids, RB_psi, post_psi_dens
   return(newlist)
 }
 
-psi_hypothesis_test(psi_0 = 0, 
-                    prior_psi_mids = alpha_hist_vals$alpha_mids, 
-                    RB_psi = rbr_alpha_vals, 
-                    post_psi_dens_smoothed = post_alpha_dens_smoothed,
-                    delta_psi = 0.5)
+inferences = plausible_region_est(prior_psi_mids = psi_hist_vals$psi_mids, 
+                                  RB_psi = rbr_psi_vals, 
+                                  post_psi_dens_smoothed = post_psi_dens_smoothed, 
+                                  delta_psi = 0.5)
 
+# estimating plausible region.the values of psi where the RB > 1
+inferences$plaus_region
 
+# getting the posterior content of the plausible region
+inferences$plaus_content
 
+#####################################################################################################
+# assess hypothesis H_0 : psi = psi_0
+psi_0 = 5
 
+hypo_test = psi_hypothesis_test(psi_0 = psi_0, 
+                                prior_psi_mids = psi_hist_vals$psi_mids, 
+                                RB_psi = rbr_psi_vals, 
+                                post_psi_dens_smoothed = post_psi_dens_smoothed,
+                                delta_psi = 0.5)
 
+# compute the evidence concerning strength H_0 : psi = psi_0
+hypo_test$psi_message
 
-# remove the custom plots below.
+# Compute the strength
+hypo_test$strength_message
 
+##########################################################################################
+# accessing the hypothesis that a collection of contrasts are all 0
 
-psi_cust_plot = function(grid, density, colour_choice = "red",
-                         lty_type = 2, transparency = 0.4, plot_title = "Prior",
-                         plot_object = "$\\psi$", xlim_min = -10, xlim_max = 10){
-  # TODO: implement col_num (column number) later.
-  #' Creates a density plot, used for the prior, posterior, and relative belief ratio for psi.
-  #' @param grid vector containing the x-axis values which corresponds to the density.
-  #' @param density vector containing the density values.
-  #' @param colour_choice the colour used for the line.
-  #' @param lty_type the line type used for the plot (same values as base R plotting).
-  #' @param transparency transparency percentage for the area of the density plot. 
-  #'                     Set to 0 if you don't want the area highlighted.
-  #' @param xlim_min smaller x-axis cutoff of the plot.
-  #' @param xlim_max larger x-axis cutoff of the plot.
-  
-  if(xlim_min > min(grid) & xlim_max < max(grid)){
-    xlim_interval = c(xlim_min, xlim_max)
-  } else {xlim_interval = c(min(grid), max(grid))}
-  
-  col_rgb = col2rgb(colour_choice)
-  area_col = rgb(col_rgb[1]/255, col_rgb[2]/255, col_rgb[3]/255, 
-                 alpha = transparency)
-  plot(grid, density, type = "l", lty = lty_type, 
-       xlab = TeX("$\\psi$"), ylab = "Density", col = colour_choice, 
-       main= TeX(paste("The", plot_title, "of", plot_object)),
-       xlim = xlim_interval)
-  polygon(grid, density, col = area_col, border = NA)
-}
+prior_alpha = prior_beta_matrix %*% C
+post_alpha = post_beta_matrix %*% C
 
-psi_priorpost_plot = function(grid, prior_density, post_density, plot_object = "$\\psi$",
-                              colour_choice = c("red", "blue"), lty_type = c(2, 2),
-                              transparency = 0.4, xlim_min = -10, xlim_max = 10){
-  # TODO: implement col_num (column number) later.
-  #' Creates a density plot, used for the prior, posterior, and relative belief ratio for psi.
-  #' @param grid vector containing the x-axis values which corresponds to the density.
-  #' @param prior_density vector containing prior density values.
-  #' @param post_density vector containing the posterior density values.
-  #' @param colour_choice vector containing colour for the density plot line.
-  #'        The first value is for the prior, and the second is for the posterior.
-  #' @param lty_type vector containing line type (same values as base R plotting).
-  #'        The first value is for the prior, and the second is for the posterior.
-  #' @param transparency transparency percentage for the area of the density plot. 
-  #'                     Set to 0 if you don't want the area highlighted.
-  #' @param xlim_min smaller x-axis cutoff of the plot.
-  #' @param xlim_max larger x-axis cutoff of the plot.
-  
-  if(xlim_min > min(grid) & xlim_max < max(grid)){
-    xlim_interval = c(xlim_min, xlim_max)
-  } else {xlim_interval = c(min(grid), max(grid))}
-  
-  prior_col_rgb = col2rgb(colour_choice[1])
-  post_col_rgb = col2rgb(colour_choice[2])
-  
-  prior_area_col = rgb(prior_col_rgb[1]/255, prior_col_rgb[2]/255, prior_col_rgb[3]/255, 
-                       alpha = transparency)
-  post_area_col = rgb(post_col_rgb[1]/255, post_col_rgb[2]/255, post_col_rgb[3]/255, 
-                      alpha = transparency)
-  
-  max_val = plyr::round_any(max(c(prior_density, post_density)), 
-                            accuracy = 0.05, f = ceiling)
-  ylim_vals = c(0, max_val)
-  
-  plot(grid, prior_density, type = "l", lty = lty_type[1], col = colour_choice[1], 
-       xlab = TeX(plot_object), ylab = "Density", 
-       main = TeX(paste("The Prior and Posterior Density of", plot_object)), 
-       ylim = ylim_vals, xlim = xlim_interval)
-  
-  lines(grid, post_density, lty = lty_type[2], col = colour_choice[2])
-  
-  polygon(grid, prior_density, col = prior_area_col, border = NA)
-  polygon(grid, post_density, col = post_area_col, border = NA)
-  
-  legend("topleft", legend=c("Prior", "Posterior"),
-         col = colour_choice, lty = lty_type, cex=0.8)
-}
-
-
-psi_priorpost_plot(grid = rbr_alpha_vals$RB_mids, 
-                   prior_density = rbr_alpha_vals$prior_alpha_dens_smoothed, 
-                   post_density = rbr_alpha_vals$post_alpha_dens_smoothed, 
-                   plot_object = "$\\alpha_{0}$",
-                   colour_choice = c("red", "blue"), lty_type = c(2, 2),
-                   transparency = 0.4, xlim_min = 30, xlim_max = 60)
-
-psi_cust_plot(grid = rbr_alpha_vals$RB_mids, 
-              density = rbr_alpha_vals$prior_alpha_dens_smoothed, 
-              colour_choice = "red", lty_type = 2, transparency = 0.4, 
-              plot_title = "Prior", plot_object = "$\\alpha_{0}$",
-              xlim_min = 30, xlim_max = 60)
-
-psi_cust_plot(grid = rbr_alpha_vals$RB_mids, 
-              density = rbr_alpha_vals$post_alpha_dens_smoothed, 
-              colour_choice = "blue", lty_type = 2, transparency = 0.4, 
-              plot_title = "Posterior",
-              xlim_min = 30, xlim_max = 60)
-
-psi_cust_plot(grid = rbr_alpha_vals$RB_mids, 
-              density = rbr_alpha_vals$RB_alpha, 
-              colour_choice = "green", lty_type = 2, transparency = 0.4, 
-              plot_title = "Relative Belief Ratio",
-              xlim_min = 30, xlim_max = 60)
-
-
-
+alpha_vals
+ 
 
 

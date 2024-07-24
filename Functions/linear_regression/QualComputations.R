@@ -2,15 +2,50 @@
 #TODO: write documentation!!   #
 ################################
 
-create_beta_list_names = function(levels){
-  # Create a list of factors
-  factors = lapply(levels, function(x) 1:x)
-  # Generate all combinations
-  combinations = expand.grid(factors)
-  # Create the names
-  names = apply(combinations, 1, function(row) paste0("b", paste(row, collapse = "")))
-  return(names)
+calculate_indices = function(i, L){
+  # Function to calculate indices for each level
+  indices = numeric(length(L))
+  remaining = i - 1
+  
+  for(j in 1:length(L)) {
+    indices[j] = (remaining %% L[j]) + 1
+    remaining = (remaining %/% L[j])
+  }
+  
+  return(indices)
 }
+
+create_beta_list_names = function(levels){
+  #' Gives a list of the order of the beta matrix.
+  #' @param levels a vector containing the number of levels per factor.
+  #' @examples
+  #' >generate_beta_vector(c(2,3,3))
+  #' [1] "b111" "b112" "b113" "b121" "b122" "b123" "b131" "b132" "b133" "b211" "b212" "b213" "b221"
+  #' [14] "b222" "b223" "b231" "b232" "b233
+  Lprod = prod(levels) # Calculate the product of levels
+  # Generate beta vector using vectorization
+  beta_vector = sapply(1:Lprod, function(i){
+    indices = calculate_indices(i, rev(levels))
+    paste("b", paste(rev(indices), collapse = ""), sep = "")
+  })
+  return(beta_vector)
+}
+
+find_position = function(value, beta_vector){
+  #' Function to find the position of a value in the beta vector
+  #' @param value represents the beta value of interest
+  #' @param beta_vector represents the vector containing the beta values
+  #' @examples 
+  #' > beta_vector = c("b111" "b112" "b113" "b121", "1222")
+  #' > find_position("b113", beta_vector)
+  #' [1] 3
+  
+  position = match(value, beta_vector)
+  return(position)
+}
+
+value <- "b113"
+position <- find_position(value, beta_vector)
 
 qual_generate_X = function(n_vector){
   #' Given the sample size per each combination, generates the X matrix.
