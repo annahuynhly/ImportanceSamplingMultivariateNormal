@@ -102,7 +102,7 @@ page_qualitativedesc = div(
            conditionalPanel(
              condition = "input.qual_input_type == 'default'",
              p("The data is based off of the generated sample detailed in 
-          the description section.")
+               the description section.")
            ),
            
            conditionalPanel(

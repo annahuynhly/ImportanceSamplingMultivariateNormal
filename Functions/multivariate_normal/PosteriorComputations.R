@@ -370,7 +370,8 @@ psi_hypothesis_test = function(psi_0 = -2, prior_psi_mids, RB_psi, post_psi_dens
   strength_psi_0 = sum(post_psi_dens_smoothed[indices]) * delta_psi
   strength_msg = paste("Strength of the evidence concerning H_0 : psi = psi_0 is given by ", strength_psi_0, sep = "")
   
-  newlist = list("psi_message" = psi_message, "indices" = indices, "strength_message" = strength_msg)
+  newlist = list("psi_message" = psi_message, "indices" = indices, 
+                 "strength_message" = strength_msg, "strength" = strength_psi_0)
   
   return(newlist)
 }

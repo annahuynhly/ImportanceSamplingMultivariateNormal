@@ -33,7 +33,6 @@ page_qualitative_elicitsigma = div(
       
       actionButton(inputId = "qual_submit_prior_elicit_sigma", label = "Submit Data"),
       
-      # need to check if the plot exists?
       downloadButton(outputId = 'qual_download_prior_elicit_sigma', label = 'Download Plot'),
       
       numericInput(inputId = "qual_virtual_uncertainty",
@@ -90,8 +89,6 @@ page_qualitative_elicitsigma = div(
                   label = "Choose .csv file", multiple = FALSE,
                   accept = c("text/csv", "text/comma-separated-values,text/plain", ".csv")),
       ),
-      
-      
       
       selectInput(inputId = "qual_elicit_sigma_graph_type",
                   label = "Select which type of graph to view.",
@@ -168,6 +165,11 @@ page_qualitative_elicitmu = div(
                   multiple = FALSE,
                   accept = c("text/csv", "text/comma-separated-values,text/plain", ".csv")),
       ),
+      
+      p("Please select the number on the top associated with the desired $\\beta_{ji}$ to 
+        view the graph."),
+      
+      tableOutput(outputId = "beta_order_output1"),
       
       numericInput(inputId = "qual_prior_elicit_mu_graphnum",
                    label = "The index of $\\beta_{ji}$ for the graph.",

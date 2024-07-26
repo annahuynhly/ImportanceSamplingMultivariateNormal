@@ -18,6 +18,13 @@ output$beta_order_output = renderPrint({
   create_beta_list_names(levels = create_necessary_vector(input$qual_num_levels))
 })
 
+output$beta_order_output1 = renderTable({
+  beta_vec = create_beta_list_names(levels = create_necessary_vector(input$qual_num_levels))
+  df = data.frame(t(beta_vec))
+  colnames(df) = 1:length(beta_vec)
+  df
+})
+
 # getting the sufficient statistic (manual)
 qual_sufficient_stat_comp_manual = reactive({
   
@@ -332,6 +339,8 @@ qual_prior_elicit_mu_graph_item = function(){
   beta0 = qual_prior_elicit_mu()$beta0
   
   col = input$qual_prior_elicit_mu_graphnum
+  names = create_beta_list_names(levels = create_necessary_vector(input$qual_num_levels))
+  name = gsub('b', '', names[col])
   x = -10+20*c(0:1000)/1000
   y = dt(x,2*alpha01)
   scale = sqrt(alpha02/alpha01)*lambda0
@@ -339,9 +348,9 @@ qual_prior_elicit_mu_graph_item = function(){
   ynew = y/scale[col]
   
   plot(xnew, ynew, lwd = 1, type="l", 
-       xlab = TeX(paste("Value of $\\beta_{", col, "}$ (TODO: EDIT)")),
+       xlab = TeX(paste("Value of $\\beta_{", name, "}$")),
        ylab = "Prior Density", 
-       main = TeX(paste("Prior Density of $\\beta_{", col, "}$")))
+       main = TeX(paste("Prior Density of $\\beta_{", name, "}$")))
 }
 
 output$qual_prior_elicit_mu_graph = renderPlot({

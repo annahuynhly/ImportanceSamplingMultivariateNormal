@@ -1,6 +1,45 @@
-################################
-#TODO: write documentation!!   #
-################################
+dot_product_expression = function(coefficients, betas){
+  #' Expresses the dot product between coefficients and a vector containing characters.
+  #' Assumption: length(coefficients) == length(betas)
+  #' @param coefficients is a vector containing the coefficients.
+  #' @param betas is a vector containing the characters. Doesn't necessarily have to be of beta's.
+  #' @examples
+  #' > dot_product_expression(c(1, 1, 0, -1, 1, 0), c("b1", "b2", "b3", "b4", "b5", "b6"))
+  #' "b1 + b2 - b4 + b5"
+ 
+  # Filter out zero coefficients
+  non_zero_indices = which(coefficients != 0)
+  non_zero_coefficients = coefficients[non_zero_indices]
+  non_zero_betas = betas[non_zero_indices]
+  
+  # Create a vector to store the terms of the expression
+  terms = vector("character", length(non_zero_coefficients))
+  
+  # Construct the expression terms
+  for (i in seq_along(non_zero_coefficients)) {
+    coeff = non_zero_coefficients[i]
+    beta = non_zero_betas[i]
+    
+    # Add the term to the vector, handling the sign of the coefficient
+    if (coeff > 0) {
+      if(i == 1){
+        terms[i] = beta
+      } else {
+        terms[i] = paste0("+ ", beta)
+      }
+    } else if (coeff < 0) {
+      terms[i] = paste0("- ", beta)
+    }
+  }
+  
+  # Concatenate the terms into a single string
+  expression <- paste(terms, collapse = " ")
+  
+  # Remove any leading '+' if present
+  expression <- sub("^\\+\\s*", "", expression)
+  
+  return(expression)
+}
 
 calculate_indices = function(i, L){
   # Function to calculate indices for each level
@@ -11,13 +50,13 @@ calculate_indices = function(i, L){
     indices[j] = (remaining %% L[j]) + 1
     remaining = (remaining %/% L[j])
   }
-  
   return(indices)
 }
 
-create_beta_list_names = function(levels){
+create_beta_list_names = function(levels, text = "b"){
   #' Gives a list of the order of the beta matrix.
   #' @param levels a vector containing the number of levels per factor.
+  #' @param text indicates the initials before the indices.
   #' @examples
   #' >generate_beta_vector(c(2,3,3))
   #' [1] "b111" "b112" "b113" "b121" "b122" "b123" "b131" "b132" "b133" "b211" "b212" "b213" "b221"
@@ -26,7 +65,7 @@ create_beta_list_names = function(levels){
   # Generate beta vector using vectorization
   beta_vector = sapply(1:Lprod, function(i){
     indices = calculate_indices(i, rev(levels))
-    paste("b", paste(rev(indices), collapse = ""), sep = "")
+    paste(text, paste(rev(indices), collapse = ""), sep = "")
   })
   return(beta_vector)
 }
@@ -98,13 +137,13 @@ elicit_prior_beta0_function = function(p, gamma, m1, m2, s1, s2, alpha01, alpha0
   #' @param m2 represents the upper bound for beta0.
   #' @param alpha01 a vector generated from sigma, along with alpha02.
   #' s1 and s2 are added as parameters for convenience.
-  vectors_of_interest = list(m1, m2, s1, s2, alpha01, alpha02)
   
   beta0 = (m1 + m2)/2 
   gam = (1+gamma)/2
   lambda0 = (m2 - m1)/(2 * sqrt(alpha02/alpha01) * qt(gam, df = 2 * alpha01))
   
-  newlist = list("beta0" = beta0, "lambda0" = lambda0, "m1" = m1, "m2" = m2)
+  newlist = list("beta0" = beta0, "lambda0" = lambda0, "m1" = m1, "m2" = m2,
+                 "s1" = s1, "s2" = s2)
   return(newlist)
 }
 
@@ -164,77 +203,74 @@ qual_sample_prior_reformat = function(levels, sigma_2_vector, beta_matrix){
   return(df)
 }
 
-alpha_plot_vals = function(Nmontecarlo, smoother = 7, delta = 0.5, alpha_vals){
-  #' Obtains the smoothed plot of the density of alpha (applicable to prior and
-  #' posterior)
-  #' @param Nprior represents the Monte Carlo sample size used for the prior.
+smoother_function = function(psi_density, counts, smoother){
+  #' A helper function that makes a smoothed plot of the density of psi.
+  #' @param psi_density a vector containing the density of the histogram psi values.
+  #' @param counts the counts associated with the histogram.
   #' @param smoother an odd number of points to average prior density values.
-  #' write more later....
-  vals = abs(alpha_vals)
-  alpha_upper_bd = max(vals)
-  
-  breaks = seq(0, alpha_upper_bd, by = delta)
-  if (tail(breaks, n=1) <= alpha_upper_bd) {
-    breaks = c(breaks, breaks[length(breaks)] + delta)
-  } 
-  
-  alpha_hist = hist(vals, breaks, freq = F)
-  alpha_mids = alpha_hist$mids
-  alpha_density = alpha_hist$density 
-  
-  # making a smoothed plot of the density of alpba
-  alpha_dens_smoothed = alpha_density
-  numcells = length(alpha_hist$counts)
+  #' 
+  psi_dens_smoothed = psi_density
+  numcells = length(counts)
   halfm = (smoother-1)/2
   for(i in (1+halfm):(numcells-halfm)){
     sum = 0
     for (j in (-halfm):halfm){
-      sum = sum + alpha_density[i+j]
+      sum = sum + psi_density[i+j]
     }
-    alpha_dens_smoothed[i]=sum/smoother 
+    psi_dens_smoothed[i]=sum/smoother 
+  }
+  return(psi_dens_smoothed)
+}
+
+psi_plot_vals = function(delta = 0.5, smoother = c(7, 7), prior_psi, post_psi){
+  #' Obtains the smoothed plot of the density of psi for both the prior and the posterior.
+  #' @param smoother a vector containing an odd number of points to average prior density values.
+  #' The first value is associated for the prior and the second is for the posterior.
+  #' @param prior_psi the vector containing the prior psi values.
+  #' @param post_psi the vector containing the posterior psi values.
+  
+  lower_bd = round_any(min(prior_psi, post_psi), accuracy = 0.1, f = floor)
+  upper_bd = round_any(max(prior_psi, post_psi), accuracy = 0.1, f = ceiling)
+  
+  breaks = seq(lower_bd, upper_bd, by = delta)
+  if(breaks[length(breaks)] <= upper_bd){
+    breaks = c(breaks, breaks[length(breaks)] + delta)
   }
   
-  newlist = list("alpha_mids" = alpha_mids, 
-                 "alpha_dens" = alpha_density,
-                 "alpha_dens_smoothed" = alpha_dens_smoothed,
+  prior_psi_hist = hist(prior_psi, breaks, freq = F)
+  psi_mids = prior_psi_hist$mids
+  post_psi_hist = hist(post_psi, breaks, freq = F)
+  
+  prior_psi_dens_smoothed = smoother_function(prior_psi_hist$density, 
+                                              prior_psi_hist$counts, 
+                                              smoother[1])
+  post_psi_dens_smoothed = smoother_function(post_psi_hist$density , 
+                                             post_psi_hist$counts, 
+                                             smoother[2])
+  
+  newlist = list("psi_mids" = psi_mids, "prior_psi_dens" = prior_psi_hist$density,
+                 "prior_psi_dens_smoothed" = prior_psi_dens_smoothed,
+                 "post_psi_dens" = post_psi_hist$density,
+                 "post_psi_dens_smoothed" = post_psi_dens_smoothed,
                  "breaks" = breaks)
   return(newlist)
 }
 
-rbr_alpha = function(prior_alpha_dens_smoothed, prior_alpha_breaks, 
-                     post_alpha_dens_smoothed, post_alpha_breaks){
+rbr_psi = function(prior_psi_dens_smoothed, post_psi_dens_smoothed, breaks){
   #' Obtain the relative belief ratio of psi based off of the prior and posterior values.
-  #' @param prior_alpha_dens_smoothed represents the prior alpha values.
-  #' @param prior_alpha_breaks represents the end points of the grid containing the prior alpha values.
-  #' @param post_alpha_dens_smoothed represents the posterior alpha values.
-  #' @param post_alpha_breaks represents the end points of the grid containing the post alpha values.
+  #' @param prior_psi_dens_smoothed represents the prior psi values.
+  #' @param post_psi_dens_smoothed represents the posterior psi values.
+  #' @param breaks represents the breaks of the histogram.
   
-  # only need to focus on the max value due to endpoints
-  extra = abs(length(prior_alpha_breaks) - length(post_alpha_breaks))
-  if(length(prior_alpha_breaks) > length(post_alpha_breaks)){
-    post_alpha_dens_smoothed = c(post_alpha_dens_smoothed, rep(0, extra))
-    rbr_breaks = prior_alpha_breaks
-  } else {
-    prior_alpha_dens_smoothed = c(prior_alpha_dens_smoothed, rep(0, extra))
-    rbr_breaks = post_alpha_breaks
-  }
-  numcells = length(rbr_breaks)-1
-  RB_alpha = rep(0, numcells)
+  # Only need to focus on the max value due to endpoints
+  numcells = length(breaks)-1
+  RB_psi = rep(0, numcells)
   for (i in 1:numcells){
-    if (prior_alpha_dens_smoothed[i] != 0){
-      RB_alpha[i] = post_alpha_dens_smoothed[i]/prior_alpha_dens_smoothed[i]}
+    if (prior_psi_dens_smoothed[i] != 0){
+      RB_psi[i] = post_psi_dens_smoothed[i]/prior_psi_dens_smoothed[i]}
   }
-  # getting the midpoints for rbr
-  comp_delta = diff(rbr_breaks)[1]
-  half_delta = comp_delta/2
-  RB_mids = seq(from = rbr_breaks[1] + half_delta, 
-                to = rbr_breaks[length(rbr_breaks)] - half_delta, 
-                by = comp_delta)
-  
-  newlist = list("RB_breaks" = rbr_breaks, "RB_mids" = RB_mids,
-                 "RB_alpha" = RB_alpha,
-                 "post_alpha_dens_smoothed" = post_alpha_dens_smoothed,
-                 "prior_alpha_dens_smoothed" = prior_alpha_dens_smoothed)
-  return(newlist)
+  return(RB_psi)
 }
+
+
 

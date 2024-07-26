@@ -3,7 +3,7 @@
 ################################################################
 
 page_qualitative_rbr = div(
-  titlePanel("Relative Belief Ratio"),
+  titlePanel("Relative Belief Ratio (for Contrasts)"),
   
   sidebarLayout(
     sidebarPanel(
@@ -11,11 +11,44 @@ page_qualitative_rbr = div(
       
       downloadButton(outputId = "qual_download_psi_plots", label = "Download Plots"),
       
-      # todo: display the order here for reference?
+      selectInput(inputId = "denote_contrasts",
+                  label = 'Do you want to use a contrast $\\alpha_{ij}$ or manually write 
+                  the the contrast vector?',
+                  choices = list("Choose from alpha_{ij}" = 'select', 
+                                 "Manually input contrast vector" = 'manual'),
+                  selected = 'select'),
       
-      numericInput(inputId = "qual_column_num_rbr",
-                   label = "TODO: change tne name, but essentially pick the column number to use",
-                   value = 1),
+      conditionalPanel(
+        condition = "input.denote_contrasts == 'select'",
+        
+        p("Please select the number on the top associated with the desired $\\alpha_{ji}$ to 
+        view the graph."),
+        
+        tableOutput(outputId = "alpha_order_output"),
+        
+        numericInput(inputId = "qual_alpha_contrast",
+                     label = "The index of $\\alpha_{ji}$ for the graph.",
+                     value = 2),
+      ),
+      
+      conditionalPanel(
+        condition = "input.denote_contrasts == 'manual'",
+        
+        p("Below manually write the contrast you'll use to test. Ensure it has the same size as
+          the length of the beta vector (either give the answer or re-explain through another page)"),
+        textInput(inputId = "qual_manual_contrast",
+                   label = "Manually denote the contrast.",
+                   value = "1, -1, 0, 0, 0, 0")
+        
+      ),
+      
+      p("The chosen contrast has the following linear combination of the $\\beta_{ji}$'s:"),
+      
+      #span(textOutput(outputId = "qual_beta_combination"), style="color:red"),
+      
+      #textOutput(outputId = "qual_beta_combination"),
+      
+      br(),
       
       numericInput(inputId = "qual_rbr_delta",
                    label = 'Insert $\\delta$, the width of the bins of the histogram.',
@@ -146,14 +179,14 @@ page_qualitative_rbr_inf = div(
       
       selectInput(inputId = "qual_alpha_null",
                   label = 'Would you like to access the evidence for a hypothesis  
-                  $H_{0} : \\alpha = \\alpha_{0}$?',
+                  $H_{0} : \\psi = \\psi_{0}$?',
                   choices = list("Yes" = 1,
                                  "No" = 2),
                   selected = 2),
       
       conditionalPanel(
         condition = "input.qual_alpha_null == 1",
-        p("Below is for accessing the hypothesis $H_{0} : \\alpha = \\alpha_{0}$"),
+        p("Below is for accessing the hypothesis $H_{0} : \\psi = \\psi_{0}$"),
         
         numericInput(inputId = "qual_alpha0",
                      label = 'Insert the value of $\\alpha_{0}$',
@@ -162,7 +195,7 @@ page_qualitative_rbr_inf = div(
       
     ), # end of sidebarPanel
     mainPanel(
-      p("Estimate of the true value of $\\alpha_{0}$ from the relative belief ratio:"),
+      p("Estimate of the true value of the contrast ($\\psi$) from the relative belief ratio:"),
       withSpinner(verbatimTextOutput(outputId = "qual_psi_hypo_test_output1")),
       p("Plausible region:"),
       withSpinner(verbatimTextOutput(outputId = "qual_psi_hypo_test_output2")),
@@ -170,9 +203,9 @@ page_qualitative_rbr_inf = div(
       withSpinner(verbatimTextOutput(outputId = "qual_psi_hypo_test_output3")),
       conditionalPanel(
         condition = "input.qual_alpha_null == 1",
-        p("The evidence concerning strength $H_{0} : \\alpha = \\alpha_{0}$:"),
+        p("The evidence concerning strength $H_{0} : \\psi = \\psi_{0}$:"),
         withSpinner(verbatimTextOutput(outputId = "qual_psi_hypo_test_output4")),
-        p("The strength of the evidence concerning $H_{0} : \\alpha = \\alpha_{0}$:"),
+        p("The strength of the evidence concerning $H_{0} : \\psi = \\psi_{0}$:"),
         withSpinner(verbatimTextOutput(outputId = "qual_psi_hypo_test_output5")),
       )
       #withSpinner(verbatimTextOutput(outputId = "qual_psi_hypo_test_output")),

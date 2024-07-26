@@ -2,61 +2,71 @@
 # QUALITATIVE FACTORS: BACKEND FOR RELATIVE BELIEF INFERENCES  #
 ################################################################
 
+output$alpha_order_output = renderTable({
+  beta_vec = create_beta_list_names(levels = create_necessary_vector(input$qual_num_levels), text = "a")
+  df = data.frame(t(beta_vec))
+  colnames(df) = 1:length(beta_vec)
+  df
+})
+
+qual_contrast = reactive({
+  if(input$denote_contrasts == "select"){
+    col_num = as.numeric(input$qual_alpha_contrast)
+    contrast = qual_sufficient_stat_comp_manual()$C[,col_num] 
+  } else if (input$denote_contrasts == "manual"){
+    contrast = create_necessary_vector(input$qual_manual_contrast)
+  }
+  contrast
+})
+
+output$qual_beta_combination = renderPrint({
+  contrast = qual_contrast()
+  beta_vec = create_beta_list_names(levels = create_necessary_vector(input$qual_num_levels))
+  cat(dot_product_expression(coefficients = contrast, betas = beta_vec))
+})
+
 qual_prior_alpha_contrasts = reactive({
-  col_num = input$qual_column_num_rbr
-  C = qual_sufficient_stat_comp_manual()$C
-  (t(C) %*% t(qual_sample_prior_values()$prior_beta_matrix))[col_num,]
+  qual_sample_prior_values()$prior_beta_matrix %*% qual_contrast()
 })
 
 qual_post_alpha_contrasts = reactive({
-  col_num = input$qual_column_num_rbr
-  C = qual_sufficient_stat_comp_manual()$C
-  (t(C) %*% t(qual_sample_post_values()$post_beta_matrix))[col_num,]
+  qual_sample_post_values()$post_beta_matrix %*% qual_contrast()
 })
 
-qual_prior_alpha_vals_comp = reactive({
-  alpha_plot_vals(Nmontecarlo = input$qual_prior_sample_bigN, 
-                  smoother = input$qual_rbr_mprior, 
-                  delta = input$qual_rbr_delta, 
-                  alpha_vals = qual_prior_alpha_contrasts())
-})
-
-qual_post_alpha_vals_comp = reactive({
-  alpha_plot_vals(Nmontecarlo = input$qual_post_sample_bigN, 
-                  smoother = input$qual_rbr_mpost, 
-                  delta = input$qual_rbr_delta, 
-                  alpha_vals = qual_post_alpha_contrasts())
+qual_alpha_vals_comp = reactive({
+  psi_plot_vals(delta = input$qual_rbr_delta, 
+                smoother = c(input$qual_rbr_mprior, input$qual_rbr_mpost), 
+                prior_psi = qual_prior_alpha_contrasts(), 
+                post_psi = qual_post_alpha_contrasts())
 })
 
 qual_rbr_alpha_vals = reactive({
-  
-  prior_alpha_val = qual_prior_alpha_vals_comp()
-  post_alpha_val = qual_post_alpha_vals_comp()
-  
-  rbr_alpha(prior_alpha_dens_smoothed = prior_alpha_val$alpha_dens_smoothed, 
-            prior_alpha_breaks = prior_alpha_val$breaks, 
-            post_alpha_dens_smoothed = post_alpha_val$alpha_dens_smoothed, 
-            post_alpha_breaks = post_alpha_val$breaks)
+  rbr_psi(prior_psi_dens_smoothed = qual_alpha_vals_comp()$prior_psi_dens_smoothed, 
+          post_psi_dens_smoothed = qual_alpha_vals_comp()$post_psi_dens_smoothed, 
+          breaks = qual_alpha_vals_comp()$breaks)
 })
 
 qual_plausible_region_est = reactive({
-  plausible_region_est(prior_psi_mids = qual_rbr_alpha_vals()$RB_mids, 
-                       RB_psi = qual_rbr_alpha_vals()$RB_alpha, 
-                       post_psi_dens_smoothed = qual_rbr_alpha_vals()$post_alpha_dens_smoothed, 
+  plausible_region_est(prior_psi_mids = qual_alpha_vals_comp()$psi_mids, 
+                       RB_psi = qual_rbr_alpha_vals(), 
+                       post_psi_dens_smoothed = qual_alpha_vals_comp()$post_psi_dens_smoothed, 
                        delta_psi = input$qual_rbr_delta)
 })
 
+output$qualdebugging1234 = renderPrint({
+  qual_plausible_region_est()
+})
+
 qual_hypothesis_test = reactive({
-  psi_hypothesis_test(psi_0 = as.numeric(input$qual_alpha_null), 
-                      prior_psi_mids = qual_rbr_alpha_vals()$RB_mids, 
-                      RB_psi = qual_rbr_alpha_vals()$RB_alpha, 
-                      post_psi_dens_smoothed = qual_rbr_alpha_vals()$post_alpha_dens_smoothed, 
+  psi_hypothesis_test(psi_0 = as.numeric(input$qual_alpha0), 
+                      prior_psi_mids = qual_alpha_vals_comp()$psi_mids, 
+                      RB_psi = qual_rbr_alpha_vals(), 
+                      post_psi_dens_smoothed = qual_alpha_vals_comp()$post_psi_dens_smoothed, 
                       delta_psi = input$qual_rbr_delta)
 })
 
 qual_RBest_value = reactive({
-  rbr_alpha_vals = qual_rbr_alpha_vals()
-  rbr_alpha_vals$RB_mids[which.max(rbr_alpha_vals$RB_alpha)]
+  qual_rbr_alpha_vals()[which.max(qual_rbr_alpha_vals())]
 })
 
 output$qual_psi_hypo_test_output = renderPrint({
@@ -72,23 +82,26 @@ output$qual_psi_hypo_test_output = renderPrint({
 })
 
 output$qual_psi_hypo_test_output1 = renderPrint({
-  qual_RBest_value()
+  cat(qual_RBest_value())
 })
 
 output$qual_psi_hypo_test_output2 = renderPrint({
-  qual_plausible_region_est()$plaus_interval
+  upper_bd = qual_plausible_region_est()$plaus_interval[2]
+  lower_bd = qual_plausible_region_est()$plaus_interval[1]
+  cat(paste("(", lower_bd, ", ", upper_bd, ")", sep=""))
 })
 
 output$qual_psi_hypo_test_output3 = renderPrint({
-  qual_plausible_region_est()$plaus_content
+  cat(qual_plausible_region_est()$plaus_content)
 })
 
 output$qual_psi_hypo_test_output4 = renderPrint({
-  qual_hypothesis_test()$psi_message
+  cat(qual_hypothesis_test()$psi_message)
 })
 
 output$qual_psi_hypo_test_output5 = renderPrint({
-  qual_hypothesis_test()$strength_message
+  #cat(qual_hypothesis_test()$strength_message)
+  cat(qual_hypothesis_test()$strength)
 })
 
 ################################################################
@@ -96,10 +109,9 @@ output$qual_psi_hypo_test_output5 = renderPrint({
 ################################################################
 
 qual_prior_post_plot = function(){
-  rbr_alpha_vals = qual_rbr_alpha_vals()
-  psi_priorpost_plot(grid = rbr_alpha_vals$RB_mids, 
-                     prior_density = rbr_alpha_vals$prior_alpha_dens_smoothed, 
-                     post_density = rbr_alpha_vals$post_alpha_dens_smoothed, 
+  psi_priorpost_plot(grid = qual_alpha_vals_comp()$psi_mids, 
+                     prior_density = qual_alpha_vals_comp()$prior_psi_dens_smoothed, 
+                     post_density = qual_alpha_vals_comp()$post_psi_dens_smoothed, 
                      plot_object = "$\\alpha_{0}$",
                      colour_choice = c(input$qual_comparison_prior_col, 
                                        input$qual_comparison_post_col), 
@@ -111,9 +123,8 @@ qual_prior_post_plot = function(){
 }
 
 qual_prior_only_plot = function(){
-  rbr_alpha_vals = qual_rbr_alpha_vals()
-  psi_cust_plot(grid = rbr_alpha_vals$RB_mids, 
-                density = rbr_alpha_vals$prior_alpha_dens_smoothed, 
+  psi_cust_plot(grid = qual_alpha_vals_comp()$psi_mids, 
+                density = qual_alpha_vals_comp()$prior_psi_dens_smoothed, 
                 colour_choice = input$qual_comparison_prior_col, 
                 lty_type = as.numeric(input$qual_comparison_prior_lty),  
                 transparency = input$qual_comparison_transparency, 
@@ -123,9 +134,8 @@ qual_prior_only_plot = function(){
 }
 
 qual_post_only_plot = function(){
-  rbr_alpha_vals = qual_rbr_alpha_vals()
-  psi_cust_plot(grid = rbr_alpha_vals$RB_mids, 
-                density = rbr_alpha_vals$post_alpha_dens_smoothed, 
+  psi_cust_plot(grid = qual_alpha_vals_comp()$psi_mids, 
+                density = qual_alpha_vals_comp()$post_psi_dens_smoothed, 
                 colour_choice = input$qual_comparison_post_col, 
                 lty_type = as.numeric(input$qual_comparison_post_lty),  
                 transparency = input$qual_comparison_transparency, 
@@ -135,9 +145,8 @@ qual_post_only_plot = function(){
 }
 
 qual_rbr_plot = function(){
-  rbr_alpha_vals = qual_rbr_alpha_vals()
-  psi_cust_plot(grid = rbr_alpha_vals$RB_mids, 
-                density = rbr_alpha_vals$RB_alpha, 
+  psi_cust_plot(grid = qual_alpha_vals_comp()$psi_mids, 
+                density = qual_rbr_alpha_vals(), 
                 colour_choice = input$qual_comparison_rbr_col,  
                 lty_type = as.numeric(input$qual_comparison_rbr_lty), 
                 transparency = input$qual_comparison_transparency, 
@@ -146,10 +155,6 @@ qual_rbr_plot = function(){
                 xlim_min = input$qual_psi_plot_xmin, 
                 xlim_max = input$qual_psi_plot_xmax)
 }
-
-output$qualdebugging1234 = renderPrint({
-  "i thought u were my friend. but you are my enemy"
-})
 
 output$qual_prior_alpha_plot = renderPlot({
   qual_prior_only_plot()
