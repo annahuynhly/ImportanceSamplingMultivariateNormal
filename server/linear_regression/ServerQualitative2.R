@@ -31,15 +31,15 @@ qual_sample_post_values = eventReactive(input$qual_submit_post_sampling, {
 })
 
 qual_sample_prior_values_cleaned = eventReactive(input$qual_submit_prior_sampling, {
-  qual_sample_prior_reformat(levels = create_necessary_vector(input$qual_num_levels), 
-                             sigma_2_vector = qual_sample_prior_values()$prior_sigma_2_vector, 
-                             beta_matrix = qual_sample_prior_values()$prior_beta_matrix)
+  qual_sample_reformat(levels = create_necessary_vector(input$qual_num_levels), 
+                       sigma_2_vector = qual_sample_prior_values()$prior_sigma_2_vector, 
+                       beta_matrix = qual_sample_prior_values()$prior_beta_matrix)
 })
 
 qual_sample_post_values_cleaned = eventReactive(input$qual_submit_post_sampling, {
-  qual_sample_prior_reformat(levels = create_necessary_vector(input$qual_num_levels), 
-                             sigma_2_vector = qual_sample_post_values()$post_sigma_2_vector, 
-                             beta_matrix = qual_sample_post_values()$post_beta_matrix)
+  qual_sample_reformat(levels = create_necessary_vector(input$qual_num_levels), 
+                       sigma_2_vector = qual_sample_post_values()$post_sigma_2_vector, 
+                       beta_matrix = qual_sample_post_values()$post_beta_matrix)
 })
 
 ################################################################

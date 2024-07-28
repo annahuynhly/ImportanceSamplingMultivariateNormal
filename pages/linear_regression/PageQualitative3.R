@@ -5,6 +5,16 @@
 page_qualitative_rbr = div(
   titlePanel("Relative Belief Ratio (for Contrasts)"),
   
+  # (NEW!) Custom JavaScript to handle MathJax reprocessing
+  withMathJax(),
+  tags$head(
+    tags$script(HTML("
+      Shiny.addCustomMessageHandler('mathjax_reprocess', function(message) {
+        MathJax.Hub.Queue(['Typeset', MathJax.Hub]);
+      });
+    "))
+  ),
+  
   sidebarLayout(
     sidebarPanel(
       width = 3,
@@ -44,11 +54,9 @@ page_qualitative_rbr = div(
       
       p("The chosen contrast has the following linear combination of the $\\beta_{ji}$'s:"),
       
-      #span(textOutput(outputId = "qual_beta_combination"), style="color:red"),
+      uiOutput(outputId = "qual_beta_combination"),
       
-      #textOutput(outputId = "qual_beta_combination"),
-      
-      br(),
+      hr(),
       
       numericInput(inputId = "qual_rbr_delta",
                    label = 'Insert $\\delta$, the width of the bins of the histogram.',

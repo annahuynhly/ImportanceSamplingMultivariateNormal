@@ -19,10 +19,18 @@ qual_contrast = reactive({
   contrast
 })
 
-output$qual_beta_combination = renderPrint({
+contrast_expression = reactive({
   contrast = qual_contrast()
   beta_vec = create_beta_list_names(levels = create_necessary_vector(input$qual_num_levels))
-  cat(dot_product_expression(coefficients = contrast, betas = beta_vec))
+  dot_product_expression(coefficients = contrast, betas = beta_vec)
+})
+
+contrast_expression_latex = reactive({
+  paste("$", dot_product_expression_latex(contrast_expression()), "$", sep = "")
+})
+
+output$qual_beta_combination = renderUI({
+  tags$p(contrast_expression(), class = "round2")
 })
 
 qual_prior_alpha_contrasts = reactive({
@@ -112,7 +120,7 @@ qual_prior_post_plot = function(){
   psi_priorpost_plot(grid = qual_alpha_vals_comp()$psi_mids, 
                      prior_density = qual_alpha_vals_comp()$prior_psi_dens_smoothed, 
                      post_density = qual_alpha_vals_comp()$post_psi_dens_smoothed, 
-                     plot_object = "$\\alpha_{0}$",
+                     plot_object = contrast_expression_latex(),
                      colour_choice = c(input$qual_comparison_prior_col, 
                                        input$qual_comparison_post_col), 
                      lty_type = c(as.numeric(input$qual_comparison_prior_lty), 
@@ -128,7 +136,8 @@ qual_prior_only_plot = function(){
                 colour_choice = input$qual_comparison_prior_col, 
                 lty_type = as.numeric(input$qual_comparison_prior_lty),  
                 transparency = input$qual_comparison_transparency, 
-                plot_title = "Prior", plot_object = "$\\alpha_{0}$",
+                plot_title = "Prior", 
+                plot_object = contrast_expression_latex(),
                 xlim_min = input$qual_psi_plot_xmin, 
                 xlim_max = input$qual_psi_plot_xmax)
 }
@@ -139,7 +148,8 @@ qual_post_only_plot = function(){
                 colour_choice = input$qual_comparison_post_col, 
                 lty_type = as.numeric(input$qual_comparison_post_lty),  
                 transparency = input$qual_comparison_transparency, 
-                plot_title = "Posterior", plot_object = "$\\alpha_{0}$",
+                plot_title = "Posterior", 
+                plot_object = contrast_expression_latex(),
                 xlim_min = input$qual_psi_plot_xmin, 
                 xlim_max = input$qual_psi_plot_xmax)
 }
@@ -151,7 +161,7 @@ qual_rbr_plot = function(){
                 lty_type = as.numeric(input$qual_comparison_rbr_lty), 
                 transparency = input$qual_comparison_transparency, 
                 plot_title = "Relative Belief Ratio",
-                plot_object = "$\\alpha_{0}$",
+                plot_object = contrast_expression_latex(),
                 xlim_min = input$qual_psi_plot_xmin, 
                 xlim_max = input$qual_psi_plot_xmax)
 }

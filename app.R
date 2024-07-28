@@ -58,6 +58,7 @@ source("./pages/linear_regression/PageQualitative3.R")
 #source("./pages/algorithm_description.R")
 
 source("./functions/HelperFunctions.R")
+source("./functions/BetaText.R")
 source("./functions/multivariate_normal/PriorElicitation.R")
 source("./functions/multivariate_normal/PriorSample.R")
 source("./functions/multivariate_normal/PosteriorComputations.R")

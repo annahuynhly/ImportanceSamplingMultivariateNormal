@@ -14,8 +14,21 @@ qual_choose_file_Y_type = reactive({
   }
 })
 
-output$beta_order_output = renderPrint({
-  create_beta_list_names(levels = create_necessary_vector(input$qual_num_levels))
+#output$beta_order_output = renderPrint({
+#  create_beta_list_names(levels = create_necessary_vector(input$qual_num_levels))
+#})
+
+output$beta_order_output = renderUI({
+  beta_names = create_beta_list_names(levels = create_necessary_vector(input$qual_num_levels))
+  beta_latex = beta_list_latex(beta_names)
+  # Use HTML to display the expression with MathJax
+  HTML(beta_latex)
+})
+
+# Reprocess MathJax to ensure proper rendering
+observe({
+  invalidateLater(500, session)
+  session$sendCustomMessage(type = 'mathjax_reprocess1', message = list())
 })
 
 output$beta_order_output1 = renderTable({

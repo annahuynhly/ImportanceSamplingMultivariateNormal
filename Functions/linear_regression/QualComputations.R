@@ -1,88 +1,3 @@
-dot_product_expression = function(coefficients, betas){
-  #' Expresses the dot product between coefficients and a vector containing characters.
-  #' Assumption: length(coefficients) == length(betas)
-  #' @param coefficients is a vector containing the coefficients.
-  #' @param betas is a vector containing the characters. Doesn't necessarily have to be of beta's.
-  #' @examples
-  #' > dot_product_expression(c(1, 1, 0, -1, 1, 0), c("b1", "b2", "b3", "b4", "b5", "b6"))
-  #' "b1 + b2 - b4 + b5"
- 
-  # Filter out zero coefficients
-  non_zero_indices = which(coefficients != 0)
-  non_zero_coefficients = coefficients[non_zero_indices]
-  non_zero_betas = betas[non_zero_indices]
-  
-  # Create a vector to store the terms of the expression
-  terms = vector("character", length(non_zero_coefficients))
-  
-  # Construct the expression terms
-  for (i in seq_along(non_zero_coefficients)) {
-    coeff = non_zero_coefficients[i]
-    beta = non_zero_betas[i]
-    
-    # Add the term to the vector, handling the sign of the coefficient
-    if (coeff > 0) {
-      if(i == 1){
-        terms[i] = beta
-      } else {
-        terms[i] = paste0("+ ", beta)
-      }
-    } else if (coeff < 0) {
-      terms[i] = paste0("- ", beta)
-    }
-  }
-  
-  # Concatenate the terms into a single string
-  expression <- paste(terms, collapse = " ")
-  
-  # Remove any leading '+' if present
-  expression <- sub("^\\+\\s*", "", expression)
-  
-  return(expression)
-}
-
-calculate_indices = function(i, L){
-  # Function to calculate indices for each level
-  indices = numeric(length(L))
-  remaining = i - 1
-  
-  for(j in 1:length(L)) {
-    indices[j] = (remaining %% L[j]) + 1
-    remaining = (remaining %/% L[j])
-  }
-  return(indices)
-}
-
-create_beta_list_names = function(levels, text = "b"){
-  #' Gives a list of the order of the beta matrix.
-  #' @param levels a vector containing the number of levels per factor.
-  #' @param text indicates the initials before the indices.
-  #' @examples
-  #' >generate_beta_vector(c(2,3,3))
-  #' [1] "b111" "b112" "b113" "b121" "b122" "b123" "b131" "b132" "b133" "b211" "b212" "b213" "b221"
-  #' [14] "b222" "b223" "b231" "b232" "b233
-  Lprod = prod(levels) # Calculate the product of levels
-  # Generate beta vector using vectorization
-  beta_vector = sapply(1:Lprod, function(i){
-    indices = calculate_indices(i, rev(levels))
-    paste(text, paste(rev(indices), collapse = ""), sep = "")
-  })
-  return(beta_vector)
-}
-
-find_position = function(value, beta_vector){
-  #' Function to find the position of a value in the beta vector
-  #' @param value represents the beta value of interest
-  #' @param beta_vector represents the vector containing the beta values
-  #' @examples 
-  #' > beta_vector = c("b111" "b112" "b113" "b121", "1222")
-  #' > find_position("b113", beta_vector)
-  #' [1] 3
-  
-  position = match(value, beta_vector)
-  return(position)
-}
-
 qual_generate_X = function(n_vector){
   #' Given the sample size per each combination, generates the X matrix.
   #' @param n a vector, which is the sample size per combination.
@@ -193,12 +108,15 @@ qual_sample_post = function(Npost, X, k, n, alpha01, alpha02, lambda0, beta0, b,
   return(newlist)
 }
 
-qual_sample_prior_reformat = function(levels, sigma_2_vector, beta_matrix){
+qual_sample_reformat = function(levels, sigma_2_vector, beta_matrix){
   #' Reformats the values to create a dataframe that contains sigma_2 vector and the
   #' beta matrix.
+  #' @param levels a vector containing the number of levels per factor.
+  #' @param sigma_2_vector is a vector containing the sigma_2 values.
+  #' @param beta_matrix is a matrix containing the beta values.
   new_names = create_beta_list_names(levels)
   df = as.data.frame(beta_matrix)
-  colnames(df) = c("b11", "b21", "b12", "b22", "b13", "b23")
+  colnames(df) = create_beta_list_names(levels, text = "b")
   df$sigma_2 = sigma_2_vector
   return(df)
 }
@@ -208,7 +126,6 @@ smoother_function = function(psi_density, counts, smoother){
   #' @param psi_density a vector containing the density of the histogram psi values.
   #' @param counts the counts associated with the histogram.
   #' @param smoother an odd number of points to average prior density values.
-  #' 
   psi_dens_smoothed = psi_density
   numcells = length(counts)
   halfm = (smoother-1)/2

@@ -83,7 +83,22 @@ page_qualitativedesc = div(
   
   p("Given the information, the order in which you input values for $\\beta$'s and 
   $n_{j1}, ..., n_{jm}$ and is the following:"),
-  verbatimTextOutput(outputId = "beta_order_output"),
+  
+  # adding the latex
+  withMathJax(),
+  
+  # Custom JavaScript to handle MathJax reprocessing
+  tags$head(
+    tags$script(HTML("
+      Shiny.addCustomMessageHandler('mathjax_reprocess1', function(message) {
+        MathJax.Hub.Queue(['Typeset', MathJax.Hub]);
+      });
+    "))
+  ),
+  # end of adding the latex
+  
+  #verbatimTextOutput(outputId = "beta_order_output"),
+  uiOutput(outputId = "beta_order_output"),
   
   hr(),
   

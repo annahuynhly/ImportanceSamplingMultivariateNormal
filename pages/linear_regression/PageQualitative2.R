@@ -269,8 +269,6 @@ page_qualitative_sampleprior = div(
       #withSpinner(verbatimTextOutput(outputId = "debuggingpriorqual123")),
       withSpinner(DTOutput(outputId = 'qual_prior_sample_table'))
       
-      
-      
     ),
   )
 )
