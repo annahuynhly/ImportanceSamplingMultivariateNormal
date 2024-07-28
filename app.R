@@ -2,10 +2,9 @@
 # TODO LIST                                                    #
 ################################################################
 
-#3. insert the order for sampling from the prior (similar as description)
-#4. insert the order for sampling from the posterior (similar as description)
-#5. Check to if the values of the hyperparameters work for prior & post
-#8. OPTIONAL: see if there’s a possible way to keep all headers for the chart of the df
+# 1. make it so there's latex as the dropdown option in the relative belief instances
+# 2. check to see if there's anywhere else that requires latex
+# 3. inplement the relative belief instances for the contrasts (see if Luai has checked this)
 
 ################################################################
 # LIBRARIES                                                    #

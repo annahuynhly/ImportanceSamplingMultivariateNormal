@@ -258,7 +258,9 @@ page_qualitative_sampleprior = div(
       
       p("The downloaded values above are formatted as follows, where each row in the file 
         contains:"),
-      p("TODO: change the formatting"),
+      
+      uiOutput(outputId = "beta_order_output_prior"),
+      
       p("Below are the first few lines of the file and contains the first set of values 
         generated from the prior."),
       p("Below are used to view different columns within the dataframe."),
@@ -343,7 +345,22 @@ page_qualitative_samplepost = div(
       
       p("The downloaded values above are formatted as follows, where each row in the file 
         contains:"),
-      p("TODO: change the formatting"),
+      
+      # adding the latex
+      withMathJax(),
+      
+      # Custom JavaScript to handle MathJax reprocessing
+      tags$head(
+        tags$script(HTML("
+      Shiny.addCustomMessageHandler('mathjax_reprocess3', function(message) {
+        MathJax.Hub.Queue(['Typeset', MathJax.Hub]);
+      });
+    "))
+      ),
+      # end of adding the latex
+      
+      uiOutput(outputId = "beta_order_output_post"),
+      
       p("Below are the first few lines of the file and contains the first set of values 
         generated from the prior."),
       p("Below are used to view different columns within the dataframe."),

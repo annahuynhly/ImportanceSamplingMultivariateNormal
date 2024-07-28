@@ -42,83 +42,123 @@ qual_sample_post_values_cleaned = eventReactive(input$qual_submit_post_sampling,
                        beta_matrix = qual_sample_post_values()$post_beta_matrix)
 })
 
+output$beta_order_output_prior = renderUI({
+  beta_names = create_beta_list_names(levels = create_necessary_vector(input$qual_num_levels))
+  beta_latex = beta_list_latex(beta_names, between = ", ", end = "")
+  # Use HTML to display the expression with MathJax
+  HTML(paste0("$$", beta_latex, ", \\sigma^{2}", "$$"))
+})
+
+# Reprocess MathJax to ensure proper rendering
+observe({
+  invalidateLater(500, session)
+  session$sendCustomMessage(type = 'mathjax_reprocess2', message = list())
+})
+
+output$beta_order_output_post = renderUI({
+  beta_names = create_beta_list_names(levels = create_necessary_vector(input$qual_num_levels))
+  beta_latex = beta_list_latex(beta_names, between = ", ", end ="")
+  # Use HTML to display the expression with MathJax
+  HTML(paste0("$$", beta_latex, ", \\sigma^{2}",  "$$"))
+})
+
+# Reprocess MathJax to ensure proper rendering
+observe({
+  invalidateLater(500, session)
+  session$sendCustomMessage(type = 'mathjax_reprocess3', message = list())
+})
+
 ################################################################
 # CODE FOR TABLE DISPLAY                                       #
 ################################################################
 
 # FOR THE PRIOR ################################################
 
-qual_prior_display_cols = reactiveValues()   
-qual_prior_display_cols$showing = 1:5    
+qual_prior_display_cols = reactiveValues(showing = 1:5)
 
 observeEvent(input$qual_submit_prior_sampling, {
-  showCols(qual_prior_proxy, 1:5, reset = FALSE) #show the first five cols (because the colums are now all hidden)
+  # Show the first five columns
+  qual_prior_display_cols$showing = 1:min(5, ncol(qual_sample_prior_values_cleaned()))
+  showCols(qual_prior_proxy, qual_prior_display_cols$showing, reset = FALSE)
 })
 
-#show the next five columns 
 observeEvent(input$qual_prior_next_five, {
-  #stop when the last column is displayed
-  if(qual_prior_display_cols$showing[[length(qual_prior_display_cols$showing)]] < length(qual_sample_prior_values_cleaned())) {
-    hideCols(qual_prior_proxy, qual_prior_display_cols$showing, reset = FALSE) #hide displayed cols
-    qual_prior_display_cols$showing = qual_prior_display_cols$showing + 5
-    showCols(qual_prior_proxy, qual_prior_display_cols$showing, reset = FALSE) #show the next five 
-  } 
+  last_col = qual_prior_display_cols$showing[[length(qual_prior_display_cols$showing)]]
+  total_cols = ncol(qual_sample_prior_values_cleaned())
+  
+  # Check if there are more columns to show
+  if (last_col < total_cols) {
+    hideCols(qual_prior_proxy, qual_prior_display_cols$showing, reset = FALSE)
+    qual_prior_display_cols$showing = (last_col + 1):min(last_col + 5, total_cols)
+    showCols(qual_prior_proxy, qual_prior_display_cols$showing, reset = FALSE)
+  }
 })
 
-#similar mechanism but reversed to show the previous cols
 observeEvent(input$qual_prior_prev_five, {
-  #stop when the first column is displayed
-  if(qual_prior_display_cols$showing[[1]] > 1) {
-    hideCols(qual_prior_proxy, qual_prior_display_cols$showing, reset = FALSE) #hide displayed cols
-    qual_prior_display_cols$showing <- qual_prior_display_cols$showing - 5
-    showCols(qual_prior_proxy, qual_prior_display_cols$showing, reset = FALSE) #show previous five
-  } 
+  first_col = qual_prior_display_cols$showing[[1]]
+  
+  # Check if there are previous columns to show
+  if (first_col > 1) {
+    hideCols(qual_prior_proxy, qual_prior_display_cols$showing, reset = FALSE)
+    qual_prior_display_cols$showing = max(1, first_col - 5):(first_col - 1)
+    showCols(qual_prior_proxy, qual_prior_display_cols$showing, reset = FALSE)
+  }
 })
 
-output$qual_prior_sample_table = renderDT(
-  qual_sample_prior_values_cleaned(),
-  options = list(
-    columnDefs = list(list(visible = FALSE, targets = 1:length(qual_sample_prior_values_cleaned()))), #hide all columns
-    scrollX = TRUE)  #for when many columns are visible
-)
+output$qual_prior_sample_table = renderDT({
+  datatable(
+    qual_sample_prior_values_cleaned(),
+    options = list(
+      columnDefs = list(list(visible = FALSE, targets = 1:ncol(qual_sample_prior_values_cleaned()))),
+      scrollX = TRUE
+    )
+  )
+})
 
 qual_prior_proxy = dataTableProxy('qual_prior_sample_table')
 
 # FOR THE POSTERIOR ############################################
 
-qual_post_display_cols = reactiveValues()   
-qual_post_display_cols$showing = 1:5    
+qual_post_display_cols = reactiveValues(showing = 1:5)
 
 observeEvent(input$qual_submit_post_sampling, {
-  showCols(qual_post_proxy, 1:5, reset = FALSE) #show the first five cols (because the colums are now all hidden)
+  # Show the first five columns
+  qual_post_display_cols$showing = 1:min(5, ncol(qual_sample_post_values_cleaned()))
+  showCols(qual_post_proxy, qual_post_display_cols$showing, reset = FALSE)
 })
 
-#show the next five columns 
 observeEvent(input$qual_post_next_five, {
-  #stop when the last column is displayed
-  if(qual_post_display_cols$showing[[length(qual_post_display_cols$showing)]] < length(qual_sample_post_values_cleaned())) {
-    hideCols(qual_post_proxy, qual_post_display_cols$showing, reset = FALSE) #hide displayed cols
-    qual_post_display_cols$showing = qual_post_display_cols$showing + 5
-    showCols(qual_post_proxy, qual_post_display_cols$showing, reset = FALSE) #show the next five 
-  } 
+  last_col = qual_post_display_cols$showing[[length(qual_post_display_cols$showing)]]
+  total_cols = ncol(qual_sample_post_values_cleaned())
+  
+  # Check if there are more columns to show
+  if (last_col < total_cols) {
+    hideCols(qual_post_proxy, qual_post_display_cols$showing, reset = FALSE)
+    qual_post_display_cols$showing = (last_col + 1):min(last_col + 5, total_cols)
+    showCols(qual_post_proxy, qual_post_display_cols$showing, reset = FALSE)
+  }
 })
 
-#similar mechanism but reversed to show the previous cols
 observeEvent(input$qual_post_prev_five, {
-  #stop when the first column is displayed
-  if(qual_post_display_cols$showing[[1]] > 1) {
-    hideCols(qual_post_proxy, qual_post_display_cols$showing, reset = FALSE) #hide displayed cols
-    qual_post_display_cols$showing <- qual_post_display_cols$showing - 5
-    showCols(qual_post_proxy, qual_post_display_cols$showing, reset = FALSE) #show previous five
-  } 
+  first_col = qual_post_display_cols$showing[[1]]
+  
+  # Check if there are previous columns to show
+  if (first_col > 1) {
+    hideCols(qual_post_proxy, qual_post_display_cols$showing, reset = FALSE)
+    qual_post_display_cols$showing = max(1, first_col - 5):(first_col - 1)
+    showCols(qual_post_proxy, qual_post_display_cols$showing, reset = FALSE)
+  }
 })
 
-output$qual_post_sample_table = renderDT(
-  qual_sample_post_values_cleaned(),
-  options = list(
-    columnDefs = list(list(visible = FALSE, targets = 1:length(qual_sample_post_values_cleaned()))), #hide all columns
-    scrollX = TRUE)  #for when many columns are visible
-)
+output$qual_post_sample_table = renderDT({
+  datatable(
+    qual_sample_post_values_cleaned(),
+    options = list(
+      columnDefs = list(list(visible = FALSE, targets = 1:ncol(qual_sample_post_values_cleaned()))),
+      scrollX = TRUE
+    )
+  )
+})
 
 qual_post_proxy = dataTableProxy('qual_post_sample_table')
 

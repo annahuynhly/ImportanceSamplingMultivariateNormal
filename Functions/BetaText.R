@@ -98,17 +98,17 @@ find_position = function(value, beta_vector){
   return(position)
 }
 
-beta_list_latex = function(structure){
+beta_list_latex = function(structure, between = ", \\quad", end = "$$"){
   #' Assumption: user used create_beta_list_names first.
   #' @param structure is the character containing the beta expression.
   
   # Convert to LaTeX format
-  latex_string = paste0("\\beta_{", substring(structure, 2), "}", collapse = ", \\quad")
+  latex_string = paste0("\\beta_{", substring(structure, 2), "}", collapse = between)
   
   # Add dollar signs for LaTeX math mode
-  latex_output = paste0("$$", latex_string, "$$")
+  latex_output = paste0(end, latex_string, end)
   return(latex_output)
 }
 
 #test = create_beta_list_names(c(2, 3), text = "b")
-#beta_list_latex(test)
+
