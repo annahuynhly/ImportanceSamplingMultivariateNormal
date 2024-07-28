@@ -26,11 +26,17 @@ contrast_expression = reactive({
 })
 
 contrast_expression_latex = reactive({
-  paste("$", dot_product_expression_latex(contrast_expression()), "$", sep = "")
+  expression = dot_product_expression_latex(as.character(contrast_expression()))
+  paste("$", expression, "$", sep = "")
 })
 
 output$qual_beta_combination = renderUI({
-  tags$p(contrast_expression(), class = "round2")
+  HTML(paste0("$", contrast_expression_latex(), "$"))
+})
+
+observe({
+  invalidateLater(500, session)
+  session$sendCustomMessage(type = 'mathjax_reprocess', message = list())
 })
 
 qual_prior_alpha_contrasts = reactive({
