@@ -173,7 +173,7 @@ psi_plot_vals = function(delta = 0.5, smoother = c(7, 7), prior_psi, post_psi){
   return(newlist)
 }
 
-rbr_psi = function(prior_psi_dens_smoothed, post_psi_dens_smoothed, breaks){
+qual_rbr_psi = function(prior_psi_dens_smoothed, post_psi_dens_smoothed, breaks){
   #' Obtain the relative belief ratio of psi based off of the prior and posterior values.
   #' @param prior_psi_dens_smoothed represents the prior psi values.
   #' @param post_psi_dens_smoothed represents the posterior psi values.

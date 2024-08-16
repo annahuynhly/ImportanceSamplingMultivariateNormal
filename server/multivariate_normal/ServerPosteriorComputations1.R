@@ -116,7 +116,6 @@ prior_psi_val1 = reactive({
 
 post_psi_val1 = reactive({
   post_psi(Npostimp = input$post_bigN, 
-           numcells = input$rbr_numcells,
            imp_mu = important_sample_values()$mu_xi, 
            imp_Sigma = important_sample_values()$Sigma, 
            imp_xi = important_sample_values()$xi, 
@@ -147,9 +146,14 @@ post_psi_values = reactive({
 })
 
 rbr_psi_values = reactive({
-  rbr_psi(numcells = input$rbr_numcells, 
+  rbr_psi(as.numeric(input$rbr_numcells), 
           prior_psi_dens_smoothed = prior_psi_values()$prior_psi_dens_smoothed, 
           post_psi_dens_smoothed = post_psi_values())
+})
+
+# debugging
+output$rbr_debugging_123 = renderPrint({
+  rbr_psi_values()
 })
 
 ################################################################

@@ -55,7 +55,7 @@ qual_alpha_vals_comp = reactive({
 })
 
 qual_rbr_alpha_vals = reactive({
-  rbr_psi(prior_psi_dens_smoothed = qual_alpha_vals_comp()$prior_psi_dens_smoothed, 
+  qual_rbr_psi(prior_psi_dens_smoothed = qual_alpha_vals_comp()$prior_psi_dens_smoothed, 
           post_psi_dens_smoothed = qual_alpha_vals_comp()$post_psi_dens_smoothed, 
           breaks = qual_alpha_vals_comp()$breaks)
 })

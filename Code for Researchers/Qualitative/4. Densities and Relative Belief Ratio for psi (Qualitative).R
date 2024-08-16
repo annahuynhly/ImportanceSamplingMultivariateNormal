@@ -2,28 +2,35 @@
 # Part 4: Prior Density, Posterior Density and Relative Belief Ratio for  #
 # the Parameter of Interest psi                                           #
 ###########################################################################
-# July 23, 2024
+# August 15, 2024
 
-# Below we denote the quantity we want to estimate.
+# We denote the quantity we want to make inference about by psi.
 
-# Use this if the contrast is going to be from the contrast matrix C
+# Use the following if psi is a linear combination of the beta's based off of a column of C
 
 col_num = 2
-contrast = C[,col_num] 
+c_vector = C[,col_num] 
 
 # Here is where you can manually write the coefficients of psi = c'beta 
 # Ensure it is the same size as k.
-#contrast = c(1, 0, 0, 0, 0, 0)
+#c_vector = c(1, 0, 0, 0, 0, 0)
+
+# Amount of smoothing for prior and posterior of psi where c(k1, k2) means k1 points
+# are averaged for the prior and k2 points are averaged for the posterior.
+smoother = c(1, 1)
+
+# delta = difference that matters
+delta = 0.5
 
 ##########################################################################################################
 # Obtain the prior and posterior density of psi
 
-prior_psi = prior_beta_matrix %*% contrast
-post_psi = post_beta_matrix %*% contrast
+prior_psi = prior_beta_matrix %*% c_vector
+post_psi = post_beta_matrix %*% c_vector
 
 smoother_function = function(psi_density, counts, smoother){
   #' A helper function that makes a smoothed plot of the density of psi.
-  #' @param psi_density a vector containing the density of the histogram psi values.
+  #' @param psi_density a vector containing the histogram of the psi values.
   #' @param counts the counts associated with the histogram.
   #' @param smoother an odd number of points to average prior density values.
   #' 
@@ -40,20 +47,18 @@ smoother_function = function(psi_density, counts, smoother){
   return(psi_dens_smoothed)
 }
 
-psi_plot_vals = function(delta = 0.5, smoother = c(7, 7), prior_psi, post_psi){
+
+psi_plot_vals = function(delta = 0.5, smoother = c(1, 1), prior_psi, post_psi){
   #' Obtains the smoothed plot of the density of psi for both the prior and the posterior.
-  #' @param smoother a vector containing an odd number of points to average prior density values.
+  #' @param smoother a vector containing an odd number of points to average density values.
   #' The first value is associated for the prior and the second is for the posterior.
   #' @param prior_psi the vector containing the prior psi values.
   #' @param post_psi the vector containing the posterior psi values.
   
-  lower_bd = round_any(min(prior_psi, post_psi), accuracy = 0.1, f = floor)
-  upper_bd = round_any(max(prior_psi, post_psi), accuracy = 0.1, f = ceiling)
+  lower_bd = delta * floor(min(prior_psi)/delta) - 0.5 * delta
+  upper_bd = delta * ceiling(max(prior_psi)/delta) - 0.5 * delta
   
   breaks = seq(lower_bd, upper_bd, by = delta)
-  if(breaks[length(breaks)] <= upper_bd){
-    breaks = c(breaks, breaks[length(breaks)] + delta)
-  }
   
   prior_psi_hist = hist(prior_psi, breaks, freq = F)
   psi_mids = prior_psi_hist$mids
@@ -85,13 +90,13 @@ post_psi_dens_smoothed = psi_hist_vals$post_psi_dens_smoothed
 # obtain the relative belief ratio of psi
 
 rbr_psi = function(prior_psi_dens_smoothed, post_psi_dens_smoothed, breaks){
-  #' Obtain the relative belief ratio of psi based off of the prior and posterior values.
+  #' Obtain the relative belief ratio of psi based on the prior and posterior.
   #' @param prior_psi_dens_smoothed represents the prior psi values.
   #' @param post_psi_dens_smoothed represents the posterior psi values.
   #' @param breaks represents the breaks of the histogram.
   
   # Only need to focus on the max value due to endpoints
-  numcells = length(breaks)-1
+  numcells = length(breaks)-1 # also size length(psi_mids)
   RB_psi = rep(0, numcells)
   for (i in 1:numcells){
     if (prior_psi_dens_smoothed[i] != 0){

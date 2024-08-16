@@ -281,6 +281,9 @@ page_rbr_comparison = div(
     ), # end of sidebarPanel
     mainPanel(
       
+      # debugging
+      #withSpinner(verbatimTextOutput(outputId = "rbr_debugging_123")),
+      
       conditionalPanel(
         # layout where prior and posterior are on different plots
         condition = "input.rbr_graph_layout == 1",

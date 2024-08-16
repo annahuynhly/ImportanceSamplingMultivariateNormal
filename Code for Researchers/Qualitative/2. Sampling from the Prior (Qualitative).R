@@ -1,7 +1,7 @@
 ###################################
 # Part 2: Sampling from the prior #
 ###################################
-# July 18, 2024
+# August 15, 2024
 
 # Nprior = size of sample from the prior
 Nprior = 10000
@@ -9,7 +9,7 @@ Nprior = 10000
 # Functions ######################################
 
 qual_sample_prior = function(Nprior, k, alpha01, alpha02, beta0, lambda0){
-  #' This generates a sample of Nprior from the prior on N(mu, Sigma).
+  #' This generates a sample of Nprior values from the prior on beta and sigma^2.
   #' @param Nprior represents the Monte Carlo sample size.
   #' @param k represents the number of possible combinations between the factors.
   #' The values of alpha01, alpha02, beta0, and lambda0 are from the prior elicitation.
@@ -27,8 +27,7 @@ qual_sample_prior = function(Nprior, k, alpha01, alpha02, beta0, lambda0){
 
 # Values #########################################
 
-sample_prior_vals = qual_sample_prior(Nprior = Nprior, k = k, alpha01 = alpha01, 
-                                      alpha02 = alpha02, beta0 = beta0, lambda0 = lambda0)
+sample_prior_vals = qual_sample_prior(Nprior, k, alpha01, alpha02, beta0, lambda0)
 
 prior_sigma_2_vector = sample_prior_vals$prior_sigma_2_vector
 prior_beta_matrix = sample_prior_vals$prior_beta_matrix

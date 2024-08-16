@@ -1,7 +1,7 @@
 #######################################
 # Part 3: Sampling from the posterior #
 #######################################
-# July 18, 2024
+# August 15, 2024
 
 # Npost = size of sample from the posterior
 Npost = 10000 
@@ -9,7 +9,7 @@ Npost = 10000
 # Functions ######################################
 
 qual_sample_post = function(Npost, X, k, n, alpha01, alpha02, lambda0, beta0, b, s_2){
-  #' This generates a sample of Npost from the posterior on N(mu, Sigma).
+  #' This generates a sample of Npost from the posterior on beta and signa^2.
   #' @param Npost represents the Monte Carlo sample size.
   #' @param k represents the number of possible combinations between the factors.
   #' @param n represents the total sample size.
@@ -39,9 +39,8 @@ qual_sample_post = function(Npost, X, k, n, alpha01, alpha02, lambda0, beta0, b,
 
 # Values #########################################
 
-sample_post_vals = qual_sample_post(Npost = Npost, X = X, k = k, n = n, alpha01 = alpha01, 
-                                    alpha02 = alpha02, lambda0 = lambda0, 
-                                    beta0 = beta0, b = b, s_2 = s_2)
+sample_post_vals = qual_sample_post(Npost, X, k, n, alpha01, alpha02, lambda0, 
+                                    beta0, b, s_2)
 
 post_sigma_2_vector = sample_post_vals$post_sigma_2_vector
 post_beta_matrix = sample_post_vals$post_beta_matrix

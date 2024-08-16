@@ -1,15 +1,16 @@
 #############################################################
 # Part 0: Data Input and Sufficient Statistics Computations #
 #############################################################
-#July 24, 2024
+#August 15, 2024
 
 #If you haven't installed any of the packages yet, comment out below.
 #install.packages("MASS")
-#install.packages("plyr)
+#install.packages("plyr")
 library(MASS) # Used for mvrnorm (generating from a multinormal dist)
 library(plyr) # for rounding
 
-# setting the seed so that computations can be repeated provided all relevant parts are run consecutively
+# setting the seed so that computations can be replicated provided all relevant parts 
+# are run consecutively
 set.seed(1)
 
 ########################################################################################
@@ -19,17 +20,18 @@ l = c(2, 3) # input the number of levels per factor
 m = length(l) # the number of factors.
 
 k = prod(l) # letting this denote the possible number of combinations between the crossed factors 
-n_vector = c(5, 5, 5, 5, 5, 5) # the size of n should be equal to k (if factors are crossed) 
+n_vector = c(5, 5, 5, 5, 5, 5) # the length of n should be equal to k (if factors are crossed) 
 n = sum(n_vector)
 
 # Generating Y
 mu = c(2, 4, 6, 8, 10, 12)
+sigma = 2
 Y = numeric(n)
 for(i in 1:k){
   if(i == 1){
-    Y[1:n[i]] = rnorm(n_vector[i], mean = mu[i], sd = 2)
+    Y[1:n[i]] = rnorm(n_vector[i], mean = mu[i], sd = sigma)
   } else {
-    Y[(cumsum(n_vector)[i-1]+1):cumsum(n_vector)[i]] = rnorm(n_vector[i], mean = mu[i], sd = 2)
+    Y[(cumsum(n_vector)[i-1]+1):cumsum(n_vector)[i]] = rnorm(n_vector[i], mean = mu[i], sd = sigma)
   }
 }
 
@@ -42,8 +44,16 @@ for(i in 1:k){
 # the data is in a .csv file stored in a directory specified by the user
 # use setwd to access this directory
 
-# TODO: NEED TO IMPLEMENT LATER.
+setwd("C:/Users/AnnaH/OneDrive/Desktop/Stats RA/New Project/ImportanceSamplingMultivariateNormal/Code for Researchers/Qualitative")
 
+data = read.csv("qual_Y_example.csv")
+
+Y = data$Y
+l = data$l[!is.na(data$l)]
+m = length(l)
+k = prod(l)
+n_vector = data$n_vector[!is.na(data$n_vector)]
+n = sum(n_vector)
 
 #####################################################################################
 
@@ -82,74 +92,92 @@ qual_generate_X = function(n_vector){
 X = qual_generate_X(n_vector)
 
 ################################################################################
-# Here is the code to compute the minimal sufficient statistics: b, S^2, and C #
+# Here is the code to compute the minimal sufficient statistics: b, s^2, and C #
 ################################################################################
 
-qual_Y_metrics = function(X, Y){
+qual_Y_minimal_suff_stat = function(X, Y){
   #' Given the values of the Y vector and the X matrix, computes the minimal
-  #' sufficient statistics (b, s^2, and C).
+  #' sufficient statistics (b and s^2).
   #' @param X a matrix.
   #' @param Y a vector containing the data.
-  #' @param m represents the number of factors.
-  #' @param l a vector that contains the number of levels per factor.
   b = solve(t(X) %*% X) %*% t(X) %*% Y
   s_2 = t(Y - X %*% b) %*% (Y - X %*% b)
+  newlist = list("b" = b, "s_2" = s_2)
+  return(newlist)
+}
+
+qual_C_matrix = function(m, l){
+  #' Form a contrast matrix C generate form is tensor product of
+  #' Hermit matrices.
+  #' @param m represents the number of factors.
+  #' @param l a vector that contains the number of levels per factor.
   C = 1
   for(i in 1:m){
     Ci = cbind(rep(1, l[i]), contr.helmert(l[i])) # dropped the normalization
     C = C %x% Ci # kronecker product
   }
-  newlist = list("b" = b, "s_2" = s_2, "C" = C)
-  return(newlist)
+  return(C)
 }
 
-results = qual_Y_metrics(X, Y)
+results1 = qual_Y_minimal_suff_stat(X, Y)
+results2 = qual_C_matrix(m, l)
 
-b = results$b
-s_2 = results$s_2
-C = results$C
+b = results1$b
+s_2 = results1$s_2
+C = results2
 
 #####################################################################################
 # The order (indices) of beta 
 
+# We treat the values of beta as a vector instead of a matrix. This displays the order
+# of the beta's within the vector.
 calculate_indices = function(i, L){
-  # Function to calculate indices for each level
-  indices = numeric(length(L))
-  remaining = i - 1
+  #' Calculate Index Positions for Each Level
+  #' @param i An integer representing the current index for which the 
+  #' indices are to be calculated.
+  #' @param L An integer vector where each element represents the 
+  #' number of levels for a particular factor.
+  
+  indices = numeric(length(L))  # Initialize a numeric vector to store the indices
+  remaining = i - 1  # Adjust index to 0-based for easier calculation
   
   for(j in 1:length(L)) {
-    indices[j] = (remaining %% L[j]) + 1
-    remaining = (remaining %/% L[j])
+    indices[j] = (remaining %% L[j]) + 1  # Calculate the current level index (remainder)
+    remaining = (remaining %/% L[j])  # Update remaining for the next level (quotient)
   }
   
-  return(indices)
+  return(indices)  # Return the vector of calculated indices
 }
 
 create_beta_list_names = function(levels){
-  #' Gives a list of the order of the beta matrix.
-  #' @param levels a vector containing the number of levels per factor.
-  #' @examples
-  #' >generate_beta_vector(c(2,3,3))
-  #' [1] "b111" "b112" "b113" "b121" "b122" "b123" "b131" "b132" "b133" "b211" "b212" "b213" "b221"
-  #' [14] "b222" "b223" "b231" "b232" "b233
-  Lprod = prod(levels) # Calculate the product of levels
-  # Generate beta vector using vectorization
+  #' Generate Beta List Names for a Beta Matrix
+  #' @param levels An integer vector where each element represents the number 
+  #' of levels for a corresponding factor.
+  
+  Lprod = prod(levels)  # Calculate the total number of combinations (product of levels)
+  
+  # Generate beta vector by calculating indices for each combination
   beta_vector = sapply(1:Lprod, function(i){
-    indices = calculate_indices(i, rev(levels))
-    paste("b", paste(rev(indices), collapse = ""), sep = "")
+    # Calculate the indices for the current combination
+    indices = calculate_indices(i, rev(levels))  
+    # Create the beta name by concatenating indices
+    paste("b", paste(rev(indices), collapse = ""), sep = "")  
   })
-  return(beta_vector)
+  
+  return(beta_vector)  # Return the vector of beta names
 }
 
 find_position = function(value, beta_vector){
-  #' Function to find the position of a value in the beta vector
-  #' @param value represents the beta value of interest
-  #' @param beta_vector represents the vector containing the beta values
+  #' This function searches for a specific value within a vector of beta values 
+  #' and returns the position (index) of that value in the vector. 
+  #' @param value A character string representing the beta value of interest. 
+  #' This is the value you want to locate in the beta_vector.
+  #' @param beta_vector A character vector containing the beta values. 
+  #' The function will search through this vector to find the position of value.
   #' @examples 
   #' > beta_vector = c("b111" "b112" "b113" "b121", "1222")
   #' > find_position("b113", beta_vector)
   #' [1] 3
-  
   position = match(value, beta_vector)
   return(position)
 }
