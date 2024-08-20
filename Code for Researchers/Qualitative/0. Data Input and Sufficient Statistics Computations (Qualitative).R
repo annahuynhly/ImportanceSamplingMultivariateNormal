@@ -1,7 +1,7 @@
 #############################################################
 # Part 0: Data Input and Sufficient Statistics Computations #
 #############################################################
-#August 15, 2024
+#August 19, 2024
 
 #If you haven't installed any of the packages yet, comment out below.
 #install.packages("MASS")
@@ -149,10 +149,15 @@ calculate_indices = function(i, L){
   return(indices)  # Return the vector of calculated indices
 }
 
-create_beta_list_names = function(levels){
+create_beta_list_names = function(levels, text = "b"){
   #' Generate Beta List Names for a Beta Matrix
   #' @param levels An integer vector where each element represents the number 
   #' of levels for a corresponding factor.
+  #' @param text indicates the initials before the indices.
+  #' @examples
+  #' >generate_beta_vector(c(2,3,3))
+  #' [1] "b111" "b112" "b113" "b121" "b122" "b123" "b131" "b132" "b133" "b211" "b212" "b213" "b221"
+  #' [14] "b222" "b223" "b231" "b232" "b233
   
   Lprod = prod(levels)  # Calculate the total number of combinations (product of levels)
   
@@ -161,7 +166,7 @@ create_beta_list_names = function(levels){
     # Calculate the indices for the current combination
     indices = calculate_indices(i, rev(levels))  
     # Create the beta name by concatenating indices
-    paste("b", paste(rev(indices), collapse = ""), sep = "")  
+    paste(text, paste(rev(indices), collapse = ""), sep = "")  
   })
   
   return(beta_vector)  # Return the vector of beta names

@@ -26,22 +26,28 @@ qual_generate_X = function(n_vector){
   return(t(X))
 }
 
-qual_Y_metrics = function(X, Y, m, l){
+qual_Y_minimal_suff_stat = function(X, Y){
   #' Given the values of the Y vector and the X matrix, computes the minimal
-  #' sufficient statistics (b, s^2, and C).
+  #' sufficient statistics (b and s^2).
   #' @param X a matrix.
   #' @param Y a vector containing the data.
-  #' @param m represents the number of factors.
-  #' @param l a vector that contains the number of levels per factor.
   b = solve(t(X) %*% X) %*% t(X) %*% Y
   s_2 = t(Y - X %*% b) %*% (Y - X %*% b)
+  newlist = list("b" = b, "s_2" = s_2)
+  return(newlist)
+}
+
+qual_C_matrix = function(m, l){
+  #' Form a contrast matrix C generate form is tensor product of
+  #' Hermit matrices.
+  #' @param m represents the number of factors.
+  #' @param l a vector that contains the number of levels per factor.
   C = 1
   for(i in 1:m){
     Ci = cbind(rep(1, l[i]), contr.helmert(l[i])) # dropped the normalization
     C = C %x% Ci # kronecker product
   }
-  newlist = list("b" = b, "s_2" = s_2, "C" = C)
-  return(newlist)
+  return(C)
 }
 
 elicit_prior_beta0_function = function(p, gamma, m1, m2, s1, s2, alpha01, alpha02){
@@ -80,7 +86,7 @@ qual_sample_prior = function(Nprior, k, alpha01, alpha02, beta0, lambda0){
 }
 
 qual_sample_post = function(Npost, X, k, n, alpha01, alpha02, lambda0, beta0, b, s_2){
-  #' This generates a sample of Npost from the posterior on N(mu, Sigma).
+  #' This generates a sample of Npost from the posterior on beta and signa^2.
   #' @param Npost represents the Monte Carlo sample size.
   #' @param k represents the number of possible combinations between the factors.
   #' @param n represents the total sample size.
@@ -139,20 +145,17 @@ smoother_function = function(psi_density, counts, smoother){
   return(psi_dens_smoothed)
 }
 
-psi_plot_vals = function(delta = 0.5, smoother = c(7, 7), prior_psi, post_psi){
+psi_plot_vals = function(delta = 0.5, smoother = c(1, 1), prior_psi, post_psi){
   #' Obtains the smoothed plot of the density of psi for both the prior and the posterior.
-  #' @param smoother a vector containing an odd number of points to average prior density values.
+  #' @param smoother a vector containing an odd number of points to average density values.
   #' The first value is associated for the prior and the second is for the posterior.
   #' @param prior_psi the vector containing the prior psi values.
   #' @param post_psi the vector containing the posterior psi values.
   
-  lower_bd = round_any(min(prior_psi, post_psi), accuracy = 0.1, f = floor)
-  upper_bd = round_any(max(prior_psi, post_psi), accuracy = 0.1, f = ceiling)
+  lower_bd = delta * floor(min(prior_psi)/delta) - 0.5 * delta
+  upper_bd = delta * ceiling(max(prior_psi)/delta) - 0.5 * delta
   
   breaks = seq(lower_bd, upper_bd, by = delta)
-  if(breaks[length(breaks)] <= upper_bd){
-    breaks = c(breaks, breaks[length(breaks)] + delta)
-  }
   
   prior_psi_hist = hist(prior_psi, breaks, freq = F)
   psi_mids = prior_psi_hist$mids
@@ -174,13 +177,13 @@ psi_plot_vals = function(delta = 0.5, smoother = c(7, 7), prior_psi, post_psi){
 }
 
 qual_rbr_psi = function(prior_psi_dens_smoothed, post_psi_dens_smoothed, breaks){
-  #' Obtain the relative belief ratio of psi based off of the prior and posterior values.
+  #' Obtain the relative belief ratio of psi based on the prior and posterior.
   #' @param prior_psi_dens_smoothed represents the prior psi values.
   #' @param post_psi_dens_smoothed represents the posterior psi values.
   #' @param breaks represents the breaks of the histogram.
   
   # Only need to focus on the max value due to endpoints
-  numcells = length(breaks)-1
+  numcells = length(breaks)-1 # also size length(psi_mids)
   RB_psi = rep(0, numcells)
   for (i in 1:numcells){
     if (prior_psi_dens_smoothed[i] != 0){

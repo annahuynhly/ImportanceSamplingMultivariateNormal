@@ -50,9 +50,10 @@ qual_sufficient_stat_comp_manual = reactive({
   n = sum(n_vector)
   
   X = qual_generate_X(n_vector)
-  results = qual_Y_metrics(X, qual_choose_file_Y_type(), m, l)
+  results = qual_Y_minimal_suff_stat(X, qual_choose_file_Y_type())
+  results2 = qual_C_matrix(m, l)
   
-  newlist = list("X" = X, "b" = results$b, "s_2" = results$s_2, "C" = results$C)
+  newlist = list("X" = X, "b" = results$b, "s_2" = results$s_2, "C" = results2)
   return(newlist)
 })
 
@@ -103,9 +104,10 @@ qual_sufficient_stat_comp_file = reactive({
   n = sum(n_vector)
   
   X = qual_generate_X(n_vector)
-  results = qual_Y_metrics(X, qual_choose_file_Y_type(), m, l)
+  results = qual_Y_minimal_suff_stat(X, qual_choose_file_Y_type())
+  results2 = qual_C_matrix(l, m)
   
-  newlist = list("X" = X, "b" = results$b, "s_2" = results$s_2, "C" = results$C)
+  newlist = list("X" = X, "b" = results$b, "s_2" = results$s_2, "C" = results2)
   return(newlist)
 })
 

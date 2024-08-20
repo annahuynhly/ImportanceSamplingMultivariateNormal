@@ -57,43 +57,57 @@ dot_product_expression_latex = function(structure) {
 }
 
 calculate_indices = function(i, L){
-  # Function to calculate indices for each level
-  indices = numeric(length(L))
-  remaining = i - 1
+  #' Calculate Index Positions for Each Level
+  #' @param i An integer representing the current index for which the 
+  #' indices are to be calculated.
+  #' @param L An integer vector where each element represents the 
+  #' number of levels for a particular factor.
+  
+  indices = numeric(length(L))  # Initialize a numeric vector to store the indices
+  remaining = i - 1  # Adjust index to 0-based for easier calculation
   
   for(j in 1:length(L)) {
-    indices[j] = (remaining %% L[j]) + 1
-    remaining = (remaining %/% L[j])
+    indices[j] = (remaining %% L[j]) + 1  # Calculate the current level index (remainder)
+    remaining = (remaining %/% L[j])  # Update remaining for the next level (quotient)
   }
-  return(indices)
+  
+  return(indices)  # Return the vector of calculated indices
 }
 
 create_beta_list_names = function(levels, text = "b"){
-  #' Gives a list of the order of the beta matrix.
-  #' @param levels a vector containing the number of levels per factor.
+  #' Generate Beta List Names for a Beta Matrix
+  #' @param levels An integer vector where each element represents the number 
+  #' of levels for a corresponding factor.
   #' @param text indicates the initials before the indices.
   #' @examples
   #' >generate_beta_vector(c(2,3,3))
   #' [1] "b111" "b112" "b113" "b121" "b122" "b123" "b131" "b132" "b133" "b211" "b212" "b213" "b221"
   #' [14] "b222" "b223" "b231" "b232" "b233
-  Lprod = prod(levels) # Calculate the product of levels
-  # Generate beta vector using vectorization
+  
+  Lprod = prod(levels)  # Calculate the total number of combinations (product of levels)
+  
+  # Generate beta vector by calculating indices for each combination
   beta_vector = sapply(1:Lprod, function(i){
-    indices = calculate_indices(i, rev(levels))
-    paste(text, paste(rev(indices), collapse = ""), sep = "")
+    # Calculate the indices for the current combination
+    indices = calculate_indices(i, rev(levels))  
+    # Create the beta name by concatenating indices
+    paste(text, paste(rev(indices), collapse = ""), sep = "")  
   })
-  return(beta_vector)
+  
+  return(beta_vector)  # Return the vector of beta names
 }
 
 find_position = function(value, beta_vector){
-  #' Function to find the position of a value in the beta vector
-  #' @param value represents the beta value of interest
-  #' @param beta_vector represents the vector containing the beta values
+  #' This function searches for a specific value within a vector of beta values 
+  #' and returns the position (index) of that value in the vector. 
+  #' @param value A character string representing the beta value of interest. 
+  #' This is the value you want to locate in the beta_vector.
+  #' @param beta_vector A character vector containing the beta values. 
+  #' The function will search through this vector to find the position of value.
   #' @examples 
   #' > beta_vector = c("b111" "b112" "b113" "b121", "1222")
   #' > find_position("b113", beta_vector)
   #' [1] 3
-  
   position = match(value, beta_vector)
   return(position)
 }

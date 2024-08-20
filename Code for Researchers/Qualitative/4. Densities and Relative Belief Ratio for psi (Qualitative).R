@@ -33,7 +33,6 @@ smoother_function = function(psi_density, counts, smoother){
   #' @param psi_density a vector containing the histogram of the psi values.
   #' @param counts the counts associated with the histogram.
   #' @param smoother an odd number of points to average prior density values.
-  #' 
   psi_dens_smoothed = psi_density
   numcells = length(counts)
   halfm = (smoother-1)/2
@@ -46,7 +45,6 @@ smoother_function = function(psi_density, counts, smoother){
   }
   return(psi_dens_smoothed)
 }
-
 
 psi_plot_vals = function(delta = 0.5, smoother = c(1, 1), prior_psi, post_psi){
   #' Obtains the smoothed plot of the density of psi for both the prior and the posterior.

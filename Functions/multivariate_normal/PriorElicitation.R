@@ -6,13 +6,13 @@ elicit_prior_sigma_function = function(p, gamma, s1, s2, upper_bd, lower_bd){
   #' 1/sigma^2 ~ gamma(alpha01, alpha02). Here, we elicit the prior for sigma.
   #' We specify s1, s2 such that s1 <= sigma * z_{(1+gamma)/2} <= s2
   #' Then the values alpha01, alpha02 are solved for:
-  #' Gamma(alpha01, 1, alpha02 * z^{2}_{(1+p)/2}/s^{2}_{1}) = (1+gamma)/2
-  #' Gamma(alpha01, 1, alpha02 * z^{2}_{(1+p)/2}/s^{2}_{2}) = (1-gamma)/2
+  #' Gamma(alpha01, 1, alpha02 * z^{2}_{(1+gamma)/2}/s^{2}_{1}) = (1+gamma)/2
+  #' Gamma(alpha01, 1, alpha02 * z^{2}_{(1+gamma)/2}/s^{2}_{2}) = (1-gamma)/2
   #' Using the bisection method.
   #' @param p represents the number of dimensions.
   #' @param gamma represents the virtual certainty.
-  vectors_of_interest = list(s1, s2, upper_bd, lower_bd)
-  for(i in vectors_of_interest){
+  sigmabounds_of_interest = list(s1, s2, upper_bd, lower_bd)
+  for(i in sigmabounds_of_interest){
     if(length(i) != p){return("Error: there is a vector that doesn't have length p.")}
   }
   
@@ -37,6 +37,8 @@ elicit_prior_sigma_function = function(p, gamma, s1, s2, upper_bd, lower_bd){
       if (abs(test-(1-gam)) <= eps) { break }
       if (test < 1 - gam) { alphaup = alpha} 
       else if (test > 1 - gam) { alphalow = alpha }
+      # As a sanity check, print how many iterations it took for the elicitation.
+      #print(maxits)
     }
     alpha01[j] = alpha
     alpha02[j] = beta
