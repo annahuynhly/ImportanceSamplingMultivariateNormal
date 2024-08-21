@@ -12,7 +12,7 @@ output$alpha_order_output = renderTable({
 qual_contrast = reactive({
   if(input$denote_contrasts == "select"){
     col_num = as.numeric(input$qual_alpha_contrast)
-    contrast = qual_sufficient_stat_comp_manual()$C[,col_num] 
+    contrast = qual_sufficient_stat_comp()$C[,col_num] 
   } else if (input$denote_contrasts == "manual"){
     contrast = create_necessary_vector(input$qual_manual_contrast)
   }
@@ -67,9 +67,10 @@ qual_plausible_region_est = reactive({
                        delta_psi = input$qual_rbr_delta)
 })
 
-output$qualdebugging1234 = renderPrint({
-  qual_plausible_region_est()
-})
+# debugging!!!
+#output$qualdebugging1234 = renderPrint({
+#  qual_alpha_vals_comp()
+#})
 
 qual_hypothesis_test = reactive({
   psi_hypothesis_test(psi_0 = as.numeric(input$qual_alpha0), 

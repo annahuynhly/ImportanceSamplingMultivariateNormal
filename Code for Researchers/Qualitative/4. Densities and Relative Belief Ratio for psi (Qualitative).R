@@ -54,7 +54,7 @@ psi_plot_vals = function(delta = 0.5, smoother = c(1, 1), prior_psi, post_psi){
   #' @param post_psi the vector containing the posterior psi values.
   
   lower_bd = delta * floor(min(prior_psi)/delta) - 0.5 * delta
-  upper_bd = delta * ceiling(max(prior_psi)/delta) - 0.5 * delta
+  upper_bd = delta * ceiling(max(prior_psi)/delta) + 0.5 * delta
   
   breaks = seq(lower_bd, upper_bd, by = delta)
   
