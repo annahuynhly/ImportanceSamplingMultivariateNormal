@@ -1,23 +1,23 @@
 #####################################
 # Part 1: Elicitation of the Prior  #
 #####################################
-#August 15, 2024
+#August 20, 2024
 
-p = 1 # This cannot be changed; it should be fixed.
+p = 1 # The data here is univariate.
 gamma = 0.99
 
 ###########################################################
 #A Here is the code to input for the elicitation manually #
 # or use the code at B to read from a file                #
 
-# s1 and s2 are elicited bounds as mentioned in the paper.
+# s1 and s2 are elicited bounds as discussed in the paper to determine the prior on 1/sigma^2
 s1 = c(1)
 s2 = c(7)
-# lower_bd, upper_bd are initial bounds on alpha01 for iteration and may need to
+# lower_bd, upper_bd are initial bounds on alpha01 for iterative procedure and may need to
 # be modified for the iteration to work.
 lower_bd = c(0)
 upper_bd = c(50)
-# m1, m2 are elicited bounds as in the paper.
+# m1, m2 are elicited bounds as in the paper to determine the priors on the means.
 m1 = c(0, 2, 4, 6, 8, 10)
 m2 = c(4, 6, 8, 10, 12, 14)
 
@@ -32,7 +32,7 @@ m2 = c(4, 6, 8, 10, 12, 14)
 setwd("C:/Users/AnnaH/OneDrive/Desktop/Stats RA/New Project/ImportanceSamplingMultivariateNormal/Code for Researchers/Qualitative")
 elicit_data = read.csv("qual_elicit_example.csv", sep = ",")
 
-# s1 and s2 are elicited bounds as mentioned in the paper.
+# s1 and s2 are elicited bounds as discussed in the paper.
 s1 = elicit_data$s1[!is.na(elicit_data$s1)]
 s2 = elicit_data$s2[!is.na(elicit_data$s2)]
 # lower_bd, upper_bd are initial bounds on alpha01 for iteration and may need to
@@ -47,7 +47,8 @@ m2 = elicit_data$m2
 
 # Functions ######################################
 
-elicit_prior_sigma_function = function(p, gamma, s1, s2, upper_bd, lower_bd){
+elicit_prior_sigma_function = function(p, gamma, s1, s2, upper_bd, lower_bd,
+                                       eps = 0.0001, maxits = 100){
   #' 1/sigma^2 ~ gamma(alpha01, alpha02). Here, we elicit the prior for sigma.
   #' We specify s1, s2 such that s1 <= sigma * z_{(1+gamma)/2} <= s2
   #' Then the values alpha01, alpha02 are solved for:
@@ -71,8 +72,6 @@ elicit_prior_sigma_function = function(p, gamma, s1, s2, upper_bd, lower_bd){
   
   for(j in 1:p){
     # iterate until prob content of s1<= sigma*z0 <= s2 is within eps of p 
-    eps = .0001
-    maxits = 100
     alphalow = lower_bd[j]
     alphaup = upper_bd[j]
     for (i in 1:maxits){
@@ -82,8 +81,9 @@ elicit_prior_sigma_function = function(p, gamma, s1, s2, upper_bd, lower_bd){
       if (abs(test-(1-gam)) <= eps) { break }
       if (test < 1 - gam) { alphaup = alpha} 
       else if (test > 1 - gam) { alphalow = alpha }
-      # As a sanity check, print how many iterations it took for the elicitation.
-      #print(maxits)
+      if(i == maxits){
+        cat("Convergence failed", "\n")
+      }
     }
     alpha01[j] = alpha
     alpha02[j] = beta
@@ -96,7 +96,7 @@ elicit_prior_sigma_function = function(p, gamma, s1, s2, upper_bd, lower_bd){
 }
 
 elicit_prior_beta0_function = function(p, gamma, m1, m2, alpha01, alpha02){
-  #' We elicit the hyper parameters beta0 and lambda0.
+  #' We elicit the hyperparameters beta0 and lambda0.
   #' @param p represents the number of dimensions.
   #' @param gamma represents virtual certainty.
   #' @param m1 represents the lower bound for beta0.

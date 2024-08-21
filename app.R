@@ -4,7 +4,7 @@
 
 # 1. make it so there's latex as the dropdown option in the relative belief instances
 # 2. check to see if there's anywhere else that requires latex
-# 3. inplement the relative belief instances for the contrasts (see if Luai has checked this)
+# 3. implement the relative belief instances for the contrasts (see if Luai has checked this)
 
 ################################################################
 # LIBRARIES                                                    #

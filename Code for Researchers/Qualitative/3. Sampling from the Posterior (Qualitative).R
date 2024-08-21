@@ -9,7 +9,7 @@ Npost = 10000
 # Functions ######################################
 
 qual_sample_post = function(Npost, X, k, n, alpha01, alpha02, lambda0, beta0, b, s_2){
-  #' This generates a sample of Npost from the posterior on beta and signa^2.
+  #' This generates a sample of Npost from the posterior on beta and sigma^2.
   #' @param Npost represents the Monte Carlo sample size.
   #' @param k represents the number of possible combinations between the factors.
   #' @param n represents the total sample size.

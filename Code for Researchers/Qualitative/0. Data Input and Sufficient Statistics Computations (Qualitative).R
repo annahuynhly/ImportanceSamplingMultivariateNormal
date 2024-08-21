@@ -1,7 +1,7 @@
 #############################################################
 # Part 0: Data Input and Sufficient Statistics Computations #
 #############################################################
-#August 19, 2024
+#August 20, 2024
 
 #If you haven't installed any of the packages yet, comment out below.
 #install.packages("MASS")
@@ -55,7 +55,27 @@ k = prod(l)
 n_vector = data$n_vector[!is.na(data$n_vector)]
 n = sum(n_vector)
 
-#####################################################################################
+# Here you can set up the overall contrast matrix.
+
+C = matrix(c(1, -1, -1, -1,  1,  1,
+             1,  1, -1, -1, -1,  1, 
+             1,  0,  2, -1,  0, -2, 
+             1, -1, -1,  1, -1, -1,
+             1,  1, -1,  1,  1, -1, 
+             1,  0,  2,  1,  0,  2), 
+           nrow = 6, ncol = 6, byrow = TRUE)
+
+# You can also input individual contrast matrices C_{1}, ..., C_{m} and form the overall
+# contrast matrix, where C_{i} \in \mathbb{R}^{}... (ask about the notation***)
+
+C1 = matrix(c(1, -1, 1, 1), nrow = 2, ncol = 2, byrow = TRUE)
+
+C2 = matrix(c(1, -1, -1, 1, 1, -1, 1, 0, 2), nrow = 3, ncol = 3, byrow = TRUE)
+
+C = C1 %x% C2 # This is the overall contrast matrix (using the kronecker product)
+
+# If you don't know what to use, there is code below to generate one from
+# the tensor product of Hermit matrices.
 
 ################################################################################
 # Here is the code for computing X given the information above                 #
@@ -91,9 +111,10 @@ qual_generate_X = function(n_vector){
 
 X = qual_generate_X(n_vector)
 
-################################################################################
-# Here is the code to compute the minimal sufficient statistics: b, s^2, and C #
-################################################################################
+##########################################################################
+# Here is the code to compute the minimal sufficient statistics: b, s^2, #
+# and the contrast matrix                                                #
+##########################################################################
 
 qual_Y_minimal_suff_stat = function(X, Y){
   #' Given the values of the Y vector and the X matrix, computes the minimal
@@ -106,38 +127,42 @@ qual_Y_minimal_suff_stat = function(X, Y){
   return(newlist)
 }
 
+results1 = qual_Y_minimal_suff_stat(X, Y)
+
+b = results1$b
+s_2 = results1$s_2
+
 qual_C_matrix = function(m, l){
-  #' Form a contrast matrix C generate form is tensor product of
-  #' Hermit matrices.
+  #' Form a contrast matrix C generate from a is tensor product of
+  #' Helmert matrices.
   #' @param m represents the number of factors.
   #' @param l a vector that contains the number of levels per factor.
   C = 1
   for(i in 1:m){
     Ci = cbind(rep(1, l[i]), contr.helmert(l[i])) # dropped the normalization
+    print(Ci)
     C = C %x% Ci # kronecker product
   }
   return(C)
 }
 
-results1 = qual_Y_minimal_suff_stat(X, Y)
 results2 = qual_C_matrix(m, l)
 
-b = results1$b
-s_2 = results1$s_2
 C = results2
 
 #####################################################################################
 # The order (indices) of beta 
 
 # We treat the values of beta as a vector instead of a matrix. This displays the order
-# of the beta's within the vector.
+# of the beta's within the vector. So index i correspond to same (j_{1}, ..., j_{m}) for
+# beta_{j_{1}, ..., j_{m}} for beta_{j_{1}, ..., j_{m}}
+
 calculate_indices = function(i, L){
   #' Calculate Index Positions for Each Level
   #' @param i An integer representing the current index for which the 
   #' indices are to be calculated.
   #' @param L An integer vector where each element represents the 
   #' number of levels for a particular factor.
-  
   indices = numeric(length(L))  # Initialize a numeric vector to store the indices
   remaining = i - 1  # Adjust index to 0-based for easier calculation
   
@@ -164,6 +189,7 @@ create_beta_list_names = function(levels, text = "b"){
   # Generate beta vector by calculating indices for each combination
   beta_vector = sapply(1:Lprod, function(i){
     # Calculate the indices for the current combination
+    # rev: reverses the order
     indices = calculate_indices(i, rev(levels))  
     # Create the beta name by concatenating indices
     paste(text, paste(rev(indices), collapse = ""), sep = "")  
@@ -190,8 +216,12 @@ find_position = function(value, beta_vector){
 # Getting the order of the betas in which the information is presented
 beta_list = create_beta_list_names(levels = l)
 
+print(beta_list)
+
 # tells you the position of each beta value. Below is just an example
 find_position(value = "b13", beta_vector = beta_list)
+
+
 
 
 
