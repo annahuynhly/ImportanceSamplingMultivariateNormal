@@ -1,7 +1,7 @@
 #############################
 #Part 5. Inferences for psi #
 #############################
-# July 23, 2024
+# August 21, 2024
 
 ##############################################################
 # Estimate of true value of psi from the relative belief ratio
@@ -9,7 +9,7 @@ RBest = rbr_psi_vals[which.max(rbr_psi_vals)]
 cat("RB estimate of psi = ", RBest,"\n")
 
 ##############################################################
-# Using a function to estimate the rest of the values (will be mentioned below)
+# Using a function to obtain the plausible region
 
 plausible_region_est = function(prior_psi_mids, RB_psi, post_psi_dens_smoothed,
                                 delta_psi){
@@ -69,7 +69,7 @@ psi_hypothesis_test = function(psi_0 = -2, prior_psi_mids, RB_psi, post_psi_dens
 inferences = plausible_region_est(prior_psi_mids = psi_hist_vals$psi_mids, 
                      RB_psi = rbr_psi_vals, 
                      post_psi_dens_smoothed = post_psi_dens_smoothed, 
-                     delta_psi = 0.5)
+                     delta_psi = delta)
 
 # estimating plausible region.the values of psi where the RB > 1
 inferences$plaus_region

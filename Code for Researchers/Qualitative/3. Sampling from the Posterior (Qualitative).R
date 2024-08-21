@@ -1,7 +1,7 @@
 #######################################
 # Part 3: Sampling from the posterior #
 #######################################
-# August 15, 2024
+# August 20, 2024
 
 # Npost = size of sample from the posterior
 Npost = 10000 

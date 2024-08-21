@@ -222,8 +222,3 @@ print(beta_list)
 find_position(value = "b13", beta_vector = beta_list)
 
 
-
-
-
-
-
