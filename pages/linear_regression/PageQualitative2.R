@@ -1,6 +1,6 @@
 
 page_qualitativeinputs = div(
-  titlePanel("Computed Sufficient Statistics"),
+  titlePanel("Computed Sufficient Statistics & Overall Contrast Matrix"),
   mainPanel(
     fluidRow(
       splitLayout(
@@ -16,7 +16,7 @@ page_qualitativeinputs = div(
         cellWidths = c("30%", "30%", "30%"), 
         withSpinner(verbatimTextOutput(outputId = "qual_X_output")), 
         withSpinner(verbatimTextOutput(outputId = "qual_sufficient_statistics1")), 
-        withSpinner(verbatimTextOutput(outputId = "qual_sufficient_statistics2"))
+        withSpinner(verbatimTextOutput(outputId = "qual_c_matrix"))
       )
     ),
     

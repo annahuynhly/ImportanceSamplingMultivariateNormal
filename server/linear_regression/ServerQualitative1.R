@@ -51,9 +51,10 @@ qual_sufficient_stat_comp_manual = reactive({
   
   X = qual_generate_X(n_vector)
   results = qual_Y_minimal_suff_stat(X, qual_choose_file_Y_type())
-  results2 = qual_C_matrix(m, l)
+  #results2 = qual_C_matrix(m, l)
   
-  newlist = list("X" = X, "b" = results$b, "s_2" = results$s_2, "C" = results2)
+  #newlist = list("X" = X, "b" = results$b, "s_2" = results$s_2, "C" = results2)
+  newlist = list("X" = X, "b" = results$b, "s_2" = results$s_2)
   return(newlist)
 })
 
@@ -105,9 +106,9 @@ qual_sufficient_stat_comp_file = reactive({
   
   X = qual_generate_X(n_vector)
   results = qual_Y_minimal_suff_stat(X, qual_choose_file_Y_type())
-  results2 = qual_C_matrix(l, m)
+  #results2 = qual_C_matrix(l, m)
   
-  newlist = list("X" = X, "b" = results$b, "s_2" = results$s_2, "C" = results2)
+  newlist = list("X" = X, "b" = results$b, "s_2" = results$s_2) #, "C" = results2)
   return(newlist)
 })
 
@@ -127,8 +128,75 @@ output$qual_sufficient_statistics1 = renderPrint({
   qual_sufficient_stat_comp()[c("b", "s_2")]
 })
 
-output$qual_sufficient_statistics2 = renderPrint({
-  qual_sufficient_stat_comp()$C
+# Now obtaining the C-matrix!
+
+# default version
+c_matrix_helmert = reactive({
+  l = create_necessary_vector(input$qual_num_levels) # input the number of levels per factor
+  m = length(l) # the number of factors.
+  qual_C_matrix(m, l)
+})
+
+# version where they input the data manually
+c_matrix_manual_modal = function(failed = FALSE) {
+  
+  default_C_val = matrix(c(1, -1, -1, -1,  1,  1,
+               1,  1, -1, -1, -1,  1, 
+               1,  0,  2, -1,  0, -2, 
+               1, -1, -1,  1, -1, -1,
+               1,  1, -1,  1,  1, -1, 
+               1,  0,  2,  1,  0,  2), 
+             nrow = 6, ncol = 6, byrow = TRUE)
+  
+  modalDialog(
+    
+    matrixInput(inputId = "c_matrix_input", value = default_C_val, class = "numeric",
+      cols = list(names = TRUE, extend = TRUE, editableNames = FALSE, 
+                  delta = 2, delete = TRUE),
+      rows = list(names = TRUE, extend = TRUE, editableNames = FALSE, 
+                  delta = 1, delete = TRUE)
+    ),
+    
+    p("Note: you must press confirm for the data to register."),
+    
+    footer = tagList(
+      modalButton("Close"),
+      actionButton("confirm_c_matrix", "Confirm")
+    )
+  ) # modual dialogue
+} # end of modal
+
+observeEvent(input$c_matrix_manual, {
+  # This is for the modal to appear
+  showModal(c_matrix_manual_modal())
+})
+
+c_matrix_manual_reactive = reactive({
+  # Below is for formatting purposes (so we actually get a matrix)
+  l = create_necessary_vector(input$qual_num_levels) # input the number of levels per factor
+  k = prod(l) # letting this denote the possible number of combinations between the crossed factors
+  diag(k) %*% input$c_matrix_input %*% diag(k)
+})
+
+qual_c_matrix_result = reactive({
+  if(input$c_matrix_input_type == "default"){
+    c_matrix_helmert()
+  } else if  (input$c_matrix_input_type == "manual"){
+    c_matrix_manual_reactive()
+  } else if (input$c_matrix_input_type == "csv"){
+    # replace this later!!!
+    matrix(c(1, -1, -1, -1,  1,  1,
+             1,  1, -1, -1, -1,  1, 
+             1,  0,  2, -1,  0, -2, 
+             1, -1, -1,  1, -1, -1,
+             1,  1, -1,  1,  1, -1, 
+             1,  0,  2,  1,  0,  2), 
+           nrow = 6, ncol = 6, byrow = TRUE)
+  }
+})
+
+output$qual_c_matrix = renderPrint({
+  qual_c_matrix_result()
 })
 
 # Part 1.1: Elicitation of the Prior (Sigma) #

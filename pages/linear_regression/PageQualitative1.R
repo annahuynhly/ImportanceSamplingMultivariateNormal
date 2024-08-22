@@ -101,6 +101,7 @@ page_qualitativedesc = div(
   uiOutput(outputId = "beta_order_output"),
   
   hr(),
+  ###################################################################
   
   h4("How to Submit .txt or .csv files Containing the Data"),
   p("At the moment, this website exclusively accepts .csv or .txt files with a specific structure. 
@@ -139,14 +140,54 @@ page_qualitativedesc = div(
            )),
   ),
   
+  hr(),
+  ###################################################################
+  h4("Setting Up the Overall Contrast Matrix"),
+  
+  p("Here you can choose a contrast matrix using the tensor product of Helmert matrices (default contrast 
+    matrix), or by manually denoting it yourself. Note that the contrast matrix should be of size m x m."),
+  
+  fluidRow(
+    column(3, selectInput(inputId = "c_matrix_input_type",
+                          label = 'Which contrast matrix should you use?',
+                          choices = list("Use the default contrast matrix" = "default",
+                                         "Manually enter matrix" = "manual",
+                                         "Upload CSV file" = "csv"),
+                          selected = "default")),
+    column(3, 
+           conditionalPanel(
+             condition = "input.c_matrix_input_type == 'default'",
+             p("The C matrix is based off of the tensor product of the Helmert matrices 
+               and will be shown on the next page.")
+           ),
+           
+           conditionalPanel(
+             condition = "input.c_matrix_input_type == 'manual'",
+             actionButton("c_matrix_manual", "Enter data manually"),
+             p("The C matrix will be shown again on the next page.")
+           ),
+           
+           conditionalPanel(
+             condition = "input.c_matrix_input_type == 'csv'",
+             fileInput(inputId = "c_matrix_csv_upload", 
+                       label = "Upload .csv file for the C matrix",
+                       multiple = FALSE,
+                       accept = c("text/csv", "text/comma-separated-values,text/plain", 
+                                  ".txt")),
+             p("The C matrix will be shown again on the next page."),
+             p("CURRENTLY DOESN'T WORK!! NEED TO BE IMPLEMENTED")
+           )),
+  ),
+  
   
   hr(),
-  h4("Default Example"),
+  ###################################################################
+  h4("Default Example (for the Elicitation)"),
   
   p("There is a default example specified to illustrate the implementation of the analysis. 
     We generated a sample of $n = 30$ from a $\\mathcal{N}_{5}(\\mu, \\Sigma)$ distribution
     where:"),
-  p("$\\mu = (2, 4, 6, 8, 10, 12)^{'}, \\sigma = 2$"),
+  p("$\\mu = (2, 4, 6, 8, 10, 12)^{'}, \\sigma = 2, \\Sigma = \\sigma I_{5}$,"),
   p("The generated sample can be downloaded below."),
   
   

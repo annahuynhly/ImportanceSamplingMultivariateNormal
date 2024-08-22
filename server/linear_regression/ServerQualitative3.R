@@ -12,7 +12,7 @@ output$alpha_order_output = renderTable({
 qual_contrast = reactive({
   if(input$denote_contrasts == "select"){
     col_num = as.numeric(input$qual_alpha_contrast)
-    contrast = qual_sufficient_stat_comp()$C[,col_num] 
+    contrast = qual_c_matrix_result()[,col_num] 
   } else if (input$denote_contrasts == "manual"){
     contrast = create_necessary_vector(input$qual_manual_contrast)
   }

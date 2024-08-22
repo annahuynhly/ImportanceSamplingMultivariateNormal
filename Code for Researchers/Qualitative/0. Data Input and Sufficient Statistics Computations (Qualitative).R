@@ -75,7 +75,7 @@ C2 = matrix(c(1, -1, -1, 1, 1, -1, 1, 0, 2), nrow = 3, ncol = 3, byrow = TRUE)
 C = C1 %x% C2 # This is the overall contrast matrix (using the kronecker product)
 
 # If you don't know what to use, there is code below to generate one from
-# the tensor product of Hermit matrices.
+# the tensor product of Helmert matrices.
 
 ################################################################################
 # Here is the code for computing X given the information above                 #
