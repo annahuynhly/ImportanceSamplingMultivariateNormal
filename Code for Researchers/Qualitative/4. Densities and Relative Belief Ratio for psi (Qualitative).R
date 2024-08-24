@@ -55,50 +55,57 @@ smoother_function = function(psi_density, counts, smoother){
 }
 
 psi_plot_vals = function(delta = 0.5, smoother = c(1, 1), prior_psi, post_psi,
-                         lower_bd, upper_bd, breaks){
+                         lower_bd, upper_bd, breaks, showplot = TRUE){
   #' Obtains the smoothed plot of the density of psi for both the prior and the posterior.
   #' @param smoother a vector containing an odd number of points to average density values.
   #' The first value is associated for the prior and the second is for the posterior.
   #' @param prior_psi the vector containing the prior psi values.
   #' @param post_psi the vector containing the posterior psi values.
   
-  prior_psi_hist = hist(prior_psi, breaks, freq = F)
+  if(showplot == TRUE){
+    par(mfrow=c(1,2))
+    prior_psi_hist = hist(prior_psi, breaks, freq = F, plot = TRUE)
+    post_psi_hist = hist(post_psi, breaks, freq = F, plot = TRUE)
+  } else {
+    prior_psi_hist = hist(prior_psi, breaks, plot = FALSE)
+    post_psi_hist = hist(post_psi, breaks, plot = FALSE)
+  }
+  
   psi_mids = prior_psi_hist$mids
-  post_psi_hist = hist(post_psi, breaks, freq = F)
   
   prior_psi_dens_smoothed = smoother_function(prior_psi_hist$density, 
                                               prior_psi_hist$counts, 
                                               smoother[1])
   post_psi_dens_smoothed = smoother_function(post_psi_hist$density , 
-                                               post_psi_hist$counts, 
-                                               smoother[2])
+                                             post_psi_hist$counts, 
+                                             smoother[2])
   
-  newlist = list("psi_mids" = psi_mids, "prior_psi_dens" = prior_psi_hist$density * delta,
-                 "prior_psi_dens_smoothed" = prior_psi_dens_smoothed * delta,
-                 "post_psi_dens" = post_psi_hist$density * delta,
-                 "post_psi_dens_smoothed" = post_psi_dens_smoothed * delta,
+  newlist = list("psi_mids" = psi_mids, "prior_psi_dens" = prior_psi_hist$density,
+                 "prior_psi_dens_smoothed" = prior_psi_dens_smoothed,
+                 "post_psi_dens" = post_psi_hist$density,
+                 "post_psi_dens_smoothed" = post_psi_dens_smoothed,
                  "breaks" = breaks)
   return(newlist)
 }
 
 psi_hist_vals = psi_plot_vals(delta, smoother, prior_psi, post_psi,
-                              lower_bd, upper_bd, breaks)
+                              lower_bd, upper_bd, breaks, showplot = TRUE)
 
 prior_psi_dens_smoothed = psi_hist_vals$prior_psi_dens_smoothed
-hist_breaks = psi_hist_vals$breaks
 post_psi_dens_smoothed = psi_hist_vals$post_psi_dens_smoothed
+psi_mids = psi_hist_vals$psi_mids
 
 ####################################################################################################
 # obtain the relative belief ratio of psi
 
-rbr_psi = function(prior_psi_dens_smoothed, post_psi_dens_smoothed, breaks){
+rbr_psi = function(prior_psi_dens_smoothed, post_psi_dens_smoothed, psi_mids){
   #' Obtain the relative belief ratio of psi based on the prior and posterior.
   #' @param prior_psi_dens_smoothed represents the prior psi values.
   #' @param post_psi_dens_smoothed represents the posterior psi values.
-  #' @param breaks represents the breaks of the histogram.
+  #' @param psi_mids represents the midpoints of the histogram.
   
   # Only need to focus on the max value due to endpoints
-  numcells = length(breaks)-1 # also size length(psi_mids)
+  numcells = length(psi_mids)
   RB_psi = rep(0, numcells)
   for (i in 1:numcells){
     if (prior_psi_dens_smoothed[i] != 0){
@@ -107,20 +114,19 @@ rbr_psi = function(prior_psi_dens_smoothed, post_psi_dens_smoothed, breaks){
   return(RB_psi)
 }
 
-rbr_psi_vals = rbr_psi(prior_psi_dens_smoothed, post_psi_dens_smoothed, 
-                           breaks = hist_breaks)
+rbr_psi_vals = rbr_psi(prior_psi_dens_smoothed, post_psi_dens_smoothed, psi_mids)
 
 #############################################################################################################
 # The plots side-by-side
 par(mfrow = (c(1, 3)))
 
-plot(psi_hist_vals$psi_mids, prior_psi_dens_smoothed, 
+plot(psi_mids, prior_psi_dens_smoothed, 
      type="l", xlab="psi", ylab="density", col = "red",
      main="The prior density of psi")
-plot(psi_hist_vals$psi_mids, post_psi_dens_smoothed,  
+plot(psi_mids, post_psi_dens_smoothed,  
      type="l", xlab="psi", ylab="density", col = "blue",
      main="The post density of psi")
-plot(psi_hist_vals$psi_mids, rbr_psi_vals,
+plot(psi_mids, rbr_psi_vals,
      type = "l", xlab = "psi", ylab = "RBR", col = "green", 
      main="The relative belief ratio of psi")
 

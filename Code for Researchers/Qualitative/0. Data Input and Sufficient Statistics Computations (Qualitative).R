@@ -1,7 +1,7 @@
 #############################################################
 # Part 0: Data Input and Sufficient Statistics Computations #
 #############################################################
-#August 20, 2024
+#August 21, 2024
 
 #If you haven't installed any of the packages yet, comment out below.
 #install.packages("MASS")
@@ -55,6 +55,7 @@ k = prod(l)
 n_vector = data$n_vector[!is.na(data$n_vector)]
 n = sum(n_vector)
 
+######################################################################################
 # Here you can set up the overall contrast matrix.
 
 C = matrix(c(1, -1, -1, -1,  1,  1,
@@ -66,7 +67,8 @@ C = matrix(c(1, -1, -1, -1,  1,  1,
            nrow = 6, ncol = 6, byrow = TRUE)
 
 # You can also input individual contrast matrices C_{1}, ..., C_{m} and form the overall
-# contrast matrix, where C_{i} \in \mathbb{R}^{}... (ask about the notation***)
+# contrast matrix, where C_{i} \in \mathbb{R}^{[L_{i}] x [L_{i}]} with first columns all 
+# mutually orthogonal.
 
 C1 = matrix(c(1, -1, 1, 1), nrow = 2, ncol = 2, byrow = TRUE)
 
