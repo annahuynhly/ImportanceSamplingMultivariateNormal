@@ -1,7 +1,7 @@
 #############################################################
 # Part 0: Data Input and Sufficient Statistics Computations #
 #############################################################
-#August 21, 2024
+#August 26, 2024
 
 #If you haven't installed any of the packages yet, comment out below.
 #install.packages("MASS")
@@ -56,28 +56,48 @@ n_vector = data$n_vector[!is.na(data$n_vector)]
 n = sum(n_vector)
 
 ######################################################################################
-# Here you can set up the overall contrast matrix.
+# Here you can set up the overall contrast matrix C or use the default which is the 
+# Kronecker product of Helmert matrices.
 
-C = matrix(c(1, -1, -1, -1,  1,  1,
-             1,  1, -1, -1, -1,  1, 
-             1,  0,  2, -1,  0, -2, 
-             1, -1, -1,  1, -1, -1,
-             1,  1, -1,  1,  1, -1, 
-             1,  0,  2,  1,  0,  2), 
-           nrow = 6, ncol = 6, byrow = TRUE)
+#C = matrix(c(1, -1, -1, -1,  1,  1,
+#            1,  1, -1, -1, -1,  1, 
+#            1,  0,  2, -1,  0, -2, 
+#            1, -1, -1,  1, -1, -1,
+#            1,  1, -1,  1,  1, -1, 
+#            1,  0,  2,  1,  0,  2), 
+#           nrow = 6, ncol = 6, byrow = TRUE)
 
 # You can also input individual contrast matrices C_{1}, ..., C_{m} and form the overall
 # contrast matrix, where C_{i} \in \mathbb{R}^{[L_{i}] x [L_{i}]} with first columns all 
 # mutually orthogonal.
 
-C1 = matrix(c(1, -1, 1, 1), nrow = 2, ncol = 2, byrow = TRUE)
+#C1 = matrix(c(1, -1, 1, 1), nrow = 2, ncol = 2, byrow = TRUE)
 
-C2 = matrix(c(1, -1, -1, 1, 1, -1, 1, 0, 2), nrow = 3, ncol = 3, byrow = TRUE)
+#C2 = matrix(c(1, -1, -1, 1, 1, -1, 1, 0, 2), nrow = 3, ncol = 3, byrow = TRUE)
 
-C = C1 %x% C2 # This is the overall contrast matrix (using the kronecker product)
+# C = C1 %x% C2 # This is the overall contrast matrix (using the kronecker product)
 
 # If you don't know what to use, there is code below to generate one from
 # the tensor product of Helmert matrices.
+
+# The following function builds the default default contrast matrix C
+qual_C_matrix = function(m, l){
+  #' Form a contrast matrix C generate from a is tensor product of
+  #' Helmert matrices.
+  #' @param m represents the number of factors.
+  #' @param l a vector that contains the number of levels per factor.
+  C = 1
+  for(i in 1:m){
+    Ci = cbind(rep(1, l[i]), contr.helmert(l[i])) # dropped the normalization
+    print(Ci)
+    C = C %x% Ci # kronecker product
+  }
+  return(C)
+}
+
+results2 = qual_C_matrix(m, l)
+
+C = results2
 
 ################################################################################
 # Here is the code for computing X given the information above                 #
@@ -114,8 +134,7 @@ qual_generate_X = function(n_vector){
 X = qual_generate_X(n_vector)
 
 ##########################################################################
-# Here is the code to compute the minimal sufficient statistics: b, s^2, #
-# and the contrast matrix                                                #
+# Here is the code to compute the minimal sufficient statistics: b, s^2 #                                                #
 ##########################################################################
 
 qual_Y_minimal_suff_stat = function(X, Y){
@@ -133,24 +152,6 @@ results1 = qual_Y_minimal_suff_stat(X, Y)
 
 b = results1$b
 s_2 = results1$s_2
-
-qual_C_matrix = function(m, l){
-  #' Form a contrast matrix C generate from a is tensor product of
-  #' Helmert matrices.
-  #' @param m represents the number of factors.
-  #' @param l a vector that contains the number of levels per factor.
-  C = 1
-  for(i in 1:m){
-    Ci = cbind(rep(1, l[i]), contr.helmert(l[i])) # dropped the normalization
-    print(Ci)
-    C = C %x% Ci # kronecker product
-  }
-  return(C)
-}
-
-results2 = qual_C_matrix(m, l)
-
-C = results2
 
 #####################################################################################
 # The order (indices) of beta 
@@ -218,7 +219,9 @@ find_position = function(value, beta_vector){
 # Getting the order of the betas in which the information is presented
 beta_list = create_beta_list_names(levels = l)
 
-print(beta_list)
+df = data.frame(beta = beta_list)
+
+print(df)
 
 # tells you the position of each beta value. Below is just an example
 find_position(value = "b13", beta_vector = beta_list)

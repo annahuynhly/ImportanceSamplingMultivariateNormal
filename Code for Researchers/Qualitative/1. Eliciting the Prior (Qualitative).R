@@ -1,7 +1,7 @@
 #####################################
 # Part 1: Elicitation of the Prior  #
 #####################################
-#August 20, 2024
+#August 26, 2024
 
 p = 1 # The data here is univariate.
 gamma = 0.99
@@ -47,8 +47,13 @@ m2 = elicit_data$m2
 
 # Functions ######################################
 
-elicit_prior_sigma_function = function(p, gamma, s1, s2, upper_bd, lower_bd,
-                                       eps = 0.0001, maxits = 100){
+# Set eps and maxits for the iterative procedure to determine if the hyperparameters for the prior
+# on 1/sigma^{2}; if maxits is too small convergence will fail.
+
+eps = 0.0001
+maxits = 100
+
+elicit_prior_sigma_function = function(p, gamma, s1, s2, upper_bd, lower_bd, eps, maxits){
   #' 1/sigma^2 ~ gamma(alpha01, alpha02). Here, we elicit the prior for sigma.
   #' We specify s1, s2 such that s1 <= sigma * z_{(1+gamma)/2} <= s2
   #' Then the values alpha01, alpha02 are solved for:
@@ -113,7 +118,7 @@ elicit_prior_beta0_function = function(p, gamma, m1, m2, alpha01, alpha02){
 
 # Values #########################################
 
-prior_sigma_vals = elicit_prior_sigma_function(p, gamma, s1, s2, upper_bd, lower_bd)
+prior_sigma_vals = elicit_prior_sigma_function(p, gamma, s1, s2, upper_bd, lower_bd, eps, maxits)
 
 prior_sigma_vals
 

@@ -1,14 +1,14 @@
 #############################
 #Part 5. Inferences for psi #
 #############################
-# August 22, 2024
+# August 26, 2024
 
 ##############################################################
 # Estimate of true value of psi from the relative belief ratio
 RBest = psi_mids[which.max(rbr_psi_vals)]
 cat("RB estimate of psi = ", RBest,"\n")
+cat("Maximized RB value = ", which.max(rbr_psi_vals), "\n")
 
-##############################################################
 # Using a function to obtain the plausible region
 
 plausible_region_est = function(psi_mids, RB_psi, post_psi_dens_smoothed,
@@ -34,6 +34,19 @@ plausible_region_est = function(psi_mids, RB_psi, post_psi_dens_smoothed,
                  "plaus_content" = plaus_content)
   return(newlist)
 }
+
+inferences = plausible_region_est(psi_mids, RB_psi = rbr_psi_vals, 
+                     post_psi_dens_smoothed, delta)
+
+# estimating plausible region.the values of psi where the RB > 1
+inferences$plaus_interval
+
+# getting the posterior content of the plausible region
+inferences$plaus_content
+
+#####################################################################################################
+# assess hypothesis H_0 : psi = psi_0
+psi_0 = 3
 
 psi_hypothesis_test = function(psi_0, psi_mids, RB_psi, post_psi_dens_smoothed,
                                delta){
@@ -65,19 +78,6 @@ psi_hypothesis_test = function(psi_0, psi_mids, RB_psi, post_psi_dens_smoothed,
   
   return(newlist)
 }
-
-inferences = plausible_region_est(psi_mids, RB_psi = rbr_psi_vals, 
-                     post_psi_dens_smoothed, delta)
-
-# estimating plausible region.the values of psi where the RB > 1
-inferences$plaus_interval
-
-# getting the posterior content of the plausible region
-inferences$plaus_content
-
-#####################################################################################################
-# assess hypothesis H_0 : psi = psi_0
-psi_0 = 3
 
 hypo_test = psi_hypothesis_test(psi_0, psi_mids, RB_psi = rbr_psi_vals, 
                                 post_psi_dens_smoothed, delta)

@@ -1,91 +1,122 @@
-############################################################################
-#Part 6. Accessing the hypothesis test a collection of contrasts are all 0 #
-############################################################################
-# July 24, 2024
+######################################################################################################
+#Part 6. The Analysis of Variance: accessing the hypothesis that a collection of contrasts are all 0 #
+######################################################################################################
+# August 26, 2024
+
+# Below, printing out the overall contrast matrix C and the beta_list for reference
+C
+beta_list
+
+prior_beta_matrix
+post_beta_matrix
+
+prior_alpha_matrix = prior_beta_matrix %*% C
+post_alpha_matrix = post_beta_matrix  %*% C
+
+# Specify which main effects or order of interactions the user wants to test
+
+# Printing number of factors and levels as a reminder
+cat("Number of factors:", m)
+cat("Number of levels per factor:", l)
+
+# If the user wants to test the main effect of a factor, they can use the functions below
+
+# Main effect of factor 1
+
+find_factor = function(name_list, levels, main_effect){
+  #' Given the vector of beta or alpha names (with their indices), a vector denoting
+  #' the number of factors per level and which main effect we are testing for, returns
+  #' a vector of betas needed for the hypothesis test.
+  
+  # getting the coefficient type
+  coefficient_type = gsub("[0-9]", "", name_list[1])
+  
+  factors_before = main_effect - 1
+  before_1 = paste(rep(1, factors_before), collapse = "")
+  factors_after = length(levels) - main_effect
+  after_1 = paste(rep(1, factors_after), collapse = "")
+  factor_list = c()
+  for(j in 2:levels[main_effect]){
+    new_factor = paste(coefficient_type, before_1, j, after_1, sep = "")
+    factor_list = c(factor_list, new_factor)
+  }
+  return(factor_list)
+}
+
+factors = find_factor(name_list = beta_list, levels = l, main_effect = 1)
+
+# Main effect of factor 2
+
+factors = find_factor(name_list = beta_list, levels = l, main_effect = 2)
+
+# Denoting the positions of the vector such that we use the correct one.
+
+positions = find_position(factors, beta_list)
+
+# The user can also manually specify the order of interactions they want to test
+
+positions = find_position(c("b12", "b13"), beta_list)
+
 
 #####################################################################################################
 # assess hypothesis (of the interactions) H_0 : psi = psi_0
 
-convert_alpha_to_beta = function(alpha_list){
-  alpha_list = gsub("alpha", "b", alpha_list)
-  return(alpha_list)
+prior_alpha = numeric(nrow(prior_alpha_matrix))
+for(i in 1:nrow(prior_alpha_matrix)){
+  prior_alpha[i] = max(abs(prior_alpha_matrix[i,][positions]))
 }
 
-max_of_contrasts = function(prior_alpha, post_alpha, delta, smoother, psi_0, contrasts = NA, 
-                            levels = NA){
-  #' Does a hypothesis test on the collection of contrasts to see if there's an interaction.
-  #' @param prior_alpha is the result of t(C) %*% beta_prior
-  #' @param post_alpha is the result if t(C) %*% beta_post
-  #' @param delta is the bin width of the histogram.
-  #' @param smoother a vector containing an odd number of points to average prior density values.
-  #' The first value is associated for the prior and the second is for the posterior.
-  #' @param psi_0 is the value of the null hypothesis used to access H_0 : psi = psi_0
-  #' @param contrasts contains the alpha contrasts included in the hypothesis test.
-  #' @param levels a vector containing the number of levels per factor.
-  
-  k = ncol(prior_alpha) # assumption is that ncol(prior) = ncol(post)
-  Nprior = nrow(prior_alpha)
-  Npost = nrow(post_alpha)
-  max_alpha_prior = numeric(Nprior)
-  max_alpha_post = numeric(Npost)
-  
-  if(is.na(contrasts[1]) == TRUE){
-    contrast_indices_beta = 2:k
-  } else {
-    beta_version = convert_alpha_to_beta(contrasts)
-    beta_list = create_beta_list_names(levels)
-    contrast_indices_beta = find_position(beta_version, beta_list)
-  }
-  
-  for(i in 1:Nprior){
-    # ignoring the first column of alphas
-    max_alpha_prior[i] = max(abs(prior_alpha[i,][contrast_indices_beta]))
-  }
-  for(j in 1:Npost){
-    max_alpha_post[j] = max(abs(post_alpha[j,][contrast_indices_beta]))
-  }
-  
-  plot_vals = psi_plot_vals(delta, smoother, prior_psi = max_alpha_prior, 
-                            post_psi = max_alpha_post)
-  
-  prior_psi_dens_smoothed = plot_vals$prior_psi_dens_smoothed
-  hist_breaks = plot_vals$breaks
-  post_psi_dens_smoothed = plot_vals$post_psi_dens_smoothed
-  rbr_vals = rbr_psi(prior_psi_dens_smoothed, post_psi_dens_smoothed, hist_breaks)
-  
-  inferences = plausible_region_est(prior_psi_mids = plot_vals$psi_mids, 
-                                    RB_psi = rbr_vals, 
-                                    post_psi_dens_smoothed = post_psi_dens_smoothed, 
-                                    delta_psi = delta)
-  
-  hypo_test = psi_hypothesis_test(psi_0 = psi_0, 
-                                  prior_psi_mids = plot_vals$psi_mids, 
-                                  RB_psi = rbr_vals, 
-                                  post_psi_dens_smoothed = post_psi_dens_smoothed,
-                                  delta_psi = delta)
-  
-  
-  # Estimate of true value of psi from the relative belief ratio
-  RBest = rbr_psi_vals[which.max(rbr_psi_vals)]
-  
-  newlist = list("RBest" = RBest, "Plausible Region" = inferences$plaus_region,
-                 "Posterior Content of the Plausible Region" = inferences$plaus_content,
-                 "Evidence Concerning strength H_0 : psi = psi_0" = hypo_test$psi_message,
-                 "Strength" = hypo_test$strength_message,
-                 "prior_psi_dens_smoothed" = prior_psi_dens_smoothed,
-                 "post_psi_dens_smoothed" = post_psi_dens_smoothed,
-                 "rbr_vals" = rbr_vals,
-                 "plot_mids" = plot_vals$psi_mids)
-  return(newlist)
+post_alpha = numeric(nrow(post_alpha_matrix))
+for(i in 1:nrow(post_alpha_matrix)){
+  post_alpha[i] = max(abs(post_alpha_matrix[i,][positions]))
 }
 
-prior_alpha = prior_beta_matrix %*% C
-post_alpha = post_beta_matrix %*% C
+delta = 0.5 # The meaningful differences for the ANOVA case
+upper_bd = delta * ceiling(max(c(prior_alpha, post_alpha))/delta) + 0.5 * delta
+breaks_anova = c(c(0, delta/2), seq(delta/2 + delta, upper_bd, by = delta))
 
-# This is for all contrasts except for alpha11
-max_of_contrasts(prior_alpha, post_alpha, delta = 0.5, smoother = c(7, 7), psi_0 = 15)
+# Getting hist values
+smoother = c(3, 3)
 
-# This is for a limited amount of contrasts (depends on what the user wants)
-max_of_contrasts(prior_alpha, post_alpha, delta = 0.5, smoother = c(7, 7), psi_0 = 15, 
-                 levels = c(2, 3), contrasts = c("alpha21","alpha22","alpha23"))
+psi_anova_hist_vals = psi_plot_vals(delta, smoother, prior_psi = prior_alpha, post_psi = post_alpha,
+              lower_bd = 0, upper_bd = breaks_anova[length(breaks_anova)], 
+              breaks = breaks_anova, showplot = TRUE)
+
+anova_rbr = rbr_psi(prior_psi_dens_smoothed = psi_anova_hist_vals$prior_psi_dens_smoothed, 
+                    post_psi_dens_smoothed = psi_anova_hist_vals$post_psi_dens_smoothed, 
+                    psi_mids = psi_anova_hist_vals$psi_mids)
+
+# Estimate of true value of psi from the relative belief ratio
+RBest_anova = psi_anova_hist_vals$psi_mids[which.max(anova_rbr)]
+cat("RB estimate of psi = ", RBest_anova,"\n")
+cat("Maximized RB value = ", which.max(anova_rbr), "\n")
+
+inferences_anova = plausible_region_est(psi_mids = psi_anova_hist_vals$psi_mids, 
+                                        RB_psi = anova_rbr, 
+                                        post_psi_dens_smoothed = psi_anova_hist_vals$post_psi_dens_smoothed, 
+                                        delta)
+
+# estimating plausible region.the values of psi where the RB > 1
+inferences_anova$plaus_interval
+
+# getting the posterior content of the plausible region
+inferences_anova$plaus_content
+
+#####################################################################################################
+# assess hypothesis H_0 : psi = psi_0
+psi_0 = 0
+
+hypo_test = psi_hypothesis_test(psi_0, 
+                                psi_mids = psi_anova_hist_vals$psi_mids, 
+                                RB_psi = anova_rbr, 
+                                post_psi_dens_smoothed = psi_anova_hist_vals$post_psi_dens_smoothed, 
+                                delta)
+
+# compute the evidence concerning strength H_0 : psi = psi_0
+hypo_test$psi_message
+
+# Compute the strength
+hypo_test$strength_message
+
+
 
