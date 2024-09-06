@@ -1,7 +1,7 @@
 ######################################################################################################
 #Part 6. The Analysis of Variance: accessing the hypothesis that a collection of contrasts are all 0 #
 ######################################################################################################
-# August 26, 2024
+# August 28, 2024
 
 # Below, printing out the overall contrast matrix C and the beta_list for reference
 C
@@ -13,20 +13,59 @@ post_beta_matrix
 prior_alpha_matrix = prior_beta_matrix %*% C
 post_alpha_matrix = post_beta_matrix  %*% C
 
+# Re-naming it to alphas to not get confused
+alpha_list = gsub("b", "a", beta_list)
+
+#############################################################################
 # Specify which main effects or order of interactions the user wants to test
 
 # Printing number of factors and levels as a reminder
 cat("Number of factors:", m)
 cat("Number of levels per factor:", l)
 
-# If the user wants to test the main effect of a factor, they can use the functions below
+# Testing the ordered interactions
 
-# Main effect of factor 1
+# When testing for the ordered interactions, assuming m represents the number of factors, then
+# we start with testing (m-1), then (m-2), etc.
 
-find_factor = function(name_list, levels, main_effect){
-  #' Given the vector of beta or alpha names (with their indices), a vector denoting
-  #' the number of factors per level and which main effect we are testing for, returns
-  #' a vector of betas needed for the hypothesis test.
+find_factor_ordered_interactions = function(name_list, levels, order){
+  #' Returns a vector of alphas required to test for the ordered interactions.
+  #' @param name_list a vector containing all indices of alpha.
+  #' @param levels a vector that contains the number of levels per factor.
+  #' @param main_effect an integer that represents the ordered interaction we are testing for.
+  
+  num_indices = order + 1 # Number of indices not equal to one
+  
+  new_names = c()
+  for(name in name_list){
+    if((sum(strsplit(name, NULL)[[1]] == "1")) != num_indices){
+      new_names = c(new_names, name)
+    }
+  }
+ return(new_names) 
+}
+
+# All first order interactions
+
+factors = find_factor_ordered_interactions(name_list = alpha_list, levels = l, order = 1)
+
+# For this case we did not include the second order interactions since the default data has m = 2.
+# However, if m >= 3 then to do a second order interaction one must do the following:
+
+#factors = find_factor_ordered_interactions(name_list = alpha_list, levels = l, order = 2)
+
+# Denoting the positions of the vector such that we use the correct one.
+positions = find_position(factors, alpha_list)
+
+#############################################################################
+# If there are no interactions, then you can test for main effects below.
+
+find_factor_main_effects = function(name_list, levels, main_effect){
+  #' Return a vector of alphas needed for the hypothesis test to test the main effect 
+  #' of a certain factor (denoted as main_effect).
+  #' @param name_list a vector containing all indices of alpha.
+  #' @param levels a vector that contains the number of levels per factor.
+  #' @param main_effect an integer represents the main effect we are testing for.
   
   # getting the coefficient type
   coefficient_type = gsub("[0-9]", "", name_list[1])
@@ -43,20 +82,19 @@ find_factor = function(name_list, levels, main_effect){
   return(factor_list)
 }
 
-factors = find_factor(name_list = beta_list, levels = l, main_effect = 1)
+# Main effect of factor 1
+factors = find_factor_main_effects(name_list = alpha_list, levels = l, main_effect = 1)
 
 # Main effect of factor 2
-
-factors = find_factor(name_list = beta_list, levels = l, main_effect = 2)
+factors = find_factor_main_effects(name_list = alpha_list, levels = l, main_effect = 2)
 
 # Denoting the positions of the vector such that we use the correct one.
+positions = find_position(factors, alpha_list)
 
-positions = find_position(factors, beta_list)
+#############################################################################
+# The user may also manually specify the contrasts they want to observe.
 
-# The user can also manually specify the order of interactions they want to test
-
-positions = find_position(c("b12", "b13"), beta_list)
-
+positions = find_position(c("a12", "a13"), alpha_list)
 
 #####################################################################################################
 # assess hypothesis (of the interactions) H_0 : psi = psi_0
@@ -89,7 +127,7 @@ anova_rbr = rbr_psi(prior_psi_dens_smoothed = psi_anova_hist_vals$prior_psi_dens
 # Estimate of true value of psi from the relative belief ratio
 RBest_anova = psi_anova_hist_vals$psi_mids[which.max(anova_rbr)]
 cat("RB estimate of psi = ", RBest_anova,"\n")
-cat("Maximized RB value = ", which.max(anova_rbr), "\n")
+cat("Maximized RB value = ", max(anova_rbr), "\n")
 
 inferences_anova = plausible_region_est(psi_mids = psi_anova_hist_vals$psi_mids, 
                                         RB_psi = anova_rbr, 
@@ -104,7 +142,7 @@ inferences_anova$plaus_content
 
 #####################################################################################################
 # assess hypothesis H_0 : psi = psi_0
-psi_0 = 0
+psi_0 = 0 
 
 hypo_test = psi_hypothesis_test(psi_0, 
                                 psi_mids = psi_anova_hist_vals$psi_mids, 

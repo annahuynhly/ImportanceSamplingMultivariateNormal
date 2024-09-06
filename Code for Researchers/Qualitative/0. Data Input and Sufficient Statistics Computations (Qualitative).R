@@ -1,7 +1,7 @@
 #############################################################
 # Part 0: Data Input and Sufficient Statistics Computations #
 #############################################################
-#August 26, 2024
+#August 28, 2024
 
 #If you haven't installed any of the packages yet, comment out below.
 #install.packages("MASS")
@@ -160,45 +160,22 @@ s_2 = results1$s_2
 # of the beta's within the vector. So index i correspond to same (j_{1}, ..., j_{m}) for
 # beta_{j_{1}, ..., j_{m}} for beta_{j_{1}, ..., j_{m}}
 
-calculate_indices = function(i, L){
-  #' Calculate Index Positions for Each Level
-  #' @param i An integer representing the current index for which the 
-  #' indices are to be calculated.
-  #' @param L An integer vector where each element represents the 
-  #' number of levels for a particular factor.
-  indices = numeric(length(L))  # Initialize a numeric vector to store the indices
-  remaining = i - 1  # Adjust index to 0-based for easier calculation
+create_beta_list_names <- function(levels, text = "b") {
+  # This list represents the range of values that each dimension can take in the final combination grid.
+  grid = lapply(rev(levels), seq)
   
-  for(j in 1:length(L)) {
-    indices[j] = (remaining %% L[j]) + 1  # Calculate the current level index (remainder)
-    remaining = (remaining %/% L[j])  # Update remaining for the next level (quotient)
-  }
+  # expand.grid creates a data frame where each row is a unique combination of the input sequences.
+  combinations = expand.grid(grid)
   
-  return(indices)  # Return the vector of calculated indices
-}
-
-create_beta_list_names = function(levels, text = "b"){
-  #' Generate Beta List Names for a Beta Matrix
-  #' @param levels An integer vector where each element represents the number 
-  #' of levels for a corresponding factor.
-  #' @param text indicates the initials before the indices.
-  #' @examples
-  #' >generate_beta_vector(c(2,3,3))
-  #' [1] "b111" "b112" "b113" "b121" "b122" "b123" "b131" "b132" "b133" "b211" "b212" "b213" "b221"
-  #' [14] "b222" "b223" "b231" "b232" "b233
+  # Changes the order of the combination (to match what is desired)
+  combinations = combinations[, rev(seq_along(levels))]
   
-  Lprod = prod(levels)  # Calculate the total number of combinations (product of levels)
+  # Combine "b" with each combination to create the final vector of strings
+  # apply is used to concatenate each row of the combinations data frame into a single string,
+  # prefixed with "b". The result is a character vector of strings like "b111", "b112", etc.
+  beta_vector = apply(combinations, 1, function(x) paste0(text, paste(x, collapse = "")))
   
-  # Generate beta vector by calculating indices for each combination
-  beta_vector = sapply(1:Lprod, function(i){
-    # Calculate the indices for the current combination
-    # rev: reverses the order
-    indices = calculate_indices(i, rev(levels))  
-    # Create the beta name by concatenating indices
-    paste(text, paste(rev(indices), collapse = ""), sep = "")  
-  })
-  
-  return(beta_vector)  # Return the vector of beta names
+  return(beta_vector)
 }
 
 find_position = function(value, beta_vector){

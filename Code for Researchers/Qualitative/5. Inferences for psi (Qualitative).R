@@ -7,7 +7,7 @@
 # Estimate of true value of psi from the relative belief ratio
 RBest = psi_mids[which.max(rbr_psi_vals)]
 cat("RB estimate of psi = ", RBest,"\n")
-cat("Maximized RB value = ", which.max(rbr_psi_vals), "\n")
+cat("Maximized RB value = ", max(rbr_psi_vals), "\n")
 
 # Using a function to obtain the plausible region
 
